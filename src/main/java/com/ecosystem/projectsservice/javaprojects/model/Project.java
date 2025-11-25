@@ -14,7 +14,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class JavaProject {
+public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,12 +31,21 @@ public class JavaProject {
     @Column
     private Instant createdAt;
 
+
+    // проект не может быть запущен быть запущен одновременно в нескольких экземплярах
     @Column
     private Boolean running;
 
     // File entry point
+    // главный файл проекта
+    @OneToOne
+    @JoinColumn(name = "entry_point_id", referencedColumnName = "id")
+    private File entryPoint;
 
-    // Directory root
+    // корневая папа проекта - не имеет родителей
+    @OneToOne
+    @JoinColumn(name = "root_id", referencedColumnName = "id")
+    private Directory root;
 
 
 }
