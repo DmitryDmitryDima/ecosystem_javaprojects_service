@@ -4,6 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectBuildFromS
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import com.ecosystem.projectsservice.javaprojects.utils.yaml.DirectoryInstruction;
 import com.ecosystem.projectsservice.javaprojects.utils.yaml.FileInstruction;
@@ -14,6 +15,7 @@ import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,7 +34,7 @@ public class ProjectConstructor {
 
 
 
-
+    // постройка проекта на основе готового system template
     public void buildProjectFromSystemTemplate(ProjectBuildFromSystemTemplateInfo info) throws Exception{
 
         Project project = info.getProject();
@@ -50,10 +52,24 @@ public class ProjectConstructor {
 
 
 
-        // загружаем и запускаем инструкцию
+
+
+        // загружаем и запускаем инструкцию, базируясь на projectType
+
+        String instructionName = switch (info.getProjectType()){
+            case MAVEN_CLASSIC -> "maven_classic.yaml";
+            case GRADLE_CLASSIC -> "gradle_classic.yaml";
+        };
+
         try {
-            YamlInstruction instruction = readInstruction(Path.of(info.getInstructionPath()));
+            // читаем инструкцию
+            YamlInstruction instruction = readInstruction(Path.of(info.getInstructionsPath(), instructionName));
+            // запускаем инструкцию
             runInstruction(instruction, root, info.getFileTemplatesPath());
+            // выполняем дополнительные действия над готовой структурой проекта
+            prepareProject(info);
+
+
         }
         catch (Exception e){
             // подчищаем
@@ -169,8 +185,8 @@ public class ProjectConstructor {
             // кешируем путь до файла
             // создаем файл
             // загружаем шаблон, если он присутствует
-            // todo доделать
-            ProjectUtils.writeFile(parent, file, templatePath, fileInstruction.getTemplate());
+
+            ProjectUtils.writeFileFromSystemTemplate(parent, file, templatePath, fileInstruction.getTemplate());
 
 
 
@@ -182,6 +198,25 @@ public class ProjectConstructor {
 
         }
 
+    }
+
+    private void prepareProject(ProjectBuildFromSystemTemplateInfo info) throws Exception {
+        if (info.getProjectType()== ProjectType.MAVEN_CLASSIC){
+            // добавляем artefact id к pom.xml
+            ProjectUtils.setArtifactIdInsidePomXML(Path.of(info.getProject().getRoot().getConstructedPath(), "pom.xml").toString(),
+                    info.getProject().getName()+"-project"
+                    );
+            // генерируем точку входа, если этого желает пользователь
+            if (info.isNeedEntryPoint()){
+
+                ProjectUtils.generateEntryPointForMavenProject(info.getProject());
+
+            }
+
+
+
+
+        }
     }
 
 

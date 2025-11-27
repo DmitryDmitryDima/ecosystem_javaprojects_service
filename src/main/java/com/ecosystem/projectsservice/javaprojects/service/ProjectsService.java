@@ -3,14 +3,19 @@ package com.ecosystem.projectsservice.javaprojects.service;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectBuildFromSystemTemplateInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectCreationRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.ProjectRemovalEventChain;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -28,6 +33,7 @@ public class ProjectsService {
 
     // папка, где хранятся готовые инструкции для проекта. В будущем вполне возможно, что пользователь (или ai) сможет сам написать подобную инструкцию
     private final String INSTRUCTIONS_FOLDER = "build_instructions";
+    private final String TEMPLATES_FOLDER = "file_templates";
 
 
 
@@ -44,8 +50,29 @@ public class ProjectsService {
     private FileRepository fileRepository;
 
 
+    @Autowired
+    private ProjectRemovalEventChain removalEventChain;
+
+
+
+
+
+    /*
+    пока что удаление происходит безвозвратно, возможно на более поздних этапах разработки добавлю что-то вроде корзины
+     */
+
+    public void deleteProject(SecurityContext securityContext, ProjectRemovalRequest request){
+
+
+        removalEventChain.initRemovalChain(securityContext.getUuid(), request.getProjectId());
+
+
+
+    }
+
+
     @Transactional(rollbackOn = Exception.class)
-    public void createProject(SecurityContext securityContext, ProjectCreationRequest request) throws Exception{
+    public void createProjectFromSystemTemplate(SecurityContext securityContext, ProjectCreationRequest request) throws Exception{
 
 
         // шаг 1 - смотрим все проекты пользователя и проверяем, есть ли среди них одноименный
@@ -63,6 +90,7 @@ public class ProjectsService {
         project.setCreatedAt(Instant.now());
         project.setUserUUID(securityContext.getUuid());
         project.setName(request.getName());
+        project.setStatus(ProjectStatus.AVAILABLE);
 
         // шаг 3 - сохраняем основные сущности
 
@@ -87,40 +115,13 @@ public class ProjectsService {
         ProjectBuildFromSystemTemplateInfo info = ProjectBuildFromSystemTemplateInfo.builder()
 
                 .project(project)
-                .instructionPath(Path.of(systemStoragePath, "build_instructions", "maven_classic.yaml").normalize().toString())
-                .fileTemplatesPath(Path.of(systemStoragePath, "file_templates").normalize().toString())
+                .instructionsPath(Path.of(systemStoragePath, INSTRUCTIONS_FOLDER).normalize().toString())
+                .fileTemplatesPath(Path.of(systemStoragePath, TEMPLATES_FOLDER).normalize().toString())
+                .projectType(ProjectType.MAVEN_CLASSIC)
+                .needEntryPoint(request.getNeedEntryPoint())
                 .build();
 
         projectConstructor.buildProjectFromSystemTemplate(info);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

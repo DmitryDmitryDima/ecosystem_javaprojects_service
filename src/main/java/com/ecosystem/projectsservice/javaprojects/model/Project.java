@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.model;
 
 
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,9 +33,13 @@ public class Project {
     private Instant createdAt;
 
 
-    // проект не может быть запущен быть запущен одновременно в нескольких экземплярах
+
+    /*
+    три состояния проекта - AVAILABLE, REMOVING, RUNNING
+     */
     @Column
-    private Boolean running;
+    @Enumerated(EnumType.STRING)
+    private ProjectStatus status = ProjectStatus.AVAILABLE;
 
     // File entry point
     // главный файл проекта

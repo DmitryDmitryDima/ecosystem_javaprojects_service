@@ -29,7 +29,7 @@ public class ProjectsLifecycleController {
 
         // todo доп защиту стоит реализовать в фильтре, проверяющем, не пришел ли post запрос с неправильной ролью
 
-        projectsService.createProject(securityContext, request);
+        projectsService.createProjectFromSystemTemplate(securityContext, request);
 
         return ResponseEntity.noContent().build();
 

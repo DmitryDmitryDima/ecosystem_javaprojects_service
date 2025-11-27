@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.dto.projects;
 
 
 import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,11 +23,15 @@ public class ProjectBuildFromSystemTemplateInfo {
 
 
     // путь к инструкции
-    private String instructionPath;
+    private String instructionsPath;
 
     private String fileTemplatesPath;
 
     private Project project;
+
+    private ProjectType projectType;
+
+    private boolean needEntryPoint;
 
 
 
