@@ -64,7 +64,7 @@ public class ProjectsService {
     public void deleteProject(SecurityContext securityContext, ProjectRemovalRequest request){
 
 
-        removalEventChain.initRemovalChain(securityContext.getUuid(), request.getProjectId());
+        removalEventChain.initRemovalChain(securityContext, request.getProjectId());
 
 
 

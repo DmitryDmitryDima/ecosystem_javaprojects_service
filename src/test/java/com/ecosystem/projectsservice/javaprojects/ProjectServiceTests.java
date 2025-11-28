@@ -42,10 +42,12 @@ public class ProjectServiceTests {
         SecurityContext securityContext = SecurityContext.builder()
                 .role("USER")
                 .username("user_1")
-                .uuid(UUID.fromString("0a05927c-ca3f-40dc-8658-9121af4617c2"))
+                .uuid(UUID.fromString("704eec39-e68a-4aee-a783-c47935a9de03"))
                 .build();
-        ProjectRemovalRequest request = new ProjectRemovalRequest(1L);
+        ProjectRemovalRequest request = new ProjectRemovalRequest(5L);
 
         projectsService.deleteProject(securityContext, request);
     }
+
+
 }

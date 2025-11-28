@@ -1,19 +1,23 @@
-package com.ecosystem.projectsservice.javaprojects.message_queue;
+package com.ecosystem.projectsservice.javaprojects;
 
 import com.ecosystem.projectsservice.javaprojects.message_queue.events_for_queue.ProjectRemovalQueueEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.events.UserEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.events.entitiesflow.ProjectRemovalResultEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.events.status.ProjectRemovalStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.test.context.SpringBootTest;
 
-// слушаются внутренние события микросервиса, предназначенные для отправки во внешнюю очередь
-// сервис является мостом между внутренней ивент системой и внешней очередью
-@Component
-public class InternalEventsListener {
+import java.time.Instant;
+import java.util.UUID;
+
+@SpringBootTest
+public class MessageQueueTest {
 
     @Autowired
     private ObjectMapper mapper;
@@ -21,44 +25,38 @@ public class InternalEventsListener {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    @Autowired
-    private EventConverter eventConverter;
-
     @Value("${users.activity_events.exchange.name}")
     private String USERS_ACTIVITY_EXCHANGE_NAME;
 
 
-    // результат удаления - успех или неудача
-    @EventListener
-    public void processProjectRemovalResult(ProjectRemovalResultEvent event){
+    @Test
+    public void sendRemovalEvent(){
+
+
+        ProjectRemovalQueueEvent queueEvent = ProjectRemovalQueueEvent.builder()
+
+                .message("hello")
+                .status(ProjectRemovalStatus.SUCCESS)
+                .projectId(1L)
+                .context(UserEventContext.builder().userUUID(UUID.randomUUID()).timestamp(Instant.now()).username("loh").build())
+                .build();
 
 
 
 
 
-        try {
+        Assertions.assertDoesNotThrow(()->{
             MessagePostProcessor postProcessor = (message )-> {
                 message.getMessageProperties().setHeader("event_type", "java_project_removal");
                 return message;
             };
 
-            ProjectRemovalQueueEvent preparedBody = eventConverter.map(event);
 
+            String payload = mapper.writeValueAsString(queueEvent);
 
-            String payload = mapper.writeValueAsString(preparedBody);
 
             rabbitTemplate.convertAndSend(USERS_ACTIVITY_EXCHANGE_NAME, "", payload, postProcessor);
-        }
-
-        catch (Exception e){
-
-        }
-
-
-
+        });
     }
-
-
-
 
 }

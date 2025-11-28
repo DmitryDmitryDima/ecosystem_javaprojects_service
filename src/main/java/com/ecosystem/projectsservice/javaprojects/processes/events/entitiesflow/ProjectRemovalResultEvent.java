@@ -1,5 +1,7 @@
-package com.ecosystem.projectsservice.javaprojects.message_queue.events_for_queue;
+package com.ecosystem.projectsservice.javaprojects.processes.events.entitiesflow;
 
+import com.ecosystem.projectsservice.javaprojects.processes.events.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.events.status.ProjectRemovalStatus;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -10,12 +12,14 @@ import org.springframework.context.ApplicationEvent;
 @ToString
 public class ProjectRemovalResultEvent extends ApplicationEvent {
 
-    // имя ивента в системе распределенной очереди
-    private final String event_type = "java_project_removal";
+
 
     private ProjectRemovalStatus status;
     private String message;
     private Long projectId;
+    private UserEventContext context;
+
+
     public ProjectRemovalResultEvent(Object source, Long projectId, ProjectRemovalStatus status, String message ) {
         super(source);
         this.message = message;
@@ -24,9 +28,9 @@ public class ProjectRemovalResultEvent extends ApplicationEvent {
 
     }
 
-    public static enum ProjectRemovalStatus {
-        SUCCESS, FAIL
-    }
+
+
+
 
 
 }

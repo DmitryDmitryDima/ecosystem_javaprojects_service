@@ -1,13 +1,16 @@
 package com.ecosystem.projectsservice.javaprojects.processes;
 
 
-import com.ecosystem.projectsservice.javaprojects.message_queue.events_for_queue.ProjectRemovalResultEvent;
+import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.processes.events.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.events.entitiesflow.ProjectRemovalResultEvent;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.events.entities.ProjectRemovalCleanedDiskEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.events.entities.ProjectRemovalInitEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.events.entitiesflow.ProjectRemovalCleanedDiskEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.events.entitiesflow.ProjectRemovalInitEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.events.status.ProjectRemovalStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -16,11 +19,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -45,23 +48,28 @@ public class ProjectRemovalEventChain {
 
     // на входе в цепочку мы проверяем сущность и блокируем ее специальным статусом
 
-    public void initRemovalChain(UUID userUUID, Long projectId){
+    public void initRemovalChain(SecurityContext securityContext, Long projectId){
+        UserEventContext sharedContext = UserEventContext.builder()
+                .userUUID(securityContext.getUuid())
+                .timestamp(Instant.now())
+                .username(securityContext.getUsername())
+                .build();
 
         Optional<Project> existenceCheck = projectRepository.findById(projectId);
         if (existenceCheck.isEmpty()){
-            sendFailedResult(projectId, "преокт не найден");
+            sendFailedResult(projectId, "преокт не найден", sharedContext);
             return;
         }
 
         Project project = existenceCheck.get();
 
-        if (!project.getUserUUID().equals(userUUID)){
-            sendFailedResult(projectId,"ошибка доступа");
+        if (!project.getUserUUID().equals(securityContext.getUuid())){
+            sendFailedResult(projectId,"ошибка доступа", sharedContext);
             return;
         }
 
         if (project.getStatus()!= ProjectStatus.AVAILABLE){
-            sendFailedResult(projectId, "Неподходящий статус. Проверьте, запущен ли проект");
+            sendFailedResult(projectId, "Неподходящий статус. Проверьте, запущен ли проект", sharedContext);
             return;
         }
 
@@ -69,9 +77,13 @@ public class ProjectRemovalEventChain {
         project.setStatus(ProjectStatus.REMOVING);
         projectRepository.save(project);
 
+
+
         String path = project.getRoot().getConstructedPath();
 
-        ProjectRemovalInitEvent initEvent = new ProjectRemovalInitEvent(this, projectId, path);
+
+
+        ProjectRemovalInitEvent initEvent = new ProjectRemovalInitEvent(this, projectId, path, sharedContext);
 
 
 
@@ -96,13 +108,15 @@ public class ProjectRemovalEventChain {
             FileSystemUtils.deleteRecursively(Path.of(initEvent.getDiskPath()));
             Thread.sleep(1000); // симуляция долгой операции
             ProjectRemovalCleanedDiskEvent projectRemovalCleanedDiskEvent = new ProjectRemovalCleanedDiskEvent(this, initEvent.getProjectId());
+            projectRemovalCleanedDiskEvent.setContext(initEvent.getContext());
 
+            System.out.println("inside disk "+projectRemovalCleanedDiskEvent.getContext());
 
             publisher.publishEvent(projectRemovalCleanedDiskEvent);
         }
         catch (Exception e){
             sendFailedResult(initEvent.getProjectId(),
-                    "ошибка удаления файловых ресурсов");
+                    "ошибка удаления файловых ресурсов", initEvent.getContext());
 
         }
 
@@ -147,25 +161,29 @@ public class ProjectRemovalEventChain {
         projectRepository.delete(project);
 
 
-
+        System.out.println("inside db "+event.getContext());
         // публикация result event для внешней системы
-        sendSuccessResult(project.getId(),"проект успешно стерт");
+        sendSuccessResult(project.getId(),"проект успешно стерт", event.getContext());
 
 
     }
 
 
-    private void sendSuccessResult(Long projectId,  String message){
+    private void sendSuccessResult(Long projectId,  String message, UserEventContext context){
 
         ProjectRemovalResultEvent removalResultEvent = new ProjectRemovalResultEvent(this, projectId,
-                ProjectRemovalResultEvent.ProjectRemovalStatus.SUCCESS, message);
+                ProjectRemovalStatus.SUCCESS, message);
 
+        removalResultEvent.setContext(context);
+        System.out.println("inside success endpoint "+context);
         publisher.publishEvent(removalResultEvent);
     }
 
-    private void sendFailedResult(Long projectId, String message){
+    private void sendFailedResult(Long projectId, String message, UserEventContext context){
         ProjectRemovalResultEvent removalResultEvent = new ProjectRemovalResultEvent(this, projectId,
-                ProjectRemovalResultEvent.ProjectRemovalStatus.FAIL, message);
+                ProjectRemovalStatus.FAIL, message);
+
+        removalResultEvent.setContext(context);
 
         publisher.publishEvent(removalResultEvent);
     }
