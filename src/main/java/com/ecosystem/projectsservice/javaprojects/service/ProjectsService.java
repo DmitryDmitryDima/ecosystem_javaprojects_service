@@ -3,11 +3,12 @@ package com.ecosystem.projectsservice.javaprojects.service;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectBuildFromSystemTemplateInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectCreationRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.ProjectRemovalEventChain;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal.ProjectRemovalEventChain;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -15,12 +16,15 @@ import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ProjectsService {
@@ -55,7 +59,20 @@ public class ProjectsService {
 
 
 
+    public List<ProjectDTO> getAllProjects(SecurityContext securityContext, UUID target){
 
+        List<Project> projects = projectRepository.findByUserUUID(target);
+
+        List<ProjectDTO> projectDTOS = projects.stream().map(p->ProjectDTO.builder()
+                .id(p.getId())
+                .name(p.getName())
+                .status(p.getStatus())
+                .build()).toList();
+
+
+
+        return projectDTOS;
+    }
 
     /*
     пока что удаление происходит безвозвратно, возможно на более поздних этапах разработки добавлю что-то вроде корзины
@@ -64,13 +81,15 @@ public class ProjectsService {
     public void deleteProject(SecurityContext securityContext, ProjectRemovalRequest request){
 
 
-        removalEventChain.initRemovalChain(securityContext, request.getProjectId());
+        removalEventChain.initProjectRemovalChain(securityContext,request.getProjectId());
 
 
 
     }
 
 
+
+    // todo пока что оставим в классическом виде, без ивентов. Версия с генерацией ИИ будет иметь event chain
     @Transactional(rollbackOn = Exception.class)
     public void createProjectFromSystemTemplate(SecurityContext securityContext, ProjectCreationRequest request) throws Exception{
 

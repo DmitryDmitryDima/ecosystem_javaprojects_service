@@ -14,4 +14,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     Optional<Project> findByNameAndUserUUID(String name, UUID userUUID);
 
+    List<Project> findByUserUUID(UUID userUUID);
+
+
 }

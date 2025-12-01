@@ -1,9 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects;
 
 import com.ecosystem.projectsservice.javaprojects.message_queue.events_for_queue.ProjectRemovalQueueEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.events.UserEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.events.entitiesflow.ProjectRemovalResultEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.events.status.ProjectRemovalStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal.ProjectRemovalStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
