@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.service;
 
+import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectBuildFromSystemTemplateInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectCreationRequest;
@@ -8,6 +9,8 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectRemovalReq
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectBuildFromTemplateInfo;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectCreationFromSystemInstructionEventChain;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal.ProjectRemovalEventChain;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
@@ -54,24 +57,26 @@ public class ProjectsService {
     private FileRepository fileRepository;
 
 
+    // цепочки событий
     @Autowired
     private ProjectRemovalEventChain removalEventChain;
 
+    @Autowired
+    private ProjectCreationFromSystemInstructionEventChain internalCreationEventChain;
 
 
-    public List<ProjectDTO> getAllProjects(SecurityContext securityContext, UUID target){
+    // todo приватность
+    public List<ProjectDTO> getAllProjects(SecurityContext securityContext, String targetUsername){
 
-        List<Project> projects = projectRepository.findByUserUUID(target);
 
-        List<ProjectDTO> projectDTOS = projects.stream().map(p->ProjectDTO.builder()
+        List<Project> projects = projectRepository.findByUserUUID(securityContext.getTargetUUID());
+
+
+        return projects.stream().map(p->ProjectDTO.builder()
                 .id(p.getId())
                 .name(p.getName())
                 .status(p.getStatus())
                 .build()).toList();
-
-
-
-        return projectDTOS;
     }
 
     /*
@@ -86,6 +91,27 @@ public class ProjectsService {
 
 
     }
+
+
+
+    public void createProject(SecurityContext securityContext, RequestContext requestContext, ProjectCreationRequest projectCreationRequest){
+
+        // todo если есть prompt - обращаемся к ai event chain, если нет - внутренний event chain
+        ProjectBuildFromTemplateInfo info = ProjectBuildFromTemplateInfo.builder()
+                .instructionsPath(Path.of(systemStoragePath, INSTRUCTIONS_FOLDER))
+                .fileTemplatesPath(Path.of(systemStoragePath, TEMPLATES_FOLDER))
+                .projectsPath(Path.of(userStoragePath, securityContext.getUuid().toString(), "projects"))
+                .projectType(ProjectType.MAVEN_CLASSIC)
+                .needEntryPoint(projectCreationRequest.getNeedEntryPoint())
+                .build();
+
+        internalCreationEventChain.initChain(securityContext, requestContext, info);
+
+
+
+
+    }
+
 
 
 

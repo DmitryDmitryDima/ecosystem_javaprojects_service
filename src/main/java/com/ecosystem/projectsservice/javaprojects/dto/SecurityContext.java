@@ -21,14 +21,22 @@ public class SecurityContext {
 
     private String role;
 
+    private UUID targetUUID;
+
+
+
 
     public static SecurityContext generateContext(Map<String, String> requestHeaders){
+
+        String targetUUID = requestHeaders.get("targetuuid");
+
 
         return SecurityContext
                 .builder()
                 .role(requestHeaders.get("role"))
                 .uuid(UUID.fromString(requestHeaders.get("uuid")))
                 .username(requestHeaders.get("username"))
+                .targetUUID(targetUUID==null?null:UUID.fromString(targetUUID))
                 .build();
     }
 

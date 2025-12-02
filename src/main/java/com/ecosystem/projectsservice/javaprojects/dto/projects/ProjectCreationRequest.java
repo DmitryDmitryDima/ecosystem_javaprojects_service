@@ -21,5 +21,8 @@ public class ProjectCreationRequest {
 
     private String projectType; // в будущем можно будет выбрать шаблон проекта
 
+    // Experimental. Если отсутствует, то создаем проект по готовой инструкции
+    private String prompt;
+
 
 }

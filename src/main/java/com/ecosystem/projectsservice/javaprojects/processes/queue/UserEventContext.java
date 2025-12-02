@@ -11,6 +11,8 @@ import java.util.UUID;
 его смысл - сообщить notification сервису адресат и далее, через websocket рассылку сообщить ui, от кого пришел ивент
 таким образом, каждый ивент, который имеет источник действия в виде пользователя, имеет такой контекст
 
+
+
  */
 @Data
 @AllArgsConstructor
@@ -20,4 +22,6 @@ public class UserEventContext {
     private Instant timestamp;
     private String username;
     private UUID userUUID;
+    private UUID correlationId;
+
 }

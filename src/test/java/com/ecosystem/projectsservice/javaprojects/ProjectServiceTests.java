@@ -23,11 +23,11 @@ public class ProjectServiceTests {
 
         SecurityContext securityContext = SecurityContext.builder()
                 .role("USER")
-                .username("user_1")
-                .uuid(UUID.randomUUID())
+                .username("dima")
+                .uuid(UUID.fromString("e9bccab3-93ce-4b83-bb3c-6d26e521c50c"))
                 .build();
 
-        ProjectCreationRequest request = new ProjectCreationRequest("test", true, "maven");
+        ProjectCreationRequest request = new ProjectCreationRequest("test1", true, "maven");
 
         Assertions.assertDoesNotThrow(()->{
             projectsService.createProjectFromSystemTemplate(securityContext, request);

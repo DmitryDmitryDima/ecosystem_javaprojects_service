@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.controller;
 
 
+import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectCreationRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectDTO;
@@ -25,9 +26,11 @@ public class ProjectsLifecycleController {
     private ProjectsService projectsService;
 
     @PostMapping("/createProject")
-    public ResponseEntity<Void> createProject(@Header Map<String, String> headers, ProjectCreationRequest request) throws Exception {
+    public ResponseEntity<Void> createProject(@RequestHeader Map<String, String> headers, ProjectCreationRequest request) throws Exception {
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
 
         // todo доп защиту стоит реализовать в фильтре, проверяющем, не пришел ли post запрос с неправильной ролью
 
@@ -40,7 +43,7 @@ public class ProjectsLifecycleController {
 
 
     @PostMapping("/deleteProject")
-    public ResponseEntity<Void> deleteProject(@Header Map<String, String> headers, ProjectRemovalRequest request)  {
+    public ResponseEntity<Void> deleteProject(@RequestHeader Map<String, String> headers, ProjectRemovalRequest request)  {
         SecurityContext context = SecurityContext.generateContext(headers);
         projectsService.deleteProject(context, request);
         return ResponseEntity.noContent().build();
@@ -49,12 +52,12 @@ public class ProjectsLifecycleController {
     /*
     Возвращаем проекты пользователя. Тут в будущем нужно проверять права доступа - кому этот проект будет виден
      */
-    @GetMapping("/getProjects/{targetUUID}")
-    public ResponseEntity<List<ProjectDTO>> getAllProjects(@Header Map<String, String> headers,
-                                                           @PathVariable("targetUUID") String targetUUID){
+    @GetMapping("/getProjects")
+    public ResponseEntity<List<ProjectDTO>> getAllProjects(@RequestHeader Map<String, String> headers,
+                                                           @RequestParam("targetUsername") String targetUsername){
         SecurityContext context = SecurityContext.generateContext(headers);
 
-        List<ProjectDTO> projects = projectsService.getAllProjects(context, UUID.fromString(targetUUID));
+        List<ProjectDTO> projects = projectsService.getAllProjects(context, targetUsername);
         return ResponseEntity.ok(projects);
 
 

@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 
 
 /*
@@ -27,11 +29,15 @@ public class ProjectBuildFromSystemTemplateInfo {
 
     private String fileTemplatesPath;
 
+
+
     private Project project;
 
     private ProjectType projectType;
 
     private boolean needEntryPoint;
+
+
 
 
 

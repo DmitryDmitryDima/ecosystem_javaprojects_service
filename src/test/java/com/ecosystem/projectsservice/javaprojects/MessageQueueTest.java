@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects;
 
-import com.ecosystem.projectsservice.javaprojects.message_queue.events_for_queue.ProjectRemovalQueueEvent;
+
 import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal.ProjectRemovalStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,34 +28,6 @@ public class MessageQueueTest {
     private String USERS_ACTIVITY_EXCHANGE_NAME;
 
 
-    @Test
-    public void sendRemovalEvent(){
 
-
-        ProjectRemovalQueueEvent queueEvent = ProjectRemovalQueueEvent.builder()
-
-                .message("hello")
-                .status(ProjectRemovalStatus.SUCCESS)
-                .projectId(1L)
-                .context(UserEventContext.builder().userUUID(UUID.randomUUID()).timestamp(Instant.now()).username("loh").build())
-                .build();
-
-
-
-
-
-        Assertions.assertDoesNotThrow(()->{
-            MessagePostProcessor postProcessor = (message )-> {
-                message.getMessageProperties().setHeader("event_type", "java_project_removal");
-                return message;
-            };
-
-
-            String payload = mapper.writeValueAsString(queueEvent);
-
-
-            rabbitTemplate.convertAndSend(USERS_ACTIVITY_EXCHANGE_NAME, "", payload, postProcessor);
-        });
-    }
 
 }
