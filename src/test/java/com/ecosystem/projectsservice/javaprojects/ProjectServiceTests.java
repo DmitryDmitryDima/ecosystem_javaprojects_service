@@ -27,7 +27,7 @@ public class ProjectServiceTests {
                 .uuid(UUID.fromString("e9bccab3-93ce-4b83-bb3c-6d26e521c50c"))
                 .build();
 
-        ProjectCreationRequest request = new ProjectCreationRequest("test1", true, "maven");
+        ProjectCreationRequest request = new ProjectCreationRequest("test1", true, "maven", "");
 
         Assertions.assertDoesNotThrow(()->{
             projectsService.createProjectFromSystemTemplate(securityContext, request);
