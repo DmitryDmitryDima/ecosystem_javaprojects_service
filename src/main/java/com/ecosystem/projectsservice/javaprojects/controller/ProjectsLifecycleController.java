@@ -26,15 +26,16 @@ public class ProjectsLifecycleController {
     private ProjectsService projectsService;
 
     @PostMapping("/createProject")
-    public ResponseEntity<Void> createProject(@RequestHeader Map<String, String> headers, ProjectCreationRequest request) throws Exception {
+    public ResponseEntity<Void> createProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectCreationRequest request) throws Exception {
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
+        System.out.println(request);
 
 
         // todo доп защиту стоит реализовать в фильтре, проверяющем, не пришел ли post запрос с неправильной ролью
 
-        projectsService.createProjectFromSystemTemplate(securityContext, request);
+        projectsService.createProject(securityContext, requestContext, request);
 
         return ResponseEntity.noContent().build();
 

@@ -1,0 +1,23 @@
+package com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template;
+
+import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.context.ApplicationEvent;
+
+@Getter
+@Setter
+public class ProjectCreationEntranceEvent extends ApplicationEvent {
+
+    private UserEventContext context;
+    private ProjectCreationEventData data;
+    private ProjectCreationPaths paths;
+    private ProjectCreationUserPreference preference;
+
+
+
+
+    public ProjectCreationEntranceEvent(Object source) {
+        super(source);
+    }
+}

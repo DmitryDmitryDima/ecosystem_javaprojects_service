@@ -6,30 +6,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.nio.file.Path;
-
+// предпочтения юзера относительно проекта
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ProjectBuildFromTemplateInfo {
-
-    // путь к инструкции
-    private String instructionsPath;
-
-    // путь к шаблонам
-    private String fileTemplatesPath;
-
-    // путь к проектам
-    private String projectsPath;
-
-    private String projectName;
+public class ProjectCreationUserPreference {
 
     // тип проекта
     private ProjectType projectType;
 
 
     private boolean needEntryPoint;
-
-
 }

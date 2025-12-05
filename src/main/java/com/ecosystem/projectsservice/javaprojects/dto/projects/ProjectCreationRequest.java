@@ -17,7 +17,7 @@ public class ProjectCreationRequest {
 
 
     // галочка "сгенерировать главный класс"
-    private Boolean needEntryPoint;
+    private boolean needEntryPoint;
 
     private String projectType; // в будущем можно будет выбрать шаблон проекта
 

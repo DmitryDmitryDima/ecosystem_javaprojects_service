@@ -1,6 +1,5 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template;
 
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,9 +11,7 @@ import java.nio.file.Path;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ProjectBuildFromTemplateInfo {
-
-    // путь к инструкции
+public class ProjectCreationPaths {
     private String instructionsPath;
 
     // путь к шаблонам
@@ -22,14 +19,4 @@ public class ProjectBuildFromTemplateInfo {
 
     // путь к проектам
     private String projectsPath;
-
-    private String projectName;
-
-    // тип проекта
-    private ProjectType projectType;
-
-
-    private boolean needEntryPoint;
-
-
 }

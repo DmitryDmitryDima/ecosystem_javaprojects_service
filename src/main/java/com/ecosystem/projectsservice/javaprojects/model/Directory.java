@@ -24,7 +24,7 @@ public class Directory {
 
     private String name;
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Directory> children = new ArrayList<>();
 
     // в корневой папке нет родителя
@@ -32,7 +32,7 @@ public class Directory {
     @JoinColumn(name = "parent_id", referencedColumnName = "id")
     private Directory parent;
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<File> files = new ArrayList<>();
 
 

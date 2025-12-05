@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.service;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectBuildFromSystemTemplateInfo;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.ConstructorSettingsForSystemTemplateBuild;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
@@ -15,7 +15,6 @@ import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,12 +34,13 @@ public class ProjectConstructor {
 
 
     // постройка проекта на основе готового system template
-    public void buildProjectFromSystemTemplate(ProjectBuildFromSystemTemplateInfo info) throws Exception{
+    public void buildProjectFromSystemTemplate(ConstructorSettingsForSystemTemplateBuild settings) throws Exception{
 
-        Project project = info.getProject();
+        Project project = settings.getProject();
         Directory root = project.getRoot();
 
         // создаем папки
+        /*
         try {
             ProjectUtils.createDirectory(Path.of(root.getConstructedPath()));
         }
@@ -49,6 +49,8 @@ public class ProjectConstructor {
 
         }
 
+         */
+
 
 
 
@@ -56,18 +58,18 @@ public class ProjectConstructor {
 
         // загружаем и запускаем инструкцию, базируясь на projectType
 
-        String instructionName = switch (info.getProjectType()){
+        String instructionName = switch (settings.getProjectType()){
             case MAVEN_CLASSIC -> "maven_classic.yaml";
             case GRADLE_CLASSIC -> "gradle_classic.yaml";
         };
 
         try {
             // читаем инструкцию
-            YamlInstruction instruction = readInstruction(Path.of(info.getInstructionsPath(), instructionName));
+            YamlInstruction instruction = readInstruction(Path.of(settings.getInstructionsPath(), instructionName));
             // запускаем инструкцию
-            runInstruction(instruction, root, info.getFileTemplatesPath());
+            runInstruction(instruction, root, settings.getFileTemplatesPath());
             // выполняем дополнительные действия над готовой структурой проекта
-            prepareProject(info);
+            prepareProject(settings);
 
 
         }
@@ -200,7 +202,7 @@ public class ProjectConstructor {
 
     }
 
-    private void prepareProject(ProjectBuildFromSystemTemplateInfo info) throws Exception {
+    private void prepareProject(ConstructorSettingsForSystemTemplateBuild info) throws Exception {
         if (info.getProjectType()== ProjectType.MAVEN_CLASSIC){
             // добавляем artefact id к pom.xml
             ProjectUtils.setArtifactIdInsidePomXML(Path.of(info.getProject().getRoot().getConstructedPath(), "pom.xml").toString(),

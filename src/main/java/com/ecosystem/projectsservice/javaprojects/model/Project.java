@@ -48,7 +48,7 @@ public class Project {
     private File entryPoint;
 
     // корневая папа проекта - не имеет родителей
-    @OneToOne
+    @OneToOne(orphanRemoval = true)
     @JoinColumn(name = "root_id", referencedColumnName = "id")
     private Directory root;
 

@@ -8,8 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
 
 
 /*
@@ -21,7 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ProjectBuildFromSystemTemplateInfo {
+public class ConstructorSettingsForSystemTemplateBuild {
 
 
     // путь к инструкции
