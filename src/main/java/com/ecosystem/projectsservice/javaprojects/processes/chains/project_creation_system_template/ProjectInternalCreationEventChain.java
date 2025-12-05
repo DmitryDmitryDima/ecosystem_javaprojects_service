@@ -243,8 +243,7 @@ public class ProjectInternalCreationEventChain {
             project.setStatus(ProjectStatus.AVAILABLE);
             projectRepository.save(project);
 
-            // todo симуляция задержки
-            Thread.sleep(3000);
+
 
             // успешное завершение
             sendSuccessResult("Проект "+project.getName()+" создан!", rootWrittenEvent.getContext(), rootWrittenEvent.getData());
@@ -285,6 +284,8 @@ public class ProjectInternalCreationEventChain {
 
     private void sendResult(String message, UserEventContext context, ProjectCreationEventData data){
         try {
+            // todo симуляция задержки
+            Thread.sleep(5000);
             UserEvent userEvent = UserEvent.builder()
                     .eventData(data)
                     .event_type(resultingEventName)
