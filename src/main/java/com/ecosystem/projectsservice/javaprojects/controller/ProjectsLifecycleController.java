@@ -44,9 +44,10 @@ public class ProjectsLifecycleController {
 
 
     @PostMapping("/deleteProject")
-    public ResponseEntity<Void> deleteProject(@RequestHeader Map<String, String> headers, ProjectRemovalRequest request)  {
-        SecurityContext context = SecurityContext.generateContext(headers);
-        projectsService.deleteProject(context, request);
+    public ResponseEntity<Void> deleteProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectRemovalRequest request)  {
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+        projectsService.deleteProject(securityContext, requestContext, request);
         return ResponseEntity.noContent().build();
     }
 

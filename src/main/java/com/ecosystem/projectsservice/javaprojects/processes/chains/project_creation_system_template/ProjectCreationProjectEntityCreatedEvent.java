@@ -7,7 +7,7 @@ import org.springframework.context.ApplicationEvent;
 
 @Getter
 @Setter
-public class ProjectCreationEntranceEvent extends ApplicationEvent {
+public class ProjectCreationProjectEntityCreatedEvent extends ApplicationEvent {
 
     private UserEventContext context;
     private ProjectCreationEventData data;
@@ -17,7 +17,7 @@ public class ProjectCreationEntranceEvent extends ApplicationEvent {
 
 
 
-    public ProjectCreationEntranceEvent(Object source) {
+    public ProjectCreationProjectEntityCreatedEvent(Object source) {
         super(source);
     }
 }

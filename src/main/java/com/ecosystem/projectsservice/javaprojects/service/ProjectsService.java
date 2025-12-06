@@ -80,10 +80,10 @@ public class ProjectsService {
     пока что удаление происходит безвозвратно, возможно на более поздних этапах разработки добавлю что-то вроде корзины
      */
 
-    public void deleteProject(SecurityContext securityContext, ProjectRemovalRequest request){
+    public void deleteProject(SecurityContext securityContext, RequestContext requestContext, ProjectRemovalRequest request){
 
 
-        removalEventChain.initProjectRemovalChain(securityContext,request.getProjectId());
+        removalEventChain.initProjectRemovalChain(securityContext, requestContext, request.getProjectId());
 
 
 

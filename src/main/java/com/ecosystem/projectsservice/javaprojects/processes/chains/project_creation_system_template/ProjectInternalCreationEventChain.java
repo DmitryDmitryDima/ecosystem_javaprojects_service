@@ -7,8 +7,6 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.ConstructorSettin
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal.ProjectRemovalEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal.ProjectRemovalStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
@@ -23,6 +21,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.FileSystemUtils;
 
 import java.nio.file.Path;
@@ -51,7 +51,7 @@ public class ProjectInternalCreationEventChain {
 
     private static final String resultingEventName = "java_project_creation";
 
-
+    @Async("taskExecutor")
     public void initChain(SecurityContext securityContext, RequestContext requestContext, ProjectBuildFromTemplateInfo info){
 
         // пользовательский контекст - мигрирует по всей цепочке и по итогу уходит в очередь
@@ -73,47 +73,24 @@ public class ProjectInternalCreationEventChain {
                 .build();
 
 
-        // готовим главную сущность
-        Project project = new Project();
-        project.setCreatedAt(Instant.now());
-        project.setUserUUID(securityContext.getUuid());
-        project.setName(eventData.getName());
-        project.setStatus(ProjectStatus.CREATING); // статус creating защищает сущность от параллельных изменений
 
-        try {
-            project = projectRepository.saveAndFlush(project);
-        }
-        catch (Exception e){
-            // тут может вылететь исключение нарушения constraint, если проект с атким именем уже существует
-            // в данном случае компенсация не нужна, так как сущность записана не была
-            if (e.getCause() instanceof DataIntegrityViolationException){
-
-                sendFailedResult("java проект с таким именем уже существует", eventContext, eventData);
-            }
-            else {
-
-                sendFailedResult("Ошибка создания проекта. Причина: "+e.getMessage(), eventContext, eventData);
-            }
-            return;
-        }
-
-        // сохраняем id
-        eventData.setProjectId(project.getId());
 
 
         // готовим ивент для дальнейшего шага. Все дальнейшие шаги имеют конкретную компенсацию
-        ProjectCreationEntranceEvent projectCreationEntranceEvent = new ProjectCreationEntranceEvent(this);
+        ProjectCreationInitiationEvent projectCreationInitEvent = new ProjectCreationInitiationEvent(this);
 
-        projectCreationEntranceEvent.setPaths(ProjectCreationPaths.builder()
+        projectCreationInitEvent.setPaths(ProjectCreationPaths.builder()
                         .projectsPath(info.getProjectsPath())
                         .fileTemplatesPath(info.getFileTemplatesPath())
                         .instructionsPath(info.getInstructionsPath())
                 .build());
-        projectCreationEntranceEvent.setData(eventData);
-        projectCreationEntranceEvent.setContext(eventContext);
-        projectCreationEntranceEvent.setPreference(preference);
+        projectCreationInitEvent.setData(eventData);
+        projectCreationInitEvent.setContext(eventContext);
+        projectCreationInitEvent.setPreference(preference);
 
-        publisher.publishEvent(projectCreationEntranceEvent);
+        System.out.println("initiation");
+        publisher.publishEvent(projectCreationInitEvent);
+
 
 
 
@@ -125,13 +102,61 @@ public class ProjectInternalCreationEventChain {
 
     }
 
+
+
+    @EventListener
+    @Transactional
+    public void prepareProjectEntityAndDatabaseLock(ProjectCreationInitiationEvent event){
+        // готовим главную сущность
+        Project project = new Project();
+        project.setCreatedAt(Instant.now());
+        project.setUserUUID(event.getContext().getUserUUID());
+        project.setName(event.getData().getName());
+        project.setStatus(ProjectStatus.CREATING); // статус creating защищает сущность от параллельных изменений
+
+        try {
+            project = projectRepository.saveAndFlush(project);
+        }
+        catch (Exception e){
+            // тут может вылететь исключение нарушения constraint, если проект с атким именем уже существует
+            // в данном случае компенсация не нужна, так как сущность записана не была
+            if (e.getCause() instanceof DataIntegrityViolationException){
+
+                sendFailedResult("java проект с таким именем уже существует", event.getContext(), event.getData());
+            }
+            else {
+
+                sendFailedResult("Ошибка создания проекта. Причина: "+e.getMessage(), event.getContext(), event.getData());
+            }
+            return;
+        }
+        // сохрарняем для транзакций в следующих шагах
+        event.getData().setProjectId(project.getId());
+
+
+
+        // формируем ивент
+        ProjectCreationProjectEntityCreatedEvent projectCreationProjectEntityCreatedEvent = new ProjectCreationProjectEntityCreatedEvent(this);
+
+        projectCreationProjectEntityCreatedEvent.setPaths(event.getPaths());
+        projectCreationProjectEntityCreatedEvent.setData(event.getData());
+        projectCreationProjectEntityCreatedEvent.setContext(event.getContext());
+        projectCreationProjectEntityCreatedEvent.setPreference(event.getPreference());
+
+        System.out.println("project entity created");
+
+        publisher.publishEvent(projectCreationProjectEntityCreatedEvent);
+
+    }
+
     /*
     По логике у нас уже существует сущность project, однако мы всегда должны проводить проверку
      */
-    @Async
-    @EventListener
+
+
     @Transactional
-    public void prepareRootDirectory(ProjectCreationEntranceEvent event){
+    @EventListener
+    public void prepareRootDirectory(ProjectCreationProjectEntityCreatedEvent event){
         Project project;
 
         try {
@@ -157,6 +182,7 @@ public class ProjectInternalCreationEventChain {
         root.setImmutable(true); // корневая папка строго иммутабельна
         root.setName(project.getName());
         root.setConstructedPath(Path.of(event.getPaths().getProjectsPath(), project.getName()).normalize().toString());
+        System.out.println("before crash!");
 
         try {
             directoryRepository.save(root);
@@ -165,7 +191,7 @@ public class ProjectInternalCreationEventChain {
             System.out.println(project.getRoot().getId());
         }
         catch (Exception e){
-
+            e.printStackTrace();
 
             sendFailedResult("Неизвестная ошибка. Причина: "+e.getMessage(), event.getContext(), event.getData());
 
@@ -188,6 +214,8 @@ public class ProjectInternalCreationEventChain {
 
         }
 
+        System.out.println("root created");
+
         // формируем следующий ивент
         ProjectCreationRootWrittenEvent rootWrittenEvent = new ProjectCreationRootWrittenEvent(this );
         rootWrittenEvent.setContext(event.getContext());
@@ -200,9 +228,10 @@ public class ProjectInternalCreationEventChain {
 
     }
 
-    @Async
-    @EventListener
+
+
     @Transactional
+    @EventListener
     public void createProjectStructure(ProjectCreationRootWrittenEvent rootWrittenEvent){
 
         Project project;
@@ -242,6 +271,8 @@ public class ProjectInternalCreationEventChain {
             // отпускаем флаг todo подумать над отдельным шагом
             project.setStatus(ProjectStatus.AVAILABLE);
             projectRepository.save(project);
+
+            System.out.println("project structure created");
 
 
 

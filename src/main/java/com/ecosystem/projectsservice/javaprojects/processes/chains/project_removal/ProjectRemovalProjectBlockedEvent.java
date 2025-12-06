@@ -8,14 +8,14 @@ import org.springframework.context.ApplicationEvent;
 // ивент, запускающий первый шаг - удаление с диска
 @Getter
 @Setter
-public class ProjectRemovalInitEvent extends ApplicationEvent {
+public class ProjectRemovalProjectBlockedEvent extends ApplicationEvent {
 
     private UserEventContext context;
-    private ProjectRemovalEventData metadata;
+    private ProjectRemovalEventData eventData;
 
     private String diskPath;
 
-    public ProjectRemovalInitEvent(Object source, String diskPath) {
+    public ProjectRemovalProjectBlockedEvent(Object source, String diskPath) {
         super(source);
         this.diskPath = diskPath;
 

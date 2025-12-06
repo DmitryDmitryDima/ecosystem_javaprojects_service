@@ -27,12 +27,15 @@ public class ProjectServiceTests {
     public void testProjectRemoval(){
         SecurityContext securityContext = SecurityContext.builder()
                 .role("USER")
-                .username("user_1")
-                .uuid(UUID.fromString("704eec39-e68a-4aee-a783-c47935a9de03"))
+                .username("dima")
+                .uuid(UUID.fromString("e9bccab3-93ce-4b83-bb3c-6d26e521c50c"))
                 .build();
-        ProjectRemovalRequest request = new ProjectRemovalRequest(5L);
+        ProjectRemovalRequest request = new ProjectRemovalRequest(52L);
 
-        projectsService.deleteProject(securityContext, request);
+
+        RequestContext requestContext = RequestContext.builder().correlationId(UUID.randomUUID()).build();
+
+        projectsService.deleteProject(securityContext, requestContext, request);
     }
 
     @Test

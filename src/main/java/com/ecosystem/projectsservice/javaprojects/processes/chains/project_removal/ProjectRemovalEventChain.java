@@ -1,11 +1,10 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal;
 
 
+import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
-import com.ecosystem.projectsservice.javaprojects.model.Directory;
-import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
@@ -17,6 +16,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.FileSystemUtils;
 
 import java.nio.file.Path;
@@ -45,41 +46,91 @@ public class ProjectRemovalEventChain {
     private ApplicationEventPublisher publisher;
 
 
+
+
     // на входе в цепочку мы проверяем сущность и блокируем ее специальным статусом
-    public void initProjectRemovalChain(SecurityContext securityContext, Long projectId){
+    @Async("taskExecutor")
+    public void initProjectRemovalChain(SecurityContext securityContext, RequestContext requestContext, Long projectId){
+
         UserEventContext sharedContext = UserEventContext.builder()
                 .userUUID(securityContext.getUuid())
                 .timestamp(Instant.now())
                 .username(securityContext.getUsername())
+                .correlationId(requestContext.getCorrelationId())
                 .build();
 
         // собираем изначальный metadata для цепочки (если преокт найден - вставляем еще и имя)
-        ProjectRemovalEventData metadata = ProjectRemovalEventData.builder()
+        ProjectRemovalEventData eventData = ProjectRemovalEventData.builder()
                 .projectId(projectId)
                 .build();
 
 
 
-        Optional<Project> existenceCheck = projectRepository.findById(projectId);
 
-        if (existenceCheck.isEmpty()){
 
-            sendFailedResult("Проект не найден", sharedContext, metadata);
+
+
+        ProjectRemovalInitiationEvent event = new ProjectRemovalInitiationEvent(this);
+        event.setData(eventData);
+        event.setContext(sharedContext);
+
+
+
+
+
+
+
+
+
+
+
+
+        // публикуем ивент
+        publisher.publishEvent(event);
+
+
+
+
+
+
+
+    }
+
+    @EventListener
+    @Transactional
+    public void findAndBlockProject(ProjectRemovalInitiationEvent event){
+        Project project;
+        try {
+            System.out.println(event.getData().getProjectId());
+
+            Optional<Project> existenceCheck = projectRepository.findById(event.getData().getProjectId());
+
+            if (existenceCheck.isEmpty()){
+
+                sendFailedResult("Проект не найден", event.getContext(), event.getData());
+                return;
+            }
+            project = existenceCheck.get();
+        }
+        catch (Exception e){
+            sendFailedResult("Ошибка удаления. Причина: "+e.getMessage(), event.getContext(), event.getData());
             return;
         }
 
-        Project project = existenceCheck.get();
 
-        if (!project.getUserUUID().equals(securityContext.getUuid())){
 
-            sendFailedResult("Ошибка доступа", sharedContext, metadata);
+        if (!project.getUserUUID().equals(event.getContext().getUserUUID())){
+
+            sendFailedResult("Ошибка доступа", event.getContext(), event.getData());
             return;
         }
 
         if (project.getStatus()!= ProjectStatus.AVAILABLE){
 
 
-            sendFailedResult("Неподходящий статус. Проверьте, запущен ли проект", sharedContext, metadata);
+            sendFailedResult("Неподходящий статус. Проверьте, запущен ли проект",
+                    event.getContext(),
+                    event.getData());
             return;
         }
 
@@ -98,39 +149,32 @@ public class ProjectRemovalEventChain {
 
 
         // формируем следующий ивент для цепочки
-        ProjectRemovalInitEvent initEvent = new ProjectRemovalInitEvent(this, path);
+        ProjectRemovalProjectBlockedEvent blockEvent = new ProjectRemovalProjectBlockedEvent(this, path);
 
         // делаем инъекцию метаданных и контекста (не забываем добавить имя проекта)
-        metadata.setProjectName(project.getName());
-        initEvent.setContext(sharedContext);
-        initEvent.setMetadata(metadata);
+        event.getData().setProjectName(project.getName());
+        blockEvent.setContext(event.getContext());
+        blockEvent.setEventData(event.getData());
 
 
 
 
         // публикуем ивент
-        publisher.publishEvent(initEvent);
-
-
-
-
-
-
+        publisher.publishEvent(blockEvent);
 
     }
 
 
     // чистим диск
     @EventListener
-    @Async("taskExecutor")
-    public void removeProjectFromDisk(ProjectRemovalInitEvent initEvent){
+    public void removeProjectFromDisk(ProjectRemovalProjectBlockedEvent blockEvent){
 
         try {
-            FileSystemUtils.deleteRecursively(Path.of(initEvent.getDiskPath()));
-            Thread.sleep(1000); // симуляция долгой операции
+            FileSystemUtils.deleteRecursively(Path.of(blockEvent.getDiskPath()));
+
             ProjectRemovalCleanedDiskEvent projectRemovalCleanedDiskEvent = new ProjectRemovalCleanedDiskEvent(this);
-            projectRemovalCleanedDiskEvent.setContext(initEvent.getContext());
-            projectRemovalCleanedDiskEvent.setMetadata(initEvent.getMetadata());
+            projectRemovalCleanedDiskEvent.setContext(blockEvent.getContext());
+            projectRemovalCleanedDiskEvent.setEventData(blockEvent.getEventData());
 
             System.out.println("inside disk "+projectRemovalCleanedDiskEvent.getContext());
 
@@ -138,31 +182,33 @@ public class ProjectRemovalEventChain {
         }
         catch (Exception e){
 
-            sendFailedResult("Ошибка удаления с диска", initEvent.getContext(), initEvent.getMetadata());
+            sendFailedResult("Ошибка удаления с диска", blockEvent.getContext(), blockEvent.getEventData());
         }
 
     }
 
     // дочищаем бд
-    @Transactional
     @EventListener
+    @Transactional
     public void removeProjectFromDB(ProjectRemovalCleanedDiskEvent event){
 
-        Optional<Project> projectCheck = projectRepository.findById(event.getProjectId());
+        Optional<Project> projectCheck = projectRepository.findById(event.getEventData().getProjectId());
         if (projectCheck.isEmpty()){
 
-            sendFailedResult("Ошибка удаления "+event.getMetadata().getProjectName()+" проекта. Сущность отсутствует в бд",
-                    event.getContext(), event.getMetadata());
+            sendFailedResult("Ошибка удаления "+event.getEventData().getProjectName()+" проекта. Сущность отсутствует в бд",
+                    event.getContext(), event.getEventData());
             return;
         }
 
         try {
+            System.out.println(projectCheck.get().getId());
             projectRepository.delete(projectCheck.get());
+
         }
         catch (Exception e){
 
-            sendFailedResult("Ошибка удаления "+event.getMetadata().getProjectName()+" проекта. Причина: "+e.getMessage(),
-                    event.getContext(), event.getMetadata());
+            sendFailedResult("Ошибка удаления "+event.getEventData().getProjectName()+" проекта. Причина: "+e.getMessage(),
+                    event.getContext(), event.getEventData());
             return;
         }
 
@@ -172,11 +218,12 @@ public class ProjectRemovalEventChain {
         System.out.println("inside db "+event.getContext());
         // публикация result event для внешней системы
 
-        sendSuccessResult("Проект "+event.getMetadata().getProjectName()+" успешно стерт", event.getContext(), event.getMetadata());
+        sendSuccessResult("Проект "+event.getEventData().getProjectName()+" успешно стерт", event.getContext(), event.getEventData());
 
 
     }
     private void sendResult(String message, UserEventContext context, ProjectRemovalEventData data){
+
         try {
             UserEvent userEvent = UserEvent.builder()
                     .eventData(data)
@@ -184,6 +231,10 @@ public class ProjectRemovalEventChain {
                     .context(context)
                     .message(message)
                     .build();
+
+
+            Thread.sleep(5000); // симуляция долгой операции
+
             publisher.publishEvent(userEvent);
         }
         catch (Exception e){
