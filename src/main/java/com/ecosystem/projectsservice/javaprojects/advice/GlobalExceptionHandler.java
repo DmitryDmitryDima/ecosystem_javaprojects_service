@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.advice;
 
 
+import com.ecosystem.projectsservice.javaprojects.exceptions.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -19,5 +20,13 @@ public class GlobalExceptionHandler {
         em.setMessage(e.getMessage());
         return em;
 
+    }
+
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ExceptionHandler({AccessDeniedException.class})
+    public ExceptionMessage handleAccessDeniedException(Exception e){
+        ExceptionMessage exceptionMessage = new ExceptionMessage();
+        exceptionMessage.setMessage(e.getMessage());
+        return exceptionMessage;
     }
 }

@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle;
 
 
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
-public class ProjectDTO {
+public class ProjectLightweightDTO {
 
     private Long id;
     private ProjectStatus status;

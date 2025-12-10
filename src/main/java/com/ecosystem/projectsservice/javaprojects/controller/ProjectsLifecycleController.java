@@ -3,18 +3,16 @@ package com.ecosystem.projectsservice.javaprojects.controller;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectCreationRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectRemovalRequest;
-import com.ecosystem.projectsservice.javaprojects.service.ProjectsService;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectCreationRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectLightweightDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
+import com.ecosystem.projectsservice.javaprojects.service.ProjectLifecycleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 // создание и уничтожение java проекта
 @RestController
@@ -23,7 +21,7 @@ public class ProjectsLifecycleController {
 
 
     @Autowired
-    private ProjectsService projectsService;
+    private ProjectLifecycleService projectLifecycleService;
 
     @PostMapping("/createProject")
     public ResponseEntity<Void> createProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectCreationRequest request) throws Exception {
@@ -35,7 +33,7 @@ public class ProjectsLifecycleController {
 
         // todo доп защиту стоит реализовать в фильтре, проверяющем, не пришел ли post запрос с неправильной ролью
 
-        projectsService.createProject(securityContext, requestContext, request);
+        projectLifecycleService.createProject(securityContext, requestContext, request);
 
         return ResponseEntity.noContent().build();
 
@@ -47,7 +45,7 @@ public class ProjectsLifecycleController {
     public ResponseEntity<Void> deleteProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectRemovalRequest request)  {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
-        projectsService.deleteProject(securityContext, requestContext, request);
+        projectLifecycleService.deleteProject(securityContext, requestContext, request);
         return ResponseEntity.noContent().build();
     }
 
@@ -55,11 +53,11 @@ public class ProjectsLifecycleController {
     Возвращаем проекты пользователя. Тут в будущем нужно проверять права доступа - кому этот проект будет виден
      */
     @GetMapping("/getProjects")
-    public ResponseEntity<List<ProjectDTO>> getAllProjects(@RequestHeader Map<String, String> headers,
-                                                           @RequestParam("targetUsername") String targetUsername){
+    public ResponseEntity<List<ProjectLightweightDTO>> getAllProjects(@RequestHeader Map<String, String> headers,
+                                                                      @RequestParam("targetUsername") String targetUsername){
         SecurityContext context = SecurityContext.generateContext(headers);
 
-        List<ProjectDTO> projects = projectsService.getAllProjects(context, targetUsername);
+        List<ProjectLightweightDTO> projects = projectLifecycleService.getAllProjects(context, targetUsername);
         return ResponseEntity.ok(projects);
 
 

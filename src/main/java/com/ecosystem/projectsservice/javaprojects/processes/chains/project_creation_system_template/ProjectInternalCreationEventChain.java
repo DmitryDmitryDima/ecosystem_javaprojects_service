@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.chains.project_crea
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ConstructorSettingsForSystemTemplateBuild;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ConstructorSettingsForSystemTemplateBuild;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
@@ -13,7 +13,7 @@ import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import com.ecosystem.projectsservice.javaprojects.service.ProjectConstructor;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectLifecycleUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,8 +21,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.FileSystemUtils;
 
 import java.nio.file.Path;
@@ -113,6 +111,7 @@ public class ProjectInternalCreationEventChain {
         project.setUserUUID(event.getContext().getUserUUID());
         project.setName(event.getData().getName());
         project.setStatus(ProjectStatus.CREATING); // статус creating защищает сущность от параллельных изменений
+        project.setType(event.getPreference().getProjectType());
 
         try {
             project = projectRepository.saveAndFlush(project);
@@ -202,7 +201,7 @@ public class ProjectInternalCreationEventChain {
 
         // создаем директорию на диске
         try {
-            ProjectUtils.createDirectory(Path.of(root.getConstructedPath()));
+            ProjectLifecycleUtils.createDirectory(Path.of(root.getConstructedPath()));
         }
         catch (Exception e){
 

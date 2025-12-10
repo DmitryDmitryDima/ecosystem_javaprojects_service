@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.utils.projects;
+package com.ecosystem.projectsservice.javaprojects.model.enums;
 
 public enum ProjectType {
     MAVEN_CLASSIC,

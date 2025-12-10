@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

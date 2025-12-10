@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.model;
 
 
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,6 +41,13 @@ public class Project {
     @Column
     @Enumerated(EnumType.STRING)
     private ProjectStatus status = ProjectStatus.AVAILABLE;
+
+    /*
+    от типа проекта может зависеть алгоритм запуска, а также алгоритм формирования dto, поэтому его стоит вынести в модель
+     */
+    @Column
+    @Enumerated(EnumType.STRING)
+    private ProjectType type = ProjectType.MAVEN_CLASSIC;
 
     // File entry point
     // главный файл проекта

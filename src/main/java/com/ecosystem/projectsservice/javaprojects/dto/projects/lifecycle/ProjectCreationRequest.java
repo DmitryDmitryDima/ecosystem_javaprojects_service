@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

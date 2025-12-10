@@ -1,11 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects.service;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ConstructorSettingsForSystemTemplateBuild;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ConstructorSettingsForSystemTemplateBuild;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectLifecycleUtils;
 import com.ecosystem.projectsservice.javaprojects.utils.yaml.DirectoryInstruction;
 import com.ecosystem.projectsservice.javaprojects.utils.yaml.FileInstruction;
 import com.ecosystem.projectsservice.javaprojects.utils.yaml.YamlInstruction;
@@ -132,10 +132,10 @@ public class ProjectConstructor {
                     Directory child = directoryInstruction.prepareDirectoryEntity();
 
                     // создаем зависимость в базе
-                    ProjectUtils.injectChildToParent(child, parent);
+                    ProjectLifecycleUtils.injectChildToParent(child, parent);
 
                     // пишем директорию, при этом дополняя path для child
-                    ProjectUtils.writeDirectoriesAndCachePath(parent, child);
+                    ProjectLifecycleUtils.writeDirectoriesAndCachePath(parent, child);
 
 
 
@@ -176,7 +176,7 @@ public class ProjectConstructor {
             // формируем зависимость в бд
             File file = fileInstruction.prepareFile();
 
-            ProjectUtils.injectChildToParent(file, parent);
+            ProjectLifecycleUtils.injectChildToParent(file, parent);
 
 
 
@@ -188,7 +188,7 @@ public class ProjectConstructor {
             // создаем файл
             // загружаем шаблон, если он присутствует
 
-            ProjectUtils.writeFileFromSystemTemplate(parent, file, templatePath, fileInstruction.getTemplate());
+            ProjectLifecycleUtils.writeFileFromSystemTemplate(parent, file, templatePath, fileInstruction.getTemplate());
 
 
 
@@ -205,13 +205,13 @@ public class ProjectConstructor {
     private void prepareProject(ConstructorSettingsForSystemTemplateBuild info) throws Exception {
         if (info.getProjectType()== ProjectType.MAVEN_CLASSIC){
             // добавляем artefact id к pom.xml
-            ProjectUtils.setArtifactIdInsidePomXML(Path.of(info.getProject().getRoot().getConstructedPath(), "pom.xml").toString(),
+            ProjectLifecycleUtils.setArtifactIdInsidePomXML(Path.of(info.getProject().getRoot().getConstructedPath(), "pom.xml").toString(),
                     info.getProject().getName()+"-project"
                     );
             // генерируем точку входа, если этого желает пользователь
             if (info.isNeedEntryPoint()){
 
-                ProjectUtils.generateEntryPointForMavenProject(info.getProject());
+                ProjectLifecycleUtils.generateEntryPointForMavenProject(info.getProject());
 
             }
 

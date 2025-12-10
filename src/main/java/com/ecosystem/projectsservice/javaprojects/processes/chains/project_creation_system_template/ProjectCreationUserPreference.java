@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template;
 
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

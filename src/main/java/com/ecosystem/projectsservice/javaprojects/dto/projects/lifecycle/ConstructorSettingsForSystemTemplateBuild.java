@@ -1,8 +1,8 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle;
 
 
 import com.ecosystem.projectsservice.javaprojects.model.Project;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

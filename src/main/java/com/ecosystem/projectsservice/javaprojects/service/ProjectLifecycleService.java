@@ -2,32 +2,26 @@ package com.ecosystem.projectsservice.javaprojects.service;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ConstructorSettingsForSystemTemplateBuild;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectCreationRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.ProjectRemovalRequest;
-import com.ecosystem.projectsservice.javaprojects.model.Directory;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectCreationRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectLightweightDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
-import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectBuildFromTemplateInfo;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectInternalCreationEventChain;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal.ProjectRemovalEventChain;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectType;
-import jakarta.transaction.Transactional;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 @Service
-public class ProjectsService {
+public class ProjectLifecycleService {
 
     @Value("${storage.system}")
     private String systemStoragePath;
@@ -41,8 +35,7 @@ public class ProjectsService {
 
 
 
-    @Autowired
-    private ProjectConstructor projectConstructor;
+
 
     @Autowired
     private ProjectRepository projectRepository;
@@ -62,14 +55,18 @@ public class ProjectsService {
     private ProjectInternalCreationEventChain internalCreationEventChain;
 
 
+
+
+
+
     // todo приватность
-    public List<ProjectDTO> getAllProjects(SecurityContext securityContext, String targetUsername){
+    public List<ProjectLightweightDTO> getAllProjects(SecurityContext securityContext, String targetUsername){
 
 
         List<Project> projects = projectRepository.findByUserUUID(securityContext.getTargetUUID());
 
 
-        return projects.stream().map(p->ProjectDTO.builder()
+        return projects.stream().map(p-> ProjectLightweightDTO.builder()
                 .id(p.getId())
                 .name(p.getName())
                 .status(p.getStatus())

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class Directory {
     private String name;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+
     private List<Directory> children = new ArrayList<>();
 
     // в корневой папке нет родителя
@@ -33,6 +35,7 @@ public class Directory {
     private Directory parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+
     private List<File> files = new ArrayList<>();
 
 
