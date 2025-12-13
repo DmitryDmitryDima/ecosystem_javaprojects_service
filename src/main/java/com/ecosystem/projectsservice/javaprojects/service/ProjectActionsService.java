@@ -3,7 +3,10 @@ package com.ecosystem.projectsservice.javaprojects.service;
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
+import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -13,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -33,6 +37,9 @@ public class ProjectActionsService {
     @Autowired
     private ProjectActionsUtils utils;
 
+    @Autowired
+    private DirectoryJDBCRepository directoryJDBCRepository;
+
 
     @Value("${storage.system}")
     private String systemStoragePath;
@@ -47,11 +54,18 @@ public class ProjectActionsService {
 
 
 
+        Project project = checks(securityContext, requestContext, projectId);
+
+        // извлекаем все папки, принадлежащие проекту, вместе с зависимостями
+        List<DirectoryReadOnly> directories = directoryJDBCRepository.loadAWholeStructureFromRoot(project.getRoot().getId());
+
+        // извлекаем все файлы, принадлежащие проекту
+        List<FileReadOnly> files = directoryJDBCRepository.loadFilesAssosiatedWithDirectories(
+                directories.stream().map(DirectoryReadOnly::getId).toList()
+        );
 
 
-
-
-        return utils.generateProjectDTOWithStructure(checks(securityContext, requestContext, projectId));
+        return utils.generateProjectDTOWithStructure(project, directories, files);
     }
 
 

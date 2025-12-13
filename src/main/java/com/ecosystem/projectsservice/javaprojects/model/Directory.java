@@ -26,7 +26,6 @@ public class Directory {
     private String name;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-
     private List<Directory> children = new ArrayList<>();
 
     // в корневой папке нет родителя

@@ -3,30 +3,47 @@ package com.ecosystem.projectsservice.javaprojects.utils.projects;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.StructureMember;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
+import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class ProjectActionsUtils {
 
 
 
-    public ProjectDTO generateProjectDTOWithStructure(Project project){
+    // метод вызывается из контекста @Transactional
+    public ProjectDTO generateProjectDTOWithStructure(Project project,
+                                                      List<DirectoryReadOnly> directories,
+                                                      List<FileReadOnly> files){
 
         ProjectDTO projectDTO = new ProjectDTO();
         projectDTO.setProjectType(project.getType());
         projectDTO.setStatus(project.getStatus());
         projectDTO.setName(project.getName());
+        projectDTO.setAuthor(project.getUserUUID());
 
-        if (project.getType()== ProjectType.MAVEN_CLASSIC){
-            List<StructureMember> structure = generateStructureForMavenClassic(project);
-            projectDTO.setStructure(structure);
-        }
+
+
+
+
+
+
+
+        // Готовим структуру в виде таблицы - генерируем сущности Structure member и внедряем зависимости
+        Map<String, StructureMember> memberMap = prepareMembersTable(directories, files);
+
+        // Извлекаем корень
+        StructureMember root = memberMap.get("directory_"+project.getRoot().getId());
+
+        projectDTO.setStructure(List.of(root));
+
+
+
 
         return projectDTO;
 
@@ -34,59 +51,69 @@ public class ProjectActionsUtils {
 
     }
 
-    // структура maven проекта начинается с папок java и resources. Для пользователя именно она будет корневой,
-    // так как над всем остальным будет организован ограниченный контроль (пример - pom xml будет доступен напрямую через кнопку)
-    private List<StructureMember> generateStructureForMavenClassic(Project project){
+    // готовим таблицу
+    private Map<String, StructureMember> prepareMembersTable(List<DirectoryReadOnly> directories,List<FileReadOnly> files ){
+
+        Map<String, StructureMember> table = new HashMap<>();
+
+        for (DirectoryReadOnly directoryReadOnly:directories){
+            StructureMember structureMember = new StructureMember();
+            structureMember.setOriginalId(directoryReadOnly.getId());
+            structureMember.setId("directory_"+directoryReadOnly.getId());
+            structureMember.setType("directory");
+            structureMember.setName(directoryReadOnly.getName());
+            structureMember.setImmutable(directoryReadOnly.isImmutable());
+
+            table.put(structureMember.getId(), structureMember);
 
 
-        List<String> hiddenFolders = List.of("src", "main");
-
-        Directory current =  project.getRoot();
-
-
-        // получаем папку main
-        for (String hiddenFolder:hiddenFolders){
-            current = current.getChildren().stream()
-                    .filter((member)->member.getName().equals(hiddenFolder))
-                    .findAny()
-                    .orElseThrow(()->new IllegalStateException("invalid project structure"));
         }
 
-        List<StructureMember> startingNodes = new ArrayList<>();
+        // для файлов можем начать вставлять зависимости, так как директории готовы
+        for (FileReadOnly fileReadOnly:files){
 
-        for (Directory directory:current.getChildren()){
-            if (directory.getName().equals("java") || directory.getName().equals("resources")){
-                startingNodes.add(transformDirectory(directory));
+            StructureMember structureMember = new StructureMember();
+            structureMember.setOriginalId(fileReadOnly.getId());
+            structureMember.setId("file_"+fileReadOnly.getId());
+            structureMember.setType("file");
+            structureMember.setName(fileReadOnly.getName());
+            structureMember.setImmutable(fileReadOnly.isImmutable());
+
+            table.put(structureMember.getId(), structureMember);
+
+            // вставляем зависимость
+            StructureMember parent = table.get("directory_"+fileReadOnly.getParent_id());
+
+            parent.getChildren().add(structureMember);
+
+
+        }
+
+        // создаем зависимости между директориями
+        for (DirectoryReadOnly directoryReadOnly:directories){
+
+            if (directoryReadOnly.getParent_id()==null){
+                continue;
             }
+
+            StructureMember parent = table.get("directory_"+directoryReadOnly.getParent_id());
+            StructureMember child = table.get("directory_"+directoryReadOnly.getId());
+
+            parent.getChildren().add(child);
+
+
         }
 
 
 
+        return table;
 
-
-
-        return  startingNodes;
     }
 
 
-    private StructureMember transformDirectory(Directory directory){
-
-        List<Directory> stack = new ArrayList<>();
-        HashSet<Long> visited = new HashSet<>();
-        stack.add(directory);
-        while (!stack.isEmpty()){
-            Directory member = stack.removeLast();
-            System.out.println(member.getName());
-            if (!visited.contains(member.getId())){
-                visited.add(directory.getId());
-                stack.addAll(member.getChildren());
-            }
 
 
 
-        }
-        return null;
-    }
 
 
 }
