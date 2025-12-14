@@ -37,10 +37,9 @@ public class ProjectActionsUtils {
         // Готовим структуру в виде таблицы - генерируем сущности Structure member и внедряем зависимости
         Map<String, StructureMember> memberMap = prepareMembersTable(directories, files);
 
-        // Извлекаем корень
-        StructureMember root = memberMap.get("directory_"+project.getRoot().getId());
 
-        projectDTO.setStructure(List.of(root));
+        // тут мы даем возможность выбирать режим отображения в зависимости от типа проекта
+        projectDTO.setStructure(getProjectSpecificLayerOfVisibility(memberMap, project.getRoot().getId(), project.getType()));
 
 
 
@@ -49,6 +48,31 @@ public class ProjectActionsUtils {
 
 
 
+    }
+
+    private List<StructureMember> getProjectSpecificLayerOfVisibility(Map<String, StructureMember> table, Long rootId, ProjectType type){
+        StructureMember root = table.get("directory_"+rootId);
+        if (type==ProjectType.MAVEN_CLASSIC){
+            StructureMember current = root;
+            List<String> mavenHiddenLayers = List.of("src", "main");
+
+
+            for (String hiddenlayer:mavenHiddenLayers){
+                current = current.getChildren().stream().filter(structureMember
+                        -> structureMember.getType().equals("directory")&&structureMember.getName().equals(hiddenlayer))
+                        .findFirst().orElseThrow(()->new IllegalStateException("Структура maven некорректна"));
+
+            }
+
+
+            return current.getChildren().stream().
+                    filter(structureMember ->
+                                    (structureMember.getName().equals("java")|| structureMember.getName().equals("resources"))
+                                            && structureMember.getType().equals("directory")).toList();
+        }
+
+
+        else return List.of(root);
     }
 
     // готовим таблицу
@@ -72,11 +96,13 @@ public class ProjectActionsUtils {
         // для файлов можем начать вставлять зависимости, так как директории готовы
         for (FileReadOnly fileReadOnly:files){
 
+            if (fileReadOnly.isHidden()) continue;
+
             StructureMember structureMember = new StructureMember();
             structureMember.setOriginalId(fileReadOnly.getId());
             structureMember.setId("file_"+fileReadOnly.getId());
             structureMember.setType("file");
-            structureMember.setName(fileReadOnly.getName());
+            structureMember.setName(fileReadOnly.getName()+"."+(fileReadOnly.getExtension()==null?"":fileReadOnly.getExtension()));
             structureMember.setImmutable(fileReadOnly.isImmutable());
 
             table.put(structureMember.getId(), structureMember);
