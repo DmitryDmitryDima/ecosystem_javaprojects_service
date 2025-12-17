@@ -31,6 +31,25 @@ public class ProjectActionsUtils {
 
 
 
+        // возвращаем последние 5 редактируемых (сохраненных) файлов
+        List<SimpleFileView> recentFiles = files.stream()
+                .sorted(Comparator.comparing(FileReadOnly::getUpdated_at))
+                .limit(5)
+                .map(file->SimpleFileView
+                        .builder()
+                        .id(file.getId())
+                        .name(file.getName())
+                        .path(file.getConstructed_path())
+                        .build())
+                .toList();
+
+        projectDTO.setRecentFiles(recentFiles);
+
+        System.out.println(recentFiles);
+
+
+
+
 
 
 
@@ -38,7 +57,8 @@ public class ProjectActionsUtils {
         // Готовим структуру в виде таблицы - генерируем сущности Structure member и внедряем зависимости
         Map<String, StructureMember> memberMap = prepareMembersTable(directories, files);
 
-        // формируем список 5 последних отредактированных файлов
+
+
 
 
 
@@ -54,6 +74,8 @@ public class ProjectActionsUtils {
 
 
     }
+
+
 
     private List<StructureMember> getProjectSpecificLayerOfVisibility(Map<String, StructureMember> table, Long rootId, ProjectType type){
         StructureMember root = table.get("directory_"+rootId);
