@@ -12,8 +12,10 @@ public class ProjectRemovalInitiationEvent extends ApplicationEvent {
 
     private UserEventContext context;
     private ProjectRemovalEventData data;
+    private String projectsPath;
 
-    public ProjectRemovalInitiationEvent(Object source) {
+    public ProjectRemovalInitiationEvent(Object source, String projectsPath) {
         super(source);
+        this.projectsPath = projectsPath;
     }
 }

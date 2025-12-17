@@ -50,7 +50,7 @@ public class ProjectRemovalEventChain {
 
     // на входе в цепочку мы проверяем сущность и блокируем ее специальным статусом
     @Async("taskExecutor")
-    public void initProjectRemovalChain(SecurityContext securityContext, RequestContext requestContext, Long projectId){
+    public void initProjectRemovalChain(SecurityContext securityContext, RequestContext requestContext, Long projectId, String projectsPath){
 
         UserEventContext sharedContext = UserEventContext.builder()
                 .userUUID(securityContext.getUuid())
@@ -70,7 +70,7 @@ public class ProjectRemovalEventChain {
 
 
 
-        ProjectRemovalInitiationEvent event = new ProjectRemovalInitiationEvent(this);
+        ProjectRemovalInitiationEvent event = new ProjectRemovalInitiationEvent(this, projectsPath);
         event.setData(eventData);
         event.setContext(sharedContext);
 
@@ -118,7 +118,7 @@ public class ProjectRemovalEventChain {
         }
 
 
-
+        // проект удалить может лишь автор проекта
         if (!project.getUserUUID().equals(event.getContext().getUserUUID())){
 
             sendFailedResult("Ошибка доступа", event.getContext(), event.getData());
@@ -141,8 +141,8 @@ public class ProjectRemovalEventChain {
 
 
 
-
-        String path = project.getRoot().getConstructedPath();
+        // формируем полный путь до проекта
+        String path = Path.of(event.getProjectsPath(), project.getName()).toString();
 
 
 

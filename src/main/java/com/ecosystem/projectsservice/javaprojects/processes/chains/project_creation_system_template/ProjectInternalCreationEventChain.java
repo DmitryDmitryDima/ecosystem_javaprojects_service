@@ -180,22 +180,26 @@ public class ProjectInternalCreationEventChain {
         root.setCreatedAt(Instant.now());
         root.setImmutable(true); // корневая папка строго иммутабельна
         root.setName(project.getName());
-        root.setConstructedPath(Path.of(project.getName()).normalize().toString()); // todo путь будет строиться относительно корневой папки проекта
 
-        System.out.println("before crash!");
+        /*
+        путь в базе данных строится относительно папки проекта, все остальное конструируется исходя из запроса
+         */
+        root.setConstructedPath(project.getName());
+
+
 
         try {
             directoryRepository.save(root);
             project.setRoot(root);
             projectRepository.saveAndFlush(project);
-            System.out.println(project.getRoot().getId());
+
         }
         catch (Exception e){
             e.printStackTrace();
 
             sendFailedResult("Неизвестная ошибка. Причина: "+e.getMessage(), event.getContext(), event.getData());
 
-            compensation(project.getId(), Path.of(event.getPaths().getProjectsPath(), project.getName()).toString());
+            compensation(project.getId(), Path.of(event.getPaths().getProjectsPath(), project.getName()));
             return;
 
         }
@@ -209,13 +213,13 @@ public class ProjectInternalCreationEventChain {
 
             sendFailedResult("Ошибка записи в диск: "+e.getMessage(), event.getContext(), event.getData());
 
-            compensation(project.getId(), Path.of(event.getPaths().getProjectsPath(), project.getName()).toString());
+            compensation(project.getId(), Path.of(event.getPaths().getProjectsPath(), project.getName()));
 
             return;
 
         }
 
-        System.out.println("root created");
+
 
         // формируем следующий ивент
         ProjectCreationRootWrittenEvent rootWrittenEvent = new ProjectCreationRootWrittenEvent(this );
@@ -252,7 +256,7 @@ public class ProjectInternalCreationEventChain {
 
             // все равно пытаемся удалить сущность на случай, если она была записана в базу, доступ к которой был потерян (todo retry)
             compensation(rootWrittenEvent.getData().getProjectId(),
-                    Path.of(rootWrittenEvent.getPaths().getProjectsPath(), rootWrittenEvent.getData().getName()).toString());
+                    Path.of(rootWrittenEvent.getPaths().getProjectsPath(), rootWrittenEvent.getData().getName()));
             return;
         }
 
@@ -275,7 +279,7 @@ public class ProjectInternalCreationEventChain {
             project.setStatus(ProjectStatus.AVAILABLE);
             projectRepository.save(project);
 
-            System.out.println("project structure created");
+
 
 
 
@@ -284,7 +288,7 @@ public class ProjectInternalCreationEventChain {
         }
         catch (Exception e){
             sendFailedResult("Ошибка при создании структуры проекта. Причина: "+e.getMessage(), rootWrittenEvent.getContext(), rootWrittenEvent.getData());
-            compensation(project.getId(), Path.of(rootWrittenEvent.getPaths().getProjectsPath(), project.getName()).toString());
+            compensation(project.getId(), Path.of(rootWrittenEvent.getPaths().getProjectsPath(), project.getName()));
         }
 
 
@@ -297,7 +301,7 @@ public class ProjectInternalCreationEventChain {
 
     // простая компенсация-удаляем директорию и бд
     @Transactional
-    private void compensation(Long projectId, String projectPath){
+    private void compensation(Long projectId, Path projectPath){
 
         try {
             Optional<Project> project = projectRepository.findById(projectId);
@@ -305,7 +309,7 @@ public class ProjectInternalCreationEventChain {
                 projectRepository.delete(entity);
             });
 
-            FileSystemUtils.deleteRecursively(Path.of(projectPath));
+            FileSystemUtils.deleteRecursively(projectPath);
         }
         catch (Exception e){
             e.printStackTrace();

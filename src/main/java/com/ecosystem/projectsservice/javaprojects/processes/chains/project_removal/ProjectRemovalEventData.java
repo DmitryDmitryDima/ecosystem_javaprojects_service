@@ -16,6 +16,7 @@ public class ProjectRemovalEventData implements EventData {
     private Long projectId;
     private String projectName;
 
+
     @Builder.Default
     private String projectLanguage = "java";
 

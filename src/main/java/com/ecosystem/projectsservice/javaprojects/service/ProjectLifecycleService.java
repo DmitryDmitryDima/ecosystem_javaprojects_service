@@ -80,7 +80,11 @@ public class ProjectLifecycleService {
     public void deleteProject(SecurityContext securityContext, RequestContext requestContext, ProjectRemovalRequest request){
 
 
-        removalEventChain.initProjectRemovalChain(securityContext, requestContext, request.getProjectId());
+        removalEventChain.initProjectRemovalChain(securityContext,
+                requestContext,
+                request.getProjectId(),
+                Path.of(userStoragePath, securityContext.getUuid().toString(),"projects").toString()
+                );
 
 
 
