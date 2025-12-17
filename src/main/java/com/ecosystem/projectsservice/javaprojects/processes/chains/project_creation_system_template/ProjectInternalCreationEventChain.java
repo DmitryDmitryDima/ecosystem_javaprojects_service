@@ -180,7 +180,8 @@ public class ProjectInternalCreationEventChain {
         root.setCreatedAt(Instant.now());
         root.setImmutable(true); // корневая папка строго иммутабельна
         root.setName(project.getName());
-        root.setConstructedPath(Path.of(event.getPaths().getProjectsPath(), project.getName()).normalize().toString());
+        root.setConstructedPath(Path.of(project.getName()).normalize().toString()); // todo путь будет строиться относительно корневой папки проекта
+
         System.out.println("before crash!");
 
         try {
@@ -194,20 +195,21 @@ public class ProjectInternalCreationEventChain {
 
             sendFailedResult("Неизвестная ошибка. Причина: "+e.getMessage(), event.getContext(), event.getData());
 
-            compensation(project.getId(), root.getConstructedPath());
+            compensation(project.getId(), Path.of(event.getPaths().getProjectsPath(), project.getName()).toString());
             return;
 
         }
 
         // создаем директорию на диске
         try {
-            ProjectLifecycleUtils.createDirectory(Path.of(root.getConstructedPath()));
+
+            ProjectLifecycleUtils.createDirectory(Path.of(event.getPaths().getProjectsPath(), project.getName()));
         }
         catch (Exception e){
 
             sendFailedResult("Ошибка записи в диск: "+e.getMessage(), event.getContext(), event.getData());
 
-            compensation(project.getId(), root.getConstructedPath());
+            compensation(project.getId(), Path.of(event.getPaths().getProjectsPath(), project.getName()).toString());
 
             return;
 
@@ -249,7 +251,8 @@ public class ProjectInternalCreationEventChain {
                     rootWrittenEvent.getData());
 
             // все равно пытаемся удалить сущность на случай, если она была записана в базу, доступ к которой был потерян (todo retry)
-            compensation(rootWrittenEvent.getData().getProjectId(), rootWrittenEvent.getPaths().getProjectsPath());
+            compensation(rootWrittenEvent.getData().getProjectId(),
+                    Path.of(rootWrittenEvent.getPaths().getProjectsPath(), rootWrittenEvent.getData().getName()).toString());
             return;
         }
 
@@ -260,6 +263,7 @@ public class ProjectInternalCreationEventChain {
                 .project(project)
                 .fileTemplatesPath(rootWrittenEvent.getPaths().getFileTemplatesPath())
                 .instructionsPath(rootWrittenEvent.getPaths().getInstructionsPath())
+                .projectsPath(rootWrittenEvent.getPaths().getProjectsPath())
                 .needEntryPoint(rootWrittenEvent.getPreference().isNeedEntryPoint())
                 .build();
 
@@ -280,7 +284,7 @@ public class ProjectInternalCreationEventChain {
         }
         catch (Exception e){
             sendFailedResult("Ошибка при создании структуры проекта. Причина: "+e.getMessage(), rootWrittenEvent.getContext(), rootWrittenEvent.getData());
-            compensation(project.getId(), rootWrittenEvent.getPaths().getProjectsPath());
+            compensation(project.getId(), Path.of(rootWrittenEvent.getPaths().getProjectsPath(), project.getName()).toString());
         }
 
 

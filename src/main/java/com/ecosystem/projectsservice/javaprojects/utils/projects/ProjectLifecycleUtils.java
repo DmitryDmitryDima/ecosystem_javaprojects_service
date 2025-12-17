@@ -43,26 +43,27 @@ public class ProjectLifecycleUtils {
         file.setParent(parent);
     }
     // пишем директории на диск и кешируем путь для child
-    public static void writeDirectoriesAndCachePath(Directory parent, Directory child) throws Exception{
+    public static void writeDirectoriesAndCachePath(Directory parent, Directory child, String projectsPath) throws Exception{
 
         Path childPath = Path.of(parent.getConstructedPath(), child.getName());
+        System.out.println("child "+childPath);
         child.setConstructedPath(childPath.toString());
 
-        Files.createDirectories(childPath);
+        Files.createDirectories(Path.of(projectsPath, childPath.toString()).normalize());
     }
 
     // записываем файл на диск, при этом (при наличии) пишем в него уже готовый template; кешируем путь до файла
     // В данном случае шаблон берется из системной папки (будущие альтернатива - ИИ)
-    public static void writeFileFromSystemTemplate(Directory parent, File file, String templatePath, String templateName) throws IOException {
+    public static void writeFileFromSystemTemplate(Directory parent, File file, String templatePath, String templateName, String projectsPath) throws IOException {
         String fileName = file.getName();
 
         if (file.getExtension()!=null){
             fileName  =fileName+"."+file.getExtension();
         }
-        Path filepath = Path.of(parent.getConstructedPath(), fileName);
-        file.setConstructedPath(filepath.toString());
+        String filepath = Path.of(parent.getConstructedPath(), fileName).toString();
+        file.setConstructedPath(filepath);
 
-        Files.createFile(filepath);
+        Files.createFile(Path.of(projectsPath,filepath));
 
         // если присутствует шаблон
 
@@ -70,7 +71,7 @@ public class ProjectLifecycleUtils {
             Path fullTemplatePath = Path.of(templatePath, templateName);
             try (InputStream stream = Files.newInputStream(fullTemplatePath)){
                 String templateContent = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-                Files.writeString(filepath, templateContent);
+                Files.writeString(Path.of(projectsPath,filepath), templateContent);
             }
             catch (Exception e){
                 throw new IOException("ошибка записи шаблона");
@@ -130,7 +131,7 @@ public class ProjectLifecycleUtils {
 
 
 
-    public static void generateEntryPointForMavenProject(Project project) throws Exception{
+    public static void generateEntryPointForMavenProject(Project project, String projectsPath) throws Exception{
 
         // сначала мы должны добраться до папки com (сущности)
         List<String> classicalMavenFolderStructure = List.of("src", "main","java","com");
@@ -178,10 +179,10 @@ public class ProjectLifecycleUtils {
                        \s"""
                 .formatted("package com;","Main");
 
-        Files.writeString(Path.of(currentDirectory.getConstructedPath(), "Main.java"), formattedTemplate);
+        Files.writeString(Path.of(projectsPath,currentDirectory.getConstructedPath(), "Main.java"), formattedTemplate);
 
         // изменяем pom xml
-        setMainClassInsidePomXML(Path.of(project.getRoot().getConstructedPath(), "pom.xml").toString(), "com.Main");
+        setMainClassInsidePomXML(Path.of(projectsPath,project.getRoot().getConstructedPath(), "pom.xml").toString(), "com.Main");
 
 
 

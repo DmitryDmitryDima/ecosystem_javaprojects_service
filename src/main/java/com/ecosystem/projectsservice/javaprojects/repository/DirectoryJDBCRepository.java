@@ -44,7 +44,7 @@ public class DirectoryJDBCRepository {
     public List<FileReadOnly> loadFilesAssosiatedWithDirectories(List<Long> directories){
         String inSql = String.join(",", Collections.nCopies(directories.size(), "?"));
         String query = String
-                .format("select parent_id, name,id, constructed_path, created_at,hidden, immutable,extension, status from files where files.parent_id in (%s)",
+                .format("select parent_id, name,id, constructed_path, created_at, updated_at, hidden, immutable,extension, status from files where files.parent_id in (%s)",
                         inSql);
 
         System.out.println(query);

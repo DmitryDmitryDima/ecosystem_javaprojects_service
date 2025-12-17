@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.utils.projects;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.SimpleFileView;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.StructureMember;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
@@ -36,6 +37,10 @@ public class ProjectActionsUtils {
 
         // Готовим структуру в виде таблицы - генерируем сущности Structure member и внедряем зависимости
         Map<String, StructureMember> memberMap = prepareMembersTable(directories, files);
+
+        // формируем список 5 последних отредактированных файлов
+
+
 
 
         // тут мы даем возможность выбирать режим отображения в зависимости от типа проекта

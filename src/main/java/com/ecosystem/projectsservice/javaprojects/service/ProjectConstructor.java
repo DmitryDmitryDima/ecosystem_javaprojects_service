@@ -67,7 +67,7 @@ public class ProjectConstructor {
             // читаем инструкцию
             YamlInstruction instruction = readInstruction(Path.of(settings.getInstructionsPath(), instructionName));
             // запускаем инструкцию
-            runInstruction(instruction, root, settings.getFileTemplatesPath());
+            runInstruction(instruction, root, settings.getFileTemplatesPath(), settings.getProjectsPath());
             // выполняем дополнительные действия над готовой структурой проекта
             prepareProject(settings);
 
@@ -97,11 +97,13 @@ public class ProjectConstructor {
         }
     }
 
-    private void runInstruction(YamlInstruction instruction, Directory root, String templatePath) throws Exception{
+    private void runInstruction(YamlInstruction instruction, Directory root, String templatePath, String projectsPath) throws Exception{
 
         // parent = null - значит верх иерархии, имеющий прямую зависимость с root. Иерархия строится с директорий
         List<DirectoryInstruction> directoryInstructions = instruction.getDirectories();
         HashMap<Long, Directory> directoriesBase = new HashMap<>();
+
+        System.out.println(root.getConstructedPath());
 
 
 
@@ -131,11 +133,13 @@ public class ProjectConstructor {
 
                     Directory child = directoryInstruction.prepareDirectoryEntity();
 
+                    System.out.println("parent here "+parent.getConstructedPath());
+
                     // создаем зависимость в базе
                     ProjectLifecycleUtils.injectChildToParent(child, parent);
 
                     // пишем директорию, при этом дополняя path для child
-                    ProjectLifecycleUtils.writeDirectoriesAndCachePath(parent, child);
+                    ProjectLifecycleUtils.writeDirectoriesAndCachePath(parent, child, projectsPath);
 
 
 
@@ -188,7 +192,7 @@ public class ProjectConstructor {
             // создаем файл
             // загружаем шаблон, если он присутствует
 
-            ProjectLifecycleUtils.writeFileFromSystemTemplate(parent, file, templatePath, fileInstruction.getTemplate());
+            ProjectLifecycleUtils.writeFileFromSystemTemplate(parent, file, templatePath, fileInstruction.getTemplate(), projectsPath);
 
 
 
@@ -205,13 +209,13 @@ public class ProjectConstructor {
     private void prepareProject(ConstructorSettingsForSystemTemplateBuild info) throws Exception {
         if (info.getProjectType()== ProjectType.MAVEN_CLASSIC){
             // добавляем artefact id к pom.xml
-            ProjectLifecycleUtils.setArtifactIdInsidePomXML(Path.of(info.getProject().getRoot().getConstructedPath(), "pom.xml").toString(),
+            ProjectLifecycleUtils.setArtifactIdInsidePomXML(Path.of(info.getProjectsPath(),info.getProject().getName(), "pom.xml").toString(),
                     info.getProject().getName()+"-project"
                     );
             // генерируем точку входа, если этого желает пользователь
             if (info.isNeedEntryPoint()){
 
-                ProjectLifecycleUtils.generateEntryPointForMavenProject(info.getProject());
+                ProjectLifecycleUtils.generateEntryPointForMavenProject(info.getProject(), info.getProjectsPath());
 
             }
 

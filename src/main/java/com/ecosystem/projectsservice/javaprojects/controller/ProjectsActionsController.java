@@ -55,7 +55,10 @@ public class ProjectsActionsController {
 
     }
 
-    //@GetMapping("/readFile")
+
+    // чтение файла - viewer id, project id, project author id, file id - все данные для конструирования пути
+
+    //   @GetMapping("/readFile")
 
 
 

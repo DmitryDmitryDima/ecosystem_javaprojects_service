@@ -17,6 +17,7 @@ public class FileReadOnly {
     private Long id;
     private String constructed_path;
     private Instant created_at;
+    private Instant updated_at;
     private boolean hidden;
     private boolean immutable;
     private String extension;

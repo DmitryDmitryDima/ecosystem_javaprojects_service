@@ -27,6 +27,9 @@ public class ConstructorSettingsForSystemTemplateBuild {
 
     private String fileTemplatesPath;
 
+    // путь к папке с проектами ! Важно - в бд сохраняется только путь начиная с папки проекта - все остальное меняется динамически в зависимости от среды
+    private String projectsPath;
+
 
 
     private Project project;
@@ -34,6 +37,8 @@ public class ConstructorSettingsForSystemTemplateBuild {
     private ProjectType projectType;
 
     private boolean needEntryPoint;
+
+
 
 
 

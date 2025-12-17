@@ -27,6 +27,8 @@ public class StructureMember {
 
 
 
+
+
     private List<StructureMember> children = new ArrayList<>();
 
     @Override
