@@ -168,14 +168,14 @@ public class ProjectLifecycleUtils {
 
         // пишем в файл на диске
         String formattedTemplate = """
-                        %s
+                       %s
                        \s
-                        public class %s{
-                          public static void main(String...args){
+                       public class %s{
+                         public static void main(String...args){
                            \s
-                          }
+                         }
                        \s
-                        }
+                       }
                        \s"""
                 .formatted("package com;","Main");
 

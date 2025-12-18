@@ -1,6 +1,5 @@
 package com.ecosystem.projectsservice.javaprojects.dto.projects.actions;
 
-import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import lombok.AllArgsConstructor;
@@ -8,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -26,7 +24,7 @@ public class ProjectDTO {
     // подготовленная структура для фронтенд tree библиотеки (nested вариант)
     private List<StructureMember> structure;
 
-    private List<SimpleFileView> recentFiles;
+    private List<SimpleFileInfo> recentFiles;
 
 
     private UUID author;

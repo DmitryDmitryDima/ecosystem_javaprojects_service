@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SimpleFileView {
+public class SimpleFileInfo {
     private String name;
     private Long id;
     private String path;

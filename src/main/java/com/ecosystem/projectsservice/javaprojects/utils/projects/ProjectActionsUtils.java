@@ -1,9 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.utils.projects;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.SimpleFileView;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.SimpleFileInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.StructureMember;
-import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
@@ -32,10 +31,10 @@ public class ProjectActionsUtils {
 
 
         // возвращаем последние 5 редактируемых (сохраненных) файлов
-        List<SimpleFileView> recentFiles = files.stream()
-                .sorted(Comparator.comparing(FileReadOnly::getUpdated_at))
+        List<SimpleFileInfo> recentFiles = files.stream()
+                .sorted(Comparator.comparing(FileReadOnly::getUpdated_at).reversed())
                 .limit(5)
-                .map(file->SimpleFileView
+                .map(file-> SimpleFileInfo
                         .builder()
                         .id(file.getId())
                         .name(file.getName())

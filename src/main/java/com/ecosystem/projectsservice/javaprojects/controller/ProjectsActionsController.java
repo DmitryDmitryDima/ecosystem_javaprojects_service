@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.controller;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.service.ProjectActionsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +59,17 @@ public class ProjectsActionsController {
 
     // чтение файла - viewer id, project id, project author id, file id - все данные для конструирования пути
 
-    //   @GetMapping("/readFile")
+    @GetMapping("/readFile/{file_id}")
+    public ResponseEntity<FileDTO> readFile(@PathVariable("id") Long projectId, @PathVariable("file_id") Long fileId,
+                                            @RequestHeader Map<String, String> headers) throws Exception{
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        return ResponseEntity.ok(actionsService.readFile(securityContext, requestContext, projectId, fileId));
+    }
+
+
 
 
 

@@ -1,6 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects;
 
 
+import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.UUID;
 
 @SpringBootTest
 public class TestProjectActions {
@@ -54,5 +57,20 @@ public class TestProjectActions {
 
 
 
+    }
+
+    @Test
+    public void fileRead(){
+        Long projectId = 94L;
+        Long fileId = 192L;
+
+        try {
+            FileDTO dto = service.readFile(SecurityContext.builder().uuid(UUID.fromString("c39d7136-bb65-4cc6-9902-ecf131c630fa")).build(), null,
+                    projectId, fileId);
+
+            System.out.println(dto);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
