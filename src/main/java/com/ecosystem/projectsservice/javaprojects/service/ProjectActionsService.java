@@ -91,6 +91,7 @@ public class ProjectActionsService {
                 }
 
                 FileDTO fileDTO = new FileDTO();
+                fileDTO.setName(fileReadOnly.getName());
                 fileDTO.setExtension(fileReadOnly.getExtension());
                 fileDTO.setLastUpdate(fileReadOnly.getUpdated_at());
                 fileDTO.setConstructedPath(fileReadOnly.getConstructed_path());

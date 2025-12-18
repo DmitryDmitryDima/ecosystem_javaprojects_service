@@ -12,6 +12,7 @@ import java.time.Instant;
 public class FileDTO {
     private String content;
     private String extension;
+    private String name;
     private String constructedPath;
     private Instant lastUpdate;
 }
