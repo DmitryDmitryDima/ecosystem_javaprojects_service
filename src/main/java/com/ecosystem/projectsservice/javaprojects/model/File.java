@@ -16,6 +16,10 @@ import java.time.Instant;
 @NoArgsConstructor
 public class File {
 
+
+    @Version
+    private Long version;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

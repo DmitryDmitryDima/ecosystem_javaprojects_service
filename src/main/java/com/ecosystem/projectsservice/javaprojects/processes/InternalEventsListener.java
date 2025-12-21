@@ -28,6 +28,7 @@ public class InternalEventsListener {
 
     @EventListener
     public void catchUserEvent(UserEvent event){
+        System.out.println(event+" catched");
         try {
             MessagePostProcessor postProcessor = (message )->{
                 message.getMessageProperties().setHeader("event_type", event.getEvent_type());

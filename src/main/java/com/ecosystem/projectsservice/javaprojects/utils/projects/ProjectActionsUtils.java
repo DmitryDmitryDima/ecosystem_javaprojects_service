@@ -1,50 +1,36 @@
 package com.ecosystem.projectsservice.javaprojects.utils.projects;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.SimpleFileInfo;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.StructureMember;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectSnapshot;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureMember;
 import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+/*
+анализ и интерпретация данных, вытащенных из бд
+ */
 @Component
 public class ProjectActionsUtils {
 
 
 
     // метод вызывается из контекста @Transactional
-    public ProjectDTO generateProjectDTOWithStructure(Project project,
-                                                      List<DirectoryReadOnly> directories,
-                                                      List<FileReadOnly> files){
-
-        ProjectDTO projectDTO = new ProjectDTO();
-        projectDTO.setProjectType(project.getType());
-        projectDTO.setStatus(project.getStatus());
-        projectDTO.setName(project.getName());
-        projectDTO.setAuthor(project.getUserUUID());
+    public ProjectDTO generateStructureForDTO(Long rootId, ProjectDTO projectDTO,
+                                              ProjectSnapshot snapshot){
 
 
 
 
-        // возвращаем последние 5 редактируемых (сохраненных) файлов
-        List<SimpleFileInfo> recentFiles = files.stream()
-                .sorted(Comparator.comparing(FileReadOnly::getUpdated_at).reversed())
-                .limit(5)
-                .map(file-> SimpleFileInfo
-                        .builder()
-                        .id(file.getId())
-                        .name(file.getName())
-                        .path(file.getConstructed_path())
-                        .build())
-                .toList();
 
-        projectDTO.setRecentFiles(recentFiles);
 
-        System.out.println(recentFiles);
+
+
+
 
 
 
@@ -54,7 +40,7 @@ public class ProjectActionsUtils {
 
 
         // Готовим структуру в виде таблицы - генерируем сущности Structure member и внедряем зависимости
-        Map<String, StructureMember> memberMap = prepareMembersTable(directories, files);
+        Map<String, StructureMember> memberMap = prepareMembersTable(snapshot);
 
 
 
@@ -63,7 +49,7 @@ public class ProjectActionsUtils {
 
 
         // тут мы даем возможность выбирать режим отображения в зависимости от типа проекта
-        projectDTO.setStructure(getProjectSpecificLayerOfVisibility(memberMap, project.getRoot().getId(), project.getType()));
+        projectDTO.setStructure(getProjectSpecificLayerOfVisibility(memberMap, rootId, projectDTO.getProjectType()));
 
 
 
@@ -72,6 +58,21 @@ public class ProjectActionsUtils {
 
 
 
+    }
+
+    public List<SimpleFileInfo> getRecentFiles(ProjectSnapshot snapshot){
+        return snapshot.getFiles().stream()
+                .sorted(Comparator.comparing(FileReadOnly::getUpdated_at).reversed())
+                .filter(file->!file.isHidden())
+                .limit(5)
+                .map(file-> SimpleFileInfo
+                        .builder()
+                        .id(file.getId())
+                        .name(file.getName())
+                        .extension(file.getExtension())
+                        .path(file.getConstructed_path())
+                        .build())
+                .toList();
     }
 
 
@@ -102,11 +103,11 @@ public class ProjectActionsUtils {
     }
 
     // готовим таблицу
-    private Map<String, StructureMember> prepareMembersTable(List<DirectoryReadOnly> directories,List<FileReadOnly> files ){
+    private Map<String, StructureMember> prepareMembersTable(ProjectSnapshot snapshot ){
 
         Map<String, StructureMember> table = new HashMap<>();
 
-        for (DirectoryReadOnly directoryReadOnly:directories){
+        for (DirectoryReadOnly directoryReadOnly: snapshot.getDirectories()){
             StructureMember structureMember = new StructureMember();
             structureMember.setOriginalId(directoryReadOnly.getId());
             structureMember.setId("directory_"+directoryReadOnly.getId());
@@ -120,7 +121,7 @@ public class ProjectActionsUtils {
         }
 
         // для файлов можем начать вставлять зависимости, так как директории готовы
-        for (FileReadOnly fileReadOnly:files){
+        for (FileReadOnly fileReadOnly: snapshot.getFiles()){
 
             if (fileReadOnly.isHidden()) continue;
 
@@ -142,7 +143,7 @@ public class ProjectActionsUtils {
         }
 
         // создаем зависимости между директориями
-        for (DirectoryReadOnly directoryReadOnly:directories){
+        for (DirectoryReadOnly directoryReadOnly: snapshot.getDirectories()){
 
             if (directoryReadOnly.getParent_id()==null){
                 continue;

@@ -3,13 +3,16 @@ package com.ecosystem.projectsservice.javaprojects.controller;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.FileDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.service.ProjectActionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -56,6 +59,15 @@ public class ProjectsActionsController {
 
     }
 
+    // обновляем отдельно список последних редактируемых файлов (файлы должны иметь статус visible)
+    @GetMapping("/readRecentFiles")
+    public ResponseEntity<List<SimpleFileInfo>> readRecentFiles(@PathVariable("id") Long id, @RequestHeader Map<String, String> headers) throws Exception{
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        return ResponseEntity.ok(actionsService.getRecentFiles(securityContext, requestContext, id));
+    }
+
 
     // чтение файла - viewer id, project id, project author id, file id - все данные для конструирования пути
 
@@ -68,6 +80,24 @@ public class ProjectsActionsController {
 
         return ResponseEntity.ok(actionsService.readFile(securityContext, requestContext, projectId, fileId));
     }
+
+    /*
+    сохранение файла через отдельную кнопку - гарантирует сохранение файла в диск (используется наравне с автосохранением в redis)
+     */
+    @PostMapping("/saveFile/{file_id}")
+    public ResponseEntity<Void> saveFile(@PathVariable("id") Long projectId, @PathVariable("file_id") Long fileId,
+                                         @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request) throws Exception{
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        actionsService.saveFile(securityContext, requestContext, projectId, fileId, request);
+
+        return ResponseEntity.noContent().build();
+
+    }
+
+    //@PostMapping ("autosave)
 
 
 

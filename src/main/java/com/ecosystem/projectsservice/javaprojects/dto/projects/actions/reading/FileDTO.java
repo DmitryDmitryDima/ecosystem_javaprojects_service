@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects.actions;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

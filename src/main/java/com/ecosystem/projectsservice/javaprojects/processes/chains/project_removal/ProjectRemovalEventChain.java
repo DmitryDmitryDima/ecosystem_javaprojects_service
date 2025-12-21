@@ -188,8 +188,8 @@ public class ProjectRemovalEventChain {
     }
 
     // дочищаем бд
-    @EventListener
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void removeProjectFromDB(ProjectRemovalCleanedDiskEvent event){
 
         Optional<Project> projectCheck = projectRepository.findById(event.getEventData().getProjectId());

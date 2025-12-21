@@ -2,8 +2,8 @@ package com.ecosystem.projectsservice.javaprojects;
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.FileDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.ProjectDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;

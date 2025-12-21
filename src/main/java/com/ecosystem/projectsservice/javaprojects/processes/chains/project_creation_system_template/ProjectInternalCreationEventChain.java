@@ -21,6 +21,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.FileSystemUtils;
 
 import java.nio.file.Path;
@@ -153,12 +156,13 @@ public class ProjectInternalCreationEventChain {
      */
 
 
-    @Transactional
-    @EventListener
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void prepareRootDirectory(ProjectCreationProjectEntityCreatedEvent event){
         Project project;
 
         try {
+
             Optional<Project> projectCheck = projectRepository.findById(event.getData().getProjectId());
             if (projectCheck.isEmpty()){
                 throw new IllegalStateException("Сущность не была создана");
@@ -197,9 +201,16 @@ public class ProjectInternalCreationEventChain {
         catch (Exception e){
             e.printStackTrace();
 
+
+
             sendFailedResult("Неизвестная ошибка. Причина: "+e.getMessage(), event.getContext(), event.getData());
 
-            compensation(project.getId(), Path.of(event.getPaths().getProjectsPath(), project.getName()));
+            publisher.publishEvent(new ProjectInternalCreationCompensationEvent(this,
+                    project.getId(),
+                    Path.of(event.getPaths().getProjectsPath(),
+                            project.getName())));
+
+
             return;
 
         }
@@ -211,9 +222,16 @@ public class ProjectInternalCreationEventChain {
         }
         catch (Exception e){
 
+
+
             sendFailedResult("Ошибка записи в диск: "+e.getMessage(), event.getContext(), event.getData());
 
-            compensation(project.getId(), Path.of(event.getPaths().getProjectsPath(), project.getName()));
+            publisher.publishEvent(new ProjectInternalCreationCompensationEvent(this,
+                    project.getId(),
+                    Path.of(event.getPaths().getProjectsPath(),
+                            project.getName())));
+
+
 
             return;
 
@@ -235,8 +253,8 @@ public class ProjectInternalCreationEventChain {
 
 
 
-    @Transactional
-    @EventListener
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void createProjectStructure(ProjectCreationRootWrittenEvent rootWrittenEvent){
 
         Project project;
@@ -250,13 +268,15 @@ public class ProjectInternalCreationEventChain {
             System.out.println(project.getRoot());
         }
         catch (Exception e){
+            publisher.publishEvent(new ProjectInternalCreationCompensationEvent(this,
+                    rootWrittenEvent.getData().getProjectId(),
+                    Path.of(rootWrittenEvent.getPaths().getProjectsPath(),
+                            rootWrittenEvent.getData().getName())));
 
             sendFailedResult("Проблемы на сервисе, попробуйте позже. Причина: "+e.getMessage(), rootWrittenEvent.getContext(),
                     rootWrittenEvent.getData());
 
-            // все равно пытаемся удалить сущность на случай, если она была записана в базу, доступ к которой был потерян (todo retry)
-            compensation(rootWrittenEvent.getData().getProjectId(),
-                    Path.of(rootWrittenEvent.getPaths().getProjectsPath(), rootWrittenEvent.getData().getName()));
+
             return;
         }
 
@@ -287,8 +307,19 @@ public class ProjectInternalCreationEventChain {
             sendSuccessResult("Проект "+project.getName()+" создан!", rootWrittenEvent.getContext(), rootWrittenEvent.getData());
         }
         catch (Exception e){
-            sendFailedResult("Ошибка при создании структуры проекта. Причина: "+e.getMessage(), rootWrittenEvent.getContext(), rootWrittenEvent.getData());
-            compensation(project.getId(), Path.of(rootWrittenEvent.getPaths().getProjectsPath(), project.getName()));
+
+            publisher.publishEvent(new ProjectInternalCreationCompensationEvent(this,
+                    project.getId(),
+                    Path.of(rootWrittenEvent.getPaths().getProjectsPath(),
+                            project.getName())));
+
+            sendFailedResult(
+                    "Ошибка при создании структуры проекта. Причина: "+e.getMessage(),
+                    rootWrittenEvent.getContext(),
+                    rootWrittenEvent.getData());
+
+
+
         }
 
 
@@ -300,16 +331,18 @@ public class ProjectInternalCreationEventChain {
 
 
     // простая компенсация-удаляем директорию и бд
-    @Transactional
-    private void compensation(Long projectId, Path projectPath){
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @EventListener
+    @Async
+    public void compensation(ProjectInternalCreationCompensationEvent compensationEvent){
 
         try {
-            Optional<Project> project = projectRepository.findById(projectId);
+            Optional<Project> project = projectRepository.findById(compensationEvent.getProjectId());
             project.ifPresent((entity)->{
                 projectRepository.delete(entity);
             });
 
-            FileSystemUtils.deleteRecursively(projectPath);
+            FileSystemUtils.deleteRecursively(compensationEvent.getProjectPath());
         }
         catch (Exception e){
             e.printStackTrace();
@@ -322,8 +355,7 @@ public class ProjectInternalCreationEventChain {
 
     private void sendResult(String message, UserEventContext context, ProjectCreationEventData data){
         try {
-            // todo симуляция задержки
-            Thread.sleep(5000);
+
             UserEvent userEvent = UserEvent.builder()
                     .eventData(data)
                     .event_type(resultingEventName)

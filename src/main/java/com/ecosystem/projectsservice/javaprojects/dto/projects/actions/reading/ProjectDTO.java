@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects.actions;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading;
 
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
@@ -24,7 +24,7 @@ public class ProjectDTO {
     // подготовленная структура для фронтенд tree библиотеки (nested вариант)
     private List<StructureMember> structure;
 
-    private List<SimpleFileInfo> recentFiles;
+
 
 
     private UUID author;

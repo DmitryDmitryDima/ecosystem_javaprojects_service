@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects.actions;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,4 +13,5 @@ public class SimpleFileInfo {
     private String name;
     private Long id;
     private String path;
+    private String extension;
 }

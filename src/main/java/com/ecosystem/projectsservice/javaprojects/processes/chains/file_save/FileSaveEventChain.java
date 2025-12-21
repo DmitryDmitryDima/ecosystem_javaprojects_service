@@ -1,0 +1,218 @@
+package com.ecosystem.projectsservice.javaprojects.processes.chains.file_save;
+
+import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
+import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.model.File;
+import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectCreationEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectCreationStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.queue.EventData;
+import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
+import java.util.Optional;
+
+// сохранение с блокировкой бд, цель - запись в диск
+// цепочка вызывается со стороны пользователя и со стороны фонового процесса
+@Service
+public class FileSaveEventChain {
+
+    @Autowired
+    private FileRepository fileRepository;
+
+    @Autowired
+    private ApplicationEventPublisher publisher;
+
+
+    private static final String resultingEventName = "file_save";
+
+
+    @Async("taskExecutor")
+    public void initChain(SecurityContext securityContext, RequestContext requestContext, FileSaveInfo info){
+
+        // готовим transfer object - event data
+        FileSaveEventData eventData = FileSaveEventData
+                .builder()
+                .fileId(info.getFileId())
+                .content(info.getContent())
+                .build();
+
+        // готовим transfer object - event context
+        UserEventContext context = UserEventContext.builder()
+                .correlationId(requestContext.getCorrelationId())
+                .timestamp(Instant.now())
+                .userUUID(securityContext.getUuid())
+                .username(securityContext.getUsername())
+                .build();
+
+        FileSaveInitiationEvent initiationEvent = new FileSaveInitiationEvent(this, info.getProjectsPath());
+        initiationEvent.setData(eventData);
+        initiationEvent.setContext(context);
+
+        publisher.publishEvent(initiationEvent);
+
+
+    }
+
+    // db lock for atomicity
+    // file has an optimistic lock mechanism
+    @Transactional
+    @EventListener
+    public void lockFileEntity(FileSaveInitiationEvent initiation){
+
+        try {
+            Optional<File> fileCheck = fileRepository.findById(initiation.getData().getFileId());
+            if (fileCheck.isEmpty()){
+                throw new IllegalStateException("файл не найден");
+            }
+
+
+
+            File file = fileCheck.get();
+            if (file.getStatus().equals(FileStatus.WRITING)){
+                throw new IllegalStateException("файл недоступен для записи");
+            }
+
+            file.setStatus(FileStatus.WRITING); // пока статус writing - никто не может писать в файл
+            fileRepository.save(file);
+
+            initiation.getData().setName(file.getName());// запоминаем имя для ui
+            initiation.getData().setPath(file.getConstructedPath());
+
+            FileSaveLockCreatedEvent fileSaveLockCreatedEvent = new FileSaveLockCreatedEvent(this,
+                            Path.of(initiation.getProjectsPath(),
+                            file.getConstructedPath()).normalize().toString());
+
+            fileSaveLockCreatedEvent.setData(initiation.getData());
+            fileSaveLockCreatedEvent.setContext(initiation.getContext());
+
+            publisher.publishEvent(fileSaveLockCreatedEvent);
+
+
+
+
+        }
+
+        catch (Exception e){
+            sendFailedResult("Ошибка проверки файла при попытке сохрания изменений - "+e.getMessage(),
+                    initiation.getContext(), initiation.getData());
+        }
+    }
+
+    // пишем на диск
+
+    @EventListener
+    public void writeToDisk(FileSaveLockCreatedEvent lockCreatedEvent){
+
+        try {
+            Files.write(Path.of(lockCreatedEvent.getFilePath()),
+                    lockCreatedEvent.getData().getContent().getBytes(),
+                    StandardOpenOption.WRITE
+            );
+
+            FileWrittenEvent fileWrittenEvent = new FileWrittenEvent(this);
+            fileWrittenEvent.setContext(lockCreatedEvent.getContext());
+            fileWrittenEvent.setData(lockCreatedEvent.getData());
+            publisher.publishEvent(fileWrittenEvent);
+        }
+        catch (Exception e){
+            FileSaveCompensationEvent compensationEvent = new FileSaveCompensationEvent(this, lockCreatedEvent.getData().getFileId());
+            publisher.publishEvent(compensationEvent);
+            sendFailedResult("ошибка работы с диском: "+e.getMessage(), lockCreatedEvent.getContext(), lockCreatedEvent.getData());
+        }
+
+    }
+
+
+    // делаем файл доступным для записи
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void releaseFile(FileWrittenEvent fileWrittenEvent){
+
+        try {
+            Optional<File> fileCheck = fileRepository.findById(fileWrittenEvent.getData().getFileId());
+            if (fileCheck.isEmpty()){
+                throw new IllegalStateException("файл не найден");
+            }
+
+
+
+            File file = fileCheck.get();
+            file.setStatus(FileStatus.AVAILABLE);
+            fileRepository.save(file);
+
+            sendSuccessResult("Файл сохранен", fileWrittenEvent.getContext(), fileWrittenEvent.getData());
+        }
+
+        catch (Exception e){
+            sendFailedResult("Ошибка при смене статуса файла: "+e.getMessage(), fileWrittenEvent.getContext(), fileWrittenEvent.getData());
+            FileSaveCompensationEvent fileSaveCompensationEvent = new FileSaveCompensationEvent(this,fileWrittenEvent.getData().getFileId());
+            publisher.publishEvent(fileSaveCompensationEvent);
+        }
+
+    }
+
+
+
+    // суть компенсации для данной цепочки - освободить файл
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    @EventListener
+    @Async
+    public void compensation(FileSaveCompensationEvent compensationEvent){
+        try {
+            Optional<File> fileCheck = fileRepository.findById(compensationEvent.getFileId());
+            if (fileCheck.isEmpty()){
+                throw new IllegalStateException("файл не найден");
+            }
+
+            File file = fileCheck.get();
+
+            file.setStatus(FileStatus.AVAILABLE);
+            fileRepository.save(file);
+        }
+        catch (Exception e){
+            // todo логирование
+        }
+    }
+
+
+    private void sendFailedResult(String message, UserEventContext context, FileSaveEventData data){
+        data.setStatus(FileSaveStatus.FAIL);
+        sendResult(message, context, data);
+    }
+
+    private void sendSuccessResult(String message, UserEventContext context, FileSaveEventData data){
+        data.setStatus(FileSaveStatus.SUCCESS);
+        sendResult(message, context, data);
+    }
+
+    private void sendResult(String message, UserEventContext context, EventData data){
+        try {
+            UserEvent userEvent = UserEvent.builder()
+                    .eventData(data)
+                    .event_type(resultingEventName)
+                    .context(context)
+                    .message(message)
+                    .build();
+            publisher.publishEvent(userEvent);
+        }
+        catch (Exception e){
+            // ошибка тут должна компенсироваться в будущем
+            e.printStackTrace();
+        }
+    }
+}
