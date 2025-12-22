@@ -10,8 +10,16 @@ public class RabbitConfig {
     @Value("${users.activity_events.exchange.name}")
     private String USERS_ACTIVITY_EXCHANGE_NAME;
 
+    @Value("${users.projects_events.exchange.name}")
+    private String USERS_PROJECTS_EVENTS_EXCHANGE_NAME;
+
     @Bean
     public FanoutExchange usersActivityExchange(){
         return new FanoutExchange(USERS_ACTIVITY_EXCHANGE_NAME);
+    }
+
+    @Bean
+    public FanoutExchange projectsEventsExchange(){
+        return new FanoutExchange(USERS_PROJECTS_EVENTS_EXCHANGE_NAME);
     }
 }

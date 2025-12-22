@@ -6,9 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectCreationEventData;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectCreationStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.queue.EventData;
-import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.queue.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +35,7 @@ public class FileSaveEventChain {
     private ApplicationEventPublisher publisher;
 
 
-    private static final String resultingEventName = "file_save";
+    private static final String resultingEventName = "java_project_file_save";
 
 
     @Async("taskExecutor")
@@ -51,16 +49,22 @@ public class FileSaveEventChain {
                 .build();
 
         // готовим transfer object - event context
-        UserEventContext context = UserEventContext.builder()
+        ProjectEventContext context = ProjectEventContext.builder()
                 .correlationId(requestContext.getCorrelationId())
+                .renderId(requestContext.getRenderId())
                 .timestamp(Instant.now())
                 .userUUID(securityContext.getUuid())
                 .username(securityContext.getUsername())
+                .projectId(info.getProjectId())
                 .build();
 
         FileSaveInitiationEvent initiationEvent = new FileSaveInitiationEvent(this, info.getProjectsPath());
         initiationEvent.setData(eventData);
         initiationEvent.setContext(context);
+
+
+        System.out.println("file save chain init "+initiationEvent);
+        System.out.println("=======================================");
 
         publisher.publishEvent(initiationEvent);
 
@@ -99,6 +103,10 @@ public class FileSaveEventChain {
             fileSaveLockCreatedEvent.setData(initiation.getData());
             fileSaveLockCreatedEvent.setContext(initiation.getContext());
 
+
+            System.out.println("FILE DB LOCK PERFORMED "+fileSaveLockCreatedEvent);
+            System.out.println("=================================================");
+
             publisher.publishEvent(fileSaveLockCreatedEvent);
 
 
@@ -116,6 +124,9 @@ public class FileSaveEventChain {
 
     @EventListener
     public void writeToDisk(FileSaveLockCreatedEvent lockCreatedEvent){
+
+        System.out.println("I will write "+lockCreatedEvent.getData().getContent()+" to file on address "+lockCreatedEvent.getFilePath());
+        System.out.println("==========================================================================================================");
 
         try {
             Files.write(Path.of(lockCreatedEvent.getFilePath()),
@@ -155,6 +166,9 @@ public class FileSaveEventChain {
             file.setStatus(FileStatus.AVAILABLE);
             fileRepository.save(file);
 
+            System.out.println("db release performed "+fileWrittenEvent);
+            System.out.println("========================================");
+
             sendSuccessResult("Файл сохранен", fileWrittenEvent.getContext(), fileWrittenEvent.getData());
         }
 
@@ -190,25 +204,25 @@ public class FileSaveEventChain {
     }
 
 
-    private void sendFailedResult(String message, UserEventContext context, FileSaveEventData data){
+    private void sendFailedResult(String message, ProjectEventContext context, FileSaveEventData data){
         data.setStatus(FileSaveStatus.FAIL);
         sendResult(message, context, data);
     }
 
-    private void sendSuccessResult(String message, UserEventContext context, FileSaveEventData data){
+    private void sendSuccessResult(String message, ProjectEventContext context, FileSaveEventData data){
         data.setStatus(FileSaveStatus.SUCCESS);
         sendResult(message, context, data);
     }
 
-    private void sendResult(String message, UserEventContext context, EventData data){
+    private void sendResult(String message, ProjectEventContext context, EventData data){
         try {
-            UserEvent userEvent = UserEvent.builder()
+            ProjectEvent projectEvent = ProjectEvent.builder()
                     .eventData(data)
                     .event_type(resultingEventName)
                     .context(context)
                     .message(message)
                     .build();
-            publisher.publishEvent(userEvent);
+            publisher.publishEvent(projectEvent);
         }
         catch (Exception e){
             // ошибка тут должна компенсироваться в будущем

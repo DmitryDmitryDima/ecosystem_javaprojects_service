@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes;
 
+import com.ecosystem.projectsservice.javaprojects.processes.queue.ProjectEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -25,6 +26,9 @@ public class InternalEventsListener {
     @Value("${users.activity_events.exchange.name}")
     private String USERS_ACTIVITY_EXCHANGE_NAME;
 
+    @Value("${users.projects_events.exchange.name}")
+    private String USERS_PROJECT_EVENTS_EXCHANGE_NAME;
+
 
     @EventListener
     public void catchUserEvent(UserEvent event){
@@ -45,6 +49,27 @@ public class InternalEventsListener {
 
         }
     }
+
+    @EventListener
+    public void catchProjectEvent(ProjectEvent event){
+        System.out.println("project event "+event);
+        try {
+            MessagePostProcessor postProcessor = (message )->{
+                message.getMessageProperties().setHeader("event_type", event.getEvent_type());
+                return message;
+            };
+
+            String payload = mapper.writeValueAsString(event);
+
+            rabbitTemplate.convertAndSend(USERS_PROJECT_EVENTS_EXCHANGE_NAME, "", payload, postProcessor);
+
+
+        }
+        catch (Exception e){
+
+        }
+    }
+
 
 
 

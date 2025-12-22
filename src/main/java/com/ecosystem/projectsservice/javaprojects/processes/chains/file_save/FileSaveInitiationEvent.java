@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.file_save;
 
+import com.ecosystem.projectsservice.javaprojects.processes.queue.ProjectEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +12,7 @@ public class FileSaveInitiationEvent extends ApplicationEvent {
 
     private String projectsPath;
 
-    private UserEventContext context;
+    private ProjectEventContext context;
     private FileSaveEventData data;
 
     public FileSaveInitiationEvent(Object source, String projectsPath) {

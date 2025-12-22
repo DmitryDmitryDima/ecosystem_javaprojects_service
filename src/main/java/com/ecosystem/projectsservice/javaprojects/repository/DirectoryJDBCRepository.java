@@ -47,7 +47,7 @@ public class DirectoryJDBCRepository {
                 .format("select parent_id, name,id, constructed_path, created_at, updated_at, hidden, immutable,extension, status from files where files.parent_id in (%s)",
                         inSql);
 
-        System.out.println(query);
+
 
         return jdbcTemplate.query(query,new BeanPropertyRowMapper<>(FileReadOnly.class), directories.toArray());
 

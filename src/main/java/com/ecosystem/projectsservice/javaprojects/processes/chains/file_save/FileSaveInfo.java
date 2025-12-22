@@ -13,6 +13,9 @@ public class FileSaveInfo {
     private Long fileId;
     private String projectsPath;
     private String content;
+    private Long projectId;
+
+    // todo participants
 
 
 }

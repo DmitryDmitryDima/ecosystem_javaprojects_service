@@ -89,7 +89,7 @@ public class ProjectActionsService {
         ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());
 
         for (FileReadOnly fileReadOnly:snapshot.getFiles()){
-            System.out.println(fileReadOnly+" "+fileId);
+
             if (fileReadOnly.getId().equals(fileId)){
                 if (fileReadOnly.isHidden() || !fileReadOnly.getStatus().equals(FileStatus.AVAILABLE)){
 
@@ -99,6 +99,7 @@ public class ProjectActionsService {
                 fileSaveEventChain.initChain(securityContext, requestContext, FileSaveInfo.builder()
                                 .content(request.getContent())
                                 .fileId(fileId)
+                                .projectId(projectId)
                                 .projectsPath(Path.of(userStoragePath,
                                         securityContext.getUuid().toString(),
                                         "projects").normalize().toString())
@@ -116,7 +117,7 @@ public class ProjectActionsService {
 
     }
 
-
+    // todo внутри данной функции должен быть добавлен запрос участников проекта вместе с ролями (admin, author, viewer)
     private ProjectSnapshot getProjectSnapshot(Long rootId){
         // извлекаем все папки, принадлежащие проекту, вместе с зависимостями
         List<DirectoryReadOnly> directories = directoryJDBCRepository.loadAWholeStructureFromRoot(rootId);
