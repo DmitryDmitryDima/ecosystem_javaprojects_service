@@ -78,12 +78,25 @@ public class ProjectActionsService {
         return utils.generateStructureForDTO(project.getRoot().getId(), projectDTO, getProjectSnapshot(project.getRoot().getId()));
     }
 
+    public void autosave(SecurityContext securityContext,
+                         RequestContext requestContext,
+                         Long projectId,
+                         Long fileId,
+                         FileSaveRequest request) throws Exception{
+
+        checks(securityContext, requestContext, projectId);
+
+        // запись данных в редис (если данных нет, их нужно создать)
+
+    }
+
     @Transactional
     public void saveFile(SecurityContext securityContext,
                          RequestContext requestContext,
                          Long projectId,
                          Long fileId,
                          FileSaveRequest request) throws Exception {
+
         Project project = checks(securityContext, requestContext, projectId);
 
         ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());

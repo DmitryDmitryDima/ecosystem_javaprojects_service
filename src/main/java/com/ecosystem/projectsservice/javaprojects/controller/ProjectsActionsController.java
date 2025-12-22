@@ -97,7 +97,24 @@ public class ProjectsActionsController {
 
     }
 
-    //@PostMapping ("autosave)
+    /*
+    автосохранение - происходит в redis
+     */
+
+    @PostMapping ("/autosave/{file_id}")
+    public ResponseEntity<Void> autosave(@PathVariable("id") Long projectId, @PathVariable("file_id") Long fileId,
+                                         @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request) throws Exception{
+
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+
+        return ResponseEntity.noContent().build();
+    }
+
+
+
 
 
 
