@@ -109,6 +109,8 @@ public class ProjectsActionsController {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
+        actionsService.autosave(securityContext, requestContext, projectId, fileId, request);
+
 
         return ResponseEntity.noContent().build();
     }

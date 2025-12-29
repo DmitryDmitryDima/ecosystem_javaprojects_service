@@ -121,7 +121,7 @@ public class FileSaveEventChain {
     }
 
     // пишем на диск
-
+    //@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @EventListener
     public void writeToDisk(FileSaveLockCreatedEvent lockCreatedEvent){
 
@@ -129,9 +129,9 @@ public class FileSaveEventChain {
         System.out.println("==========================================================================================================");
 
         try {
-            Files.write(Path.of(lockCreatedEvent.getFilePath()),
-                    lockCreatedEvent.getData().getContent().getBytes(),
-                    StandardOpenOption.WRITE
+            Files.writeString(Path.of(lockCreatedEvent.getFilePath()),
+                    lockCreatedEvent.getData().getContent(),
+                    StandardOpenOption.TRUNCATE_EXISTING
             );
 
             FileWrittenEvent fileWrittenEvent = new FileWrittenEvent(this);

@@ -31,6 +31,8 @@ import java.util.Optional;
 
 // todo методы проверки могут быть оптимизированы кастомный join requests
 
+// ответственность внешнего сервиса - проверка прав. ответственность асинхронных внутренних цепочек - внутренние операции с бд, диском и кешем
+
 @Service
 public class ProjectActionsService {
 
@@ -78,6 +80,9 @@ public class ProjectActionsService {
         return utils.generateStructureForDTO(project.getRoot().getId(), projectDTO, getProjectSnapshot(project.getRoot().getId()));
     }
 
+
+    // механизм автосохранения не полагается на цепочку, так как работает только с redis
+    @Transactional
     public void autosave(SecurityContext securityContext,
                          RequestContext requestContext,
                          Long projectId,
@@ -86,7 +91,8 @@ public class ProjectActionsService {
 
         checks(securityContext, requestContext, projectId);
 
-        // запись данных в редис (если данных нет, их нужно создать)
+        // запись данных в редис с последующей генерацией ивента (если данных нет, их нужно создать)
+
 
     }
 

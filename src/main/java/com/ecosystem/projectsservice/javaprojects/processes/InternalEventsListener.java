@@ -8,6 +8,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 
@@ -31,6 +32,7 @@ public class InternalEventsListener {
 
 
     @EventListener
+    @Async
     public void catchUserEvent(UserEvent event){
         System.out.println(event+" catched");
         try {
@@ -51,7 +53,8 @@ public class InternalEventsListener {
     }
 
     @EventListener
-    public void catchProjectEvent(ProjectEvent event){
+    @Async
+    public void catchProjectUserEvent(ProjectEvent event){
         System.out.println("project event "+event);
         try {
             MessagePostProcessor postProcessor = (message )->{
