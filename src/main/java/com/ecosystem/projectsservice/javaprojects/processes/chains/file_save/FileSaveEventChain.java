@@ -121,7 +121,6 @@ public class FileSaveEventChain {
     }
 
     // пишем на диск
-    //@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @EventListener
     public void writeToDisk(FileSaveLockCreatedEvent lockCreatedEvent){
 
