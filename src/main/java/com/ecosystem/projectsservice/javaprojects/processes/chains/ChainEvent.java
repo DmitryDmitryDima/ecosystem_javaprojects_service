@@ -12,7 +12,7 @@ import org.springframework.context.ApplicationEvent;
 public abstract class ChainEvent extends ApplicationEvent {
 
     protected long outboxParent = -1; // сущность, породившая ивент
-    protected String eventName;
+
 
     public ChainEvent(Object source){
         super(source);
