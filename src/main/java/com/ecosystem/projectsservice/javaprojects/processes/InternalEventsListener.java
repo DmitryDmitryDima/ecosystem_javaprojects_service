@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes;
 
-import com.ecosystem.projectsservice.javaprojects.processes.queue.ProjectEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_queue.ProjectEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_queue.UserEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -34,7 +34,7 @@ public class InternalEventsListener {
     @EventListener
     @Async
     public void catchUserEvent(UserEvent event){
-        System.out.println(event+" catched");
+        //System.out.println(event+" catched");
         try {
             MessagePostProcessor postProcessor = (message )->{
                 message.getMessageProperties().setHeader("event_type", event.getEvent_type());
@@ -55,7 +55,7 @@ public class InternalEventsListener {
     @EventListener
     @Async
     public void catchProjectUserEvent(ProjectEvent event){
-        System.out.println("project event "+event);
+        //System.out.println("project event "+event);
         try {
             MessagePostProcessor postProcessor = (message )->{
                 message.getMessageProperties().setHeader("event_type", event.getEvent_type());

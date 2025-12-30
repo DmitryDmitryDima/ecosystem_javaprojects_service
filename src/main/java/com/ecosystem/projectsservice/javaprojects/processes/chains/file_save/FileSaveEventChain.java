@@ -4,10 +4,11 @@ import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectCreationEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectCreationStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.queue.*;
+import com.ecosystem.projectsservice.javaprojects.processes.external_queue.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,6 +34,9 @@ public class FileSaveEventChain {
 
     @Autowired
     private ApplicationEventPublisher publisher;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
 
     private static final String resultingEventName = "java_project_file_save";
@@ -66,7 +70,17 @@ public class FileSaveEventChain {
         System.out.println("file save chain init "+initiationEvent);
         System.out.println("=======================================");
 
-        publisher.publishEvent(initiationEvent);
+        try {
+            String value = objectMapper.writeValueAsString(initiationEvent);
+            FileSaveInitiationEvent parsed = objectMapper.readValue(value, FileSaveInitiationEvent.class);
+            System.out.println(objectMapper.writeValueAsString(parsed)+" from");
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        //publisher.publishEvent(initiationEvent);
+
+
 
 
     }
@@ -86,6 +100,7 @@ public class FileSaveEventChain {
 
 
             File file = fileCheck.get();
+
             if (file.getStatus().equals(FileStatus.WRITING)){
                 throw new IllegalStateException("файл недоступен для записи");
             }
@@ -128,6 +143,8 @@ public class FileSaveEventChain {
         System.out.println("==========================================================================================================");
 
         try {
+
+
             Files.writeString(Path.of(lockCreatedEvent.getFilePath()),
                     lockCreatedEvent.getData().getContent(),
                     StandardOpenOption.TRUNCATE_EXISTING
@@ -137,6 +154,8 @@ public class FileSaveEventChain {
             fileWrittenEvent.setContext(lockCreatedEvent.getContext());
             fileWrittenEvent.setData(lockCreatedEvent.getData());
             publisher.publishEvent(fileWrittenEvent);
+
+
         }
         catch (Exception e){
             FileSaveCompensationEvent compensationEvent = new FileSaveCompensationEvent(this, lockCreatedEvent.getData().getFileId());
@@ -150,7 +169,7 @@ public class FileSaveEventChain {
     // делаем файл доступным для записи
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
     public void releaseFile(FileWrittenEvent fileWrittenEvent){
 
         try {
@@ -162,6 +181,7 @@ public class FileSaveEventChain {
 
 
             File file = fileCheck.get();
+
             file.setStatus(FileStatus.AVAILABLE);
             fileRepository.save(file);
 
@@ -182,23 +202,33 @@ public class FileSaveEventChain {
 
 
     // суть компенсации для данной цепочки - освободить файл
-    @Transactional(Transactional.TxType.REQUIRES_NEW)
-    @EventListener
-    @Async
+    // если бы не было after commit - асинхронный метод бы работал со старым состоянием БД
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async("taskExecutor")
     public void compensation(FileSaveCompensationEvent compensationEvent){
         try {
+            System.out.println("compensation");
             Optional<File> fileCheck = fileRepository.findById(compensationEvent.getFileId());
+
             if (fileCheck.isEmpty()){
                 throw new IllegalStateException("файл не найден");
             }
 
             File file = fileCheck.get();
 
+
             file.setStatus(FileStatus.AVAILABLE);
             fileRepository.save(file);
+
+
+
+
+
+
         }
         catch (Exception e){
             // todo логирование
+            e.printStackTrace();
         }
     }
 

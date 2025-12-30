@@ -1,7 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.file_save;
 
-import com.ecosystem.projectsservice.javaprojects.processes.queue.ProjectEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_queue.ProjectEventContext;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;

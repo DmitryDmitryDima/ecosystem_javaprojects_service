@@ -1,10 +1,8 @@
-package com.ecosystem.projectsservice.javaprojects.processes.queue;
+package com.ecosystem.projectsservice.javaprojects.processes.external_queue;
 
 
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
-
-import java.util.UUID;
 
 @SuperBuilder
 @Data

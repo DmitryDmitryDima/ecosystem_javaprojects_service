@@ -1,11 +1,10 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template;
 
-import com.ecosystem.projectsservice.javaprojects.processes.queue.EventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_queue.EventData;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Builder
 @AllArgsConstructor

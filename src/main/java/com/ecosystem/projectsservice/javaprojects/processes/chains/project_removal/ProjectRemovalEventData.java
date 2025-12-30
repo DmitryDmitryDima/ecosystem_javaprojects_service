@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal;
 
-import com.ecosystem.projectsservice.javaprojects.processes.queue.EventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_queue.EventData;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -7,8 +7,8 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.Constru
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.queue.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_queue.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_queue.UserEventContext;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -21,7 +21,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.FileSystemUtils;

@@ -17,8 +17,7 @@ import java.time.Instant;
 public class File {
 
 
-    @Version
-    private Long version;
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -71,7 +70,7 @@ public class File {
 
     @Override
     public String toString(){
-        return name+"."+extension;
+        return name+"."+extension+" "+status;
     }
 
 
