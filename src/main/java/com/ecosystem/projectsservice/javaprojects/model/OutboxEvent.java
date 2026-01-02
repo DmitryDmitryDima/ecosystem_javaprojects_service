@@ -33,12 +33,7 @@ public class OutboxEvent {
     @Enumerated(EnumType.STRING)
     private OutboxEvent.OutboxEventStatus status;
 
-    // параметр актуален, если шаг допустимо retryable. Передается между outbox событиями.
-    // ивенты знают о нем и вставляют обновленное значение при ошибке в новое событие, либо генерируют ошибку с компенсацией при превышении лимита
-    private long retry;
 
-    // если false, то компенсация вызывается сразу, без обновления счетчика
-    private boolean retryable;
 
     // тип ивента - его string форма хранится в каждом из ивентов. Тип + payload => application event для публикации в цепочку после прочтения из outbox
     private String type;
@@ -46,6 +41,7 @@ public class OutboxEvent {
 
 
     // json репрезентация ивента
+    @Column(columnDefinition = "TEXT")
     private String payload;
 
     // последняя смена статуса

@@ -7,27 +7,19 @@ import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.Pr
 import lombok.Getter;
 import lombok.Setter;
 
-
 @Getter
 @Setter
-@EventName("outbox_file_save_init")
 @Retryable(count = 3)
-public class FileSaveOutboxInitEvent extends ChainEvent {
+@EventName("outbox_file_save_lock_created")
+public class FileSaveOutboxLockCreatedEvent extends ChainEvent {
 
+    private String filePath;
 
-
-
-
-    // контекст - данные контекста пользователя и сущности, с которой он работает
     private ProjectExternalEventContext context;
-
-    // данные, которые передаются сквозь всю цепочку ивентов, могут обогащаться. Предназначены для передачи внешней очереди
     private FileSaveEventData data;
 
+    public FileSaveOutboxLockCreatedEvent(String filePath) {
 
-    private String projectsPath;
-
-    public FileSaveOutboxInitEvent(String projectsPath) {
-        this.projectsPath = projectsPath;
+        this.filePath = filePath;
     }
 }

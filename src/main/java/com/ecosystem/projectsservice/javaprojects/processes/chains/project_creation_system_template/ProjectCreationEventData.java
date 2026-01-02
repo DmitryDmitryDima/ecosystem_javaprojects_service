@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template;
 
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.EventData;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.EventData;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

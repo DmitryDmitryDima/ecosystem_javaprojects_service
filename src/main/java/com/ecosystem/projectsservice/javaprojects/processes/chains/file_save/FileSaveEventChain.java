@@ -4,10 +4,10 @@ import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.*;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +53,7 @@ public class FileSaveEventChain {
                 .build();
 
         // готовим transfer object - event context
-        ProjectEventContext context = ProjectEventContext.builder()
+        ProjectExternalEventContext context = ProjectExternalEventContext.builder()
                 .correlationId(requestContext.getCorrelationId())
                 .renderId(requestContext.getRenderId())
                 .timestamp(Instant.now())
@@ -70,15 +70,7 @@ public class FileSaveEventChain {
         System.out.println("file save chain init "+initiationEvent);
         System.out.println("=======================================");
 
-        try {
-            String value = objectMapper.writeValueAsString(initiationEvent);
-            FileSaveInitiationEvent parsed = objectMapper.readValue(value, FileSaveInitiationEvent.class);
-            System.out.println(objectMapper.writeValueAsString(parsed)+" from");
 
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-        //publisher.publishEvent(initiationEvent);
 
 
 
@@ -233,17 +225,17 @@ public class FileSaveEventChain {
     }
 
 
-    private void sendFailedResult(String message, ProjectEventContext context, FileSaveEventData data){
-        data.setStatus(FileSaveStatus.FAIL);
+    private void sendFailedResult(String message, ProjectExternalEventContext context, FileSaveEventData data){
+        data.setStatus(EventStatus.ERROR);
         sendResult(message, context, data);
     }
 
-    private void sendSuccessResult(String message, ProjectEventContext context, FileSaveEventData data){
-        data.setStatus(FileSaveStatus.SUCCESS);
+    private void sendSuccessResult(String message, ProjectExternalEventContext context, FileSaveEventData data){
+        data.setStatus(EventStatus.ERROR);
         sendResult(message, context, data);
     }
 
-    private void sendResult(String message, ProjectEventContext context, EventData data){
+    private void sendResult(String message, ProjectExternalEventContext context, EventData data){
         try {
             ProjectEvent projectEvent = ProjectEvent.builder()
                     .eventData(data)

@@ -1,8 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.file_save;
 
-import com.ecosystem.projectsservice.javaprojects.processes.chains.EventName;
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.ProjectEventContext;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.ProjectExternalEventContext;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
@@ -14,7 +13,7 @@ public class FileSaveInitiationEvent extends ApplicationEvent {
 
     private String projectsPath;
 
-    private ProjectEventContext context;
+    private ProjectExternalEventContext context;
     private FileSaveEventData data;
 
     public FileSaveInitiationEvent(Object source, String projectsPath) {

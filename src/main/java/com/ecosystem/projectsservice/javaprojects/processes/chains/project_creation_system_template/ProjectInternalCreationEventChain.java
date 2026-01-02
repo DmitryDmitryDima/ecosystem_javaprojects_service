@@ -7,8 +7,8 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.Constru
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.UserEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -55,7 +55,7 @@ public class ProjectInternalCreationEventChain {
     public void initChain(SecurityContext securityContext, RequestContext requestContext, ProjectBuildFromTemplateInfo info){
 
         // пользовательский контекст - мигрирует по всей цепочке и по итогу уходит в очередь
-        UserEventContext eventContext = UserEventContext.builder()
+        UserExternalEventContext eventContext = UserExternalEventContext.builder()
                 .correlationId(requestContext.getCorrelationId())
                 .timestamp(Instant.now())
                 .username(securityContext.getUsername())
@@ -352,7 +352,7 @@ public class ProjectInternalCreationEventChain {
 
 
 
-    private void sendResult(String message, UserEventContext context, ProjectCreationEventData data){
+    private void sendResult(String message, UserExternalEventContext context, ProjectCreationEventData data){
         try {
 
             UserEvent userEvent = UserEvent.builder()
@@ -369,12 +369,12 @@ public class ProjectInternalCreationEventChain {
         }
     }
 
-    private void sendFailedResult(String message, UserEventContext context, ProjectCreationEventData data){
+    private void sendFailedResult(String message, UserExternalEventContext context, ProjectCreationEventData data){
         data.setStatus(ProjectCreationStatus.FAIL);
         sendResult(message, context, data);
     }
 
-    private void sendSuccessResult(String message, UserEventContext context, ProjectCreationEventData data){
+    private void sendSuccessResult(String message, UserExternalEventContext context, ProjectCreationEventData data){
         data.setStatus(ProjectCreationStatus.SUCCESS);
         sendResult(message, context, data);
     }

@@ -3,8 +3,8 @@ package com.ecosystem.projectsservice.javaprojects.processes.chains.project_remo
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.UserEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
@@ -52,7 +52,7 @@ public class ProjectRemovalEventChain {
     @Async("taskExecutor")
     public void initProjectRemovalChain(SecurityContext securityContext, RequestContext requestContext, Long projectId, String projectsPath){
 
-        UserEventContext sharedContext = UserEventContext.builder()
+        UserExternalEventContext sharedContext = UserExternalEventContext.builder()
                 .userUUID(securityContext.getUuid())
                 .timestamp(Instant.now())
                 .username(securityContext.getUsername())
@@ -222,7 +222,7 @@ public class ProjectRemovalEventChain {
 
 
     }
-    private void sendResult(String message, UserEventContext context, ProjectRemovalEventData data){
+    private void sendResult(String message, UserExternalEventContext context, ProjectRemovalEventData data){
 
         try {
             UserEvent userEvent = UserEvent.builder()
@@ -243,12 +243,12 @@ public class ProjectRemovalEventChain {
         }
     }
 
-    private void sendFailedResult(String message, UserEventContext context, ProjectRemovalEventData data){
+    private void sendFailedResult(String message, UserExternalEventContext context, ProjectRemovalEventData data){
         data.setStatus(ProjectRemovalStatus.FAIL);
         sendResult(message, context, data);
     }
 
-    private void sendSuccessResult(String message, UserEventContext context, ProjectRemovalEventData data){
+    private void sendSuccessResult(String message, UserExternalEventContext context, ProjectRemovalEventData data){
         data.setStatus(ProjectRemovalStatus.SUCCESS);
         sendResult(message, context, data);
     }

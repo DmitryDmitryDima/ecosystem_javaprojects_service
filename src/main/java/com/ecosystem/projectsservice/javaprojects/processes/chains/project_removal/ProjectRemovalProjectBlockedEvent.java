@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal;
 
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.UserEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserExternalEventContext;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
@@ -10,7 +10,7 @@ import org.springframework.context.ApplicationEvent;
 @Setter
 public class ProjectRemovalProjectBlockedEvent extends ApplicationEvent {
 
-    private UserEventContext context;
+    private UserExternalEventContext context;
     private ProjectRemovalEventData eventData;
 
     private String diskPath;

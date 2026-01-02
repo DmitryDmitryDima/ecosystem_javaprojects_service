@@ -9,14 +9,18 @@ import org.springframework.context.ApplicationEvent;
 
 @Setter
 @Getter
-public abstract class ChainEvent extends ApplicationEvent {
+public abstract class ChainEvent {
 
-    protected long outboxParent = -1; // сущность, породившая ивент
+    private long outboxParent = -1; // сущность, породившая ивент
 
+    private long currentRetry = -1;
 
-    public ChainEvent(Object source){
-        super(source);
+    public ChainEvent(){
+
     }
+
+
+
 
 
 }

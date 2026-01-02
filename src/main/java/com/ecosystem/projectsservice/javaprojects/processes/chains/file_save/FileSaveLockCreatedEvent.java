@@ -1,7 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.file_save;
 
 
-import com.ecosystem.projectsservice.javaprojects.processes.external_queue.ProjectEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.ProjectExternalEventContext;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;
@@ -10,7 +11,7 @@ import org.springframework.context.ApplicationEvent;
 @Getter
 public class FileSaveLockCreatedEvent extends ApplicationEvent {
     private String filePath;
-    private ProjectEventContext context;
+    private ProjectExternalEventContext context;
     private FileSaveEventData data;
 
     public FileSaveLockCreatedEvent(Object source, String filePath) {
