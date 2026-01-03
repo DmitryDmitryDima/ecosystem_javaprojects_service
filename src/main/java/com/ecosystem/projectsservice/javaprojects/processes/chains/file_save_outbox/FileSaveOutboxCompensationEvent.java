@@ -7,13 +7,13 @@ import com.ecosystem.projectsservice.javaprojects.processes.chains.Retryable;
 import lombok.Getter;
 
 @Getter
-@Retryable(count = 3)
 @EventName(value = "outbox_file_save_compensation")
 public class FileSaveOutboxCompensationEvent extends CompensationEvent {
 
     private Long fileId;
 
-    public FileSaveOutboxCompensationEvent(Long fileId) {
+    public FileSaveOutboxCompensationEvent(String afterEventType, Long fileId) {
+        super(afterEventType);
         this.fileId = fileId;
     }
 

@@ -1,5 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes.to_external_queue;
 
+
+import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveEventData;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -8,9 +10,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         include = JsonTypeInfo.As.PROPERTY,
         property = "serialized_as")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = UserExternalEventContext.class, name = "UserExternalEventContext"),
-        @JsonSubTypes.Type(value = ProjectExternalEventContext.class, name = "ProjectExternalEventContext")
-})
-public interface ExternalEventContext {
+        @JsonSubTypes.Type(value = FileSaveEventData.class, name = "FileSaveEventData"),
 
+})
+public interface ExternalEventData {
 }

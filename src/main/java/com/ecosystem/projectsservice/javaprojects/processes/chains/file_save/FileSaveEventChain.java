@@ -235,7 +235,7 @@ public class FileSaveEventChain {
         sendResult(message, context, data);
     }
 
-    private void sendResult(String message, ProjectExternalEventContext context, EventData data){
+    private void sendResult(String message, ProjectExternalEventContext context, ExternalEventData data){
         try {
             ProjectEvent projectEvent = ProjectEvent.builder()
                     .eventData(data)

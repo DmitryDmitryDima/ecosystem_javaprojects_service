@@ -11,7 +11,7 @@ public class CompensationEvent extends ChainEvent{
 
     private Class<? extends ChainEvent> afterEventTypeConverted;
 
-    public CompensationEvent() {
-
+    public CompensationEvent(String afterEventType) {
+        this.afterEventType = afterEventType;
     }
 }

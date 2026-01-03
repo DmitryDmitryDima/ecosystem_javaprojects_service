@@ -14,9 +14,13 @@ import lombok.experimental.SuperBuilder;
 public class ProjectEvent extends BasicQueueEvent {
 
 
-    private ProjectExternalEventContext context;
+    private ExternalEventContext context;
 
-    private EventData eventData;
+    private ExternalEventData eventData;
+
+    public ProjectEvent(){
+        super();
+    }
 
 
 

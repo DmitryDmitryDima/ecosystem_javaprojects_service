@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template;
 
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.EventData;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.ExternalEventData;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class ProjectCreationEventData implements EventData {
+public class ProjectCreationEventData implements ExternalEventData {
     private Long projectId;
     private String name;
     private ProjectCreationStatus status;

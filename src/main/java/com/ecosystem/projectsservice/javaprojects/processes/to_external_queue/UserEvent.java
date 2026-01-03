@@ -16,7 +16,7 @@ public class UserEvent extends BasicQueueEvent {
 
     private UserExternalEventContext context;
 
-    private EventData eventData;
+    private ExternalEventData eventData;
 
 
 

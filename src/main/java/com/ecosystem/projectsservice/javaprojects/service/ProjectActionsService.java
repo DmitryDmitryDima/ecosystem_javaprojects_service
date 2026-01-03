@@ -13,6 +13,7 @@ import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileSaveEventChain;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileSaveInfo;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveOutboxEventChain;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
@@ -53,6 +54,9 @@ public class ProjectActionsService {
 
     @Autowired
     private FileSaveEventChain fileSaveEventChain;
+
+    @Autowired
+    private FileSaveOutboxEventChain fileSaveOutboxEventChain;
 
 
     @Value("${storage.system}")
@@ -115,6 +119,7 @@ public class ProjectActionsService {
                     throw new IllegalStateException("Файл не доступен для записи");
                 }
 
+                /*
                 fileSaveEventChain.initChain(securityContext, requestContext, FileSaveInfo.builder()
                                 .content(request.getContent())
                                 .fileId(fileId)
@@ -122,6 +127,19 @@ public class ProjectActionsService {
                                 .projectsPath(Path.of(userStoragePath,
                                         securityContext.getUuid().toString(),
                                         "projects").normalize().toString())
+                        .build());
+
+                return;
+
+                 */
+
+                fileSaveOutboxEventChain.init(securityContext, requestContext, FileSaveInfo.builder()
+                        .content(request.getContent())
+                        .fileId(fileId)
+                        .projectId(projectId)
+                        .projectsPath(Path.of(userStoragePath,
+                                securityContext.getUuid().toString(),
+                                "projects").normalize().toString())
                         .build());
 
                 return;

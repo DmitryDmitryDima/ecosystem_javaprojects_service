@@ -10,6 +10,11 @@ import lombok.experimental.SuperBuilder;
 public abstract class BasicQueueEvent extends ChainEvent {
     protected String event_type;
     protected String message;
+    protected EventStatus status;
+
+    public BasicQueueEvent(){
+        super();
+    }
 
 
 

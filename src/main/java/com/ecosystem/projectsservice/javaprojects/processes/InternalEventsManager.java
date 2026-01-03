@@ -4,7 +4,9 @@ import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.CompensationEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.EventName;
+import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.BasicQueueEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 @Service
+@Slf4j
 public class InternalEventsManager {
 
 
@@ -24,12 +27,31 @@ public class InternalEventsManager {
     @Autowired
     private ObjectMapper mapper;
 
+    // общий кеш всех внутренних ивентов приложения
     private Map<String, Class<? extends ChainEvent>> chainEventsCache = new HashMap<>();
 
+    // выделяем отдельно имена ивентов, относящихся к событиям для bridge
+    private Map<String, Class<? extends ChainEvent>> externalEvents = new HashMap<>();
 
 
+    public boolean isBridgeEvent(String eventName){
+        return externalEvents.containsKey(eventName);
+    }
+
+
+    public void registerBridge(List< Class<? extends ChainEvent>> chainEvents){
+        registerEvents(chainEvents, true);
+
+
+    }
 
     public void registerEvents(List< Class<? extends ChainEvent>> chainEvents){
+        registerEvents(chainEvents, false);
+    }
+
+
+
+    private void registerEvents(List< Class<? extends ChainEvent>> chainEvents, boolean bridge){
 
 
 
@@ -38,6 +60,9 @@ public class InternalEventsManager {
             EventName annotation = eventClass.getAnnotation(EventName.class);
             if (annotation!=null){
                 chainEventsCache.put(annotation.value(), eventClass);
+                if (bridge){
+                    externalEvents.put(annotation.value(), eventClass);
+                }
 
             }
             else {
@@ -53,6 +78,11 @@ public class InternalEventsManager {
 
 
 
+
+
+
+
+
     // конвертируем outbox запись во внутреннее событие какой-либо из цепочек (каждая цепочка начинает то или иное событие асинхронно)
     public void serializeAndPublish(OutboxEvent outboxEvent){
         Class<? extends ChainEvent> type = chainEventsCache.get(outboxEvent.getType());
@@ -61,21 +91,26 @@ public class InternalEventsManager {
         }
 
         try {
-
+            log.info("работа с payload формата "+outboxEvent.getPayload());
             ChainEvent chainEvent = mapper.readValue(outboxEvent.getPayload(), type);
 
             chainEvent.setOutboxParent(outboxEvent.getId());
+
+
 
             // для удобства обогащаем сущность готовым типом
             if (chainEvent instanceof CompensationEvent compensationEvent){
                 compensationEvent.setAfterEventTypeConverted(chainEventsCache.get(compensationEvent.getAfterEventType()));
             }
 
+
+            log.info("ивент с родителем "+chainEvent.getOutboxParent()+" с типом "+chainEvent.getClass().getName()+" готов к публикации");
             publisher.publishEvent(chainEvent);
+
 
         }
         catch (Exception e){
-            System.out.println(e.getMessage());
+            log.info("ошибка публикации ивента "+e.getMessage());
             throw new IllegalStateException("invalid payload value");
         }
 

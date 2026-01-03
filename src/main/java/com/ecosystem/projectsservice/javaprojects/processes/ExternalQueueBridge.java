@@ -33,6 +33,8 @@ public class ExternalQueueBridge {
 
 
 
+
+
     @Value("${users.activity_events.exchange.name}")
     private String USERS_ACTIVITY_EXCHANGE_NAME;
 
@@ -42,7 +44,8 @@ public class ExternalQueueBridge {
     @PostConstruct
     public void registerQueueEvents(){
 
-        manager.registerEvents(List.of(
+
+        manager.registerBridge(List.of(
                 ProjectEvent.class,
                 UserEvent.class
         ));

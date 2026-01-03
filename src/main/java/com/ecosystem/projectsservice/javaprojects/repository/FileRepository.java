@@ -14,6 +14,6 @@ import java.util.Optional;
 public interface FileRepository extends JpaRepository<File, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Product p WHERE p.id = :id")
+    @Query("SELECT file FROM File file WHERE file.id = :id")
     Optional<File> findByIdForUpdate(Long id);
 }
