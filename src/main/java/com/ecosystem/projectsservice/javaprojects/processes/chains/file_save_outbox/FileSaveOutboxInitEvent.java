@@ -11,7 +11,6 @@ import lombok.Setter;
 @Getter
 @Setter
 @EventName("outbox_file_save_init")
-@Retryable(count = 3)
 public class FileSaveOutboxInitEvent extends ChainEvent {
 
 

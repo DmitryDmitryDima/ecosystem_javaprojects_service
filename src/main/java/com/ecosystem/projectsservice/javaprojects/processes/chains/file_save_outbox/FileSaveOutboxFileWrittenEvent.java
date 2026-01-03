@@ -7,18 +7,16 @@ import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.Pr
 import lombok.Getter;
 import lombok.Setter;
 
+@Retryable(count = 3)
+@EventName("outbox_file_save_file_written")
 @Getter
 @Setter
-@EventName("outbox_file_save_lock_created")
-public class FileSaveOutboxLockCreatedEvent extends ChainEvent {
-
-    private String filePath;
+public class FileSaveOutboxFileWrittenEvent extends ChainEvent {
 
     private ProjectExternalEventContext context;
     private FileSaveEventData data;
 
-    public FileSaveOutboxLockCreatedEvent(String filePath) {
+    public FileSaveOutboxFileWrittenEvent(){
 
-        this.filePath = filePath;
     }
 }

@@ -208,6 +208,15 @@ public abstract class AbstractOutboxChain
                 .build();
     }
 
+    public void endOutboxEntity(Long id){
+        transaction().execute(status -> {
+            Optional<OutboxEvent> previousEventCheck = outboxRepository.findById(id);
+            previousEventCheck.ifPresent(event->{event.setStatus(OutboxEvent.OutboxEventStatus.PROCESSED);
+                event.setLast_update(Instant.now());});
+            return null;
+        });
+    }
+
 
 
     public void pushChain(ChainEvent newEvent, Long previousOutbox) throws Exception{

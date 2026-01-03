@@ -9,6 +9,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.chains.AbstractOutbo
 import com.ecosystem.projectsservice.javaprojects.processes.chains.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.EventName;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileSaveInfo;
+import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileWrittenEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,9 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -108,7 +111,7 @@ public class FileSaveOutboxEventChain extends AbstractOutboxChain<FileSaveInfo, 
                     ProjectEvent.builder()
                             .status(EventStatus.PROCESSING)
                             .event_type(getResultingEventName())
-                            .message("Работаем с файлом")
+                            .message("Синхронизация изменений")
                             .context(initiation.getContext())
                             .eventData(initiation.getData())
                             .build(),
@@ -116,6 +119,7 @@ public class FileSaveOutboxEventChain extends AbstractOutboxChain<FileSaveInfo, 
         }
         catch (Exception e){
             errorProcessing(initiation,
+
                     new FileSaveOutboxCompensationEvent(FileSaveOutboxLockCreatedEvent.class.getAnnotation(EventName.class).value(),
                             initiation.getData().getFileId()),
 
@@ -129,10 +133,93 @@ public class FileSaveOutboxEventChain extends AbstractOutboxChain<FileSaveInfo, 
 
 
 
-
-
-
     }
+
+
+    @Async("taskExecutor")
+    @EventListener
+    public void writeToDisk(FileSaveOutboxLockCreatedEvent lockCreatedEvent){
+        try {
+
+            Files.writeString(Path.of(lockCreatedEvent.getFilePath()),
+                    lockCreatedEvent.getData().getContent(),
+                    StandardOpenOption.TRUNCATE_EXISTING
+            );
+
+
+
+
+
+            FileSaveOutboxFileWrittenEvent fileWrittenEvent = new FileSaveOutboxFileWrittenEvent();
+            fileWrittenEvent.setContext(lockCreatedEvent.getContext());
+            fileWrittenEvent.setData(lockCreatedEvent.getData());
+
+
+
+            pushChainWithExternalMessage(fileWrittenEvent, ProjectEvent.builder()
+                    .status(EventStatus.PROCESSING)
+                    .event_type(getResultingEventName())
+                    .message("Сохранение файла - запись в диск")
+                    .context(lockCreatedEvent.getContext())
+                    .eventData(lockCreatedEvent.getData())
+                    .build(),
+                    lockCreatedEvent.getOutboxParent() );
+
+
+
+        }
+        catch (Exception e){
+            errorProcessing(lockCreatedEvent,
+                    new FileSaveOutboxCompensationEvent(FileSaveOutboxLockCreatedEvent.class.getAnnotation(EventName.class).value(),
+                            lockCreatedEvent.getData().getFileId()),
+
+                    generateResult("ошибка работы с файлом на этапе записи. Причина: "+e.getMessage(), EventStatus.ERROR,
+                            lockCreatedEvent.getContext(),
+                            lockCreatedEvent.getData())
+
+            );
+        }
+    }
+
+    @Async
+    @EventListener
+    public void releaseFile(FileSaveOutboxFileWrittenEvent fileWrittenEvent){
+        try {
+            transaction().execute(status -> {
+                Optional<File> fileCheck = fileRepository.findByIdForUpdate(fileWrittenEvent.getData().getFileId());
+
+                fileCheck.ifPresent(file -> file.setStatus(FileStatus.AVAILABLE));
+
+                return null;
+            });
+
+            sendFinalResult(
+                    ProjectEvent.builder()
+                            .status(EventStatus.SUCCESS)
+                            .event_type(getResultingEventName())
+                            .message("Файл сохранен успешно")
+                            .context(fileWrittenEvent.getContext())
+                            .eventData(fileWrittenEvent.getData())
+                            .build(),
+
+                    fileWrittenEvent.getOutboxParent()
+            );
+        }
+        catch (Exception e){
+            errorProcessing(fileWrittenEvent,
+                    new FileSaveOutboxCompensationEvent(FileSaveOutboxLockCreatedEvent.class.getAnnotation(EventName.class).value(),
+                            fileWrittenEvent.getData().getFileId()),
+
+                    generateResult("ошибка бд"+e.getMessage(), EventStatus.ERROR,
+                            fileWrittenEvent.getContext(),
+                            fileWrittenEvent.getData())
+
+            );
+        }
+    }
+
+
+
 
 
 
@@ -145,6 +232,8 @@ public class FileSaveOutboxEventChain extends AbstractOutboxChain<FileSaveInfo, 
     @EventListener
     public void compensation(FileSaveOutboxCompensationEvent compensationEvent){
 
+        endOutboxEntity(compensationEvent.getOutboxParent()); // todo подумай, как автоматизирвоать этот коллбэк (мб статус менять в обработчике?)
+
         Class<? extends ChainEvent> afterType = compensationEvent.getAfterEventTypeConverted();
 
         if (afterType == FileSaveOutboxInitEvent.class){
@@ -154,7 +243,7 @@ public class FileSaveOutboxEventChain extends AbstractOutboxChain<FileSaveInfo, 
 
         }
 
-        if (afterType == FileSaveOutboxLockCreatedEvent.class){
+        if (afterType == FileSaveOutboxLockCreatedEvent.class || afterType == FileSaveOutboxFileWrittenEvent.class){
             System.out.println("here we should unlock db");
             try {
                 transaction().execute((status -> {
@@ -174,8 +263,6 @@ public class FileSaveOutboxEventChain extends AbstractOutboxChain<FileSaveInfo, 
         // другие этапы
 
 
-
-
     }
 
     @Override
@@ -183,6 +270,7 @@ public class FileSaveOutboxEventChain extends AbstractOutboxChain<FileSaveInfo, 
         return List.of(
                 FileSaveOutboxInitEvent.class,
                 FileSaveOutboxLockCreatedEvent.class,
+                FileSaveOutboxFileWrittenEvent.class,
                 FileSaveOutboxCompensationEvent.class);
     }
 
