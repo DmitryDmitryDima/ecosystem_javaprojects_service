@@ -5,6 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventData;
 import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 

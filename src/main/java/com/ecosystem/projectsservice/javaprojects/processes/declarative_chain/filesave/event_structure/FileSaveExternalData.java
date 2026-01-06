@@ -1,7 +1,6 @@
-package com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox;
+package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure;
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.EventStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,11 +10,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileSaveEventData implements ExternalEventData {
+public class FileSaveExternalData implements ExternalEventData {
+
     private Long fileId;
     private String name;
     private String content;
     private String path;
-    private EventStatus status;
+
 
 }
+
+

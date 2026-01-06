@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.to_external_queue;
 
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
 import lombok.*;
 
 import java.time.Instant;
