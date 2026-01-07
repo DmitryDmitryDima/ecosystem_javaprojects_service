@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 // указывается state event, проходящий через всю очередь, и ивент результат
 @Service
-@ResultingName(name = "file_save")
+@ExternalResultName(name = "file_save")
 public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
 
 
@@ -24,6 +24,8 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     @Async("taskExecutor")
     @EventListener
     public void catchEvent(FileSaveEvent event) {
+        System.out.println(event.getMessage());
+        System.out.println(event.getContext());
         super.processEvent(event);
     }
 

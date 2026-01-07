@@ -24,9 +24,9 @@ public abstract class DeclarativeChainEvent <C extends ExternalEventContext> {
 
 
 
-    public abstract InternalEventData getInternalEventData();
+    public abstract InternalEventData getInternalData();
 
-    public abstract ExternalEventData getExternalEventData();
+    public abstract ExternalEventData getExternalData();
 
 
 

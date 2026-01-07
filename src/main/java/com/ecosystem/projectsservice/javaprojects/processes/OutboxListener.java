@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.ChainManager;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +16,7 @@ import java.util.List;
 @Slf4j
 public class OutboxListener {
 
-    @Autowired
-    private InternalEventsManager eventsManager;
+
 
     @Autowired
     private OutboxEventRepository outboxEventRepository;
@@ -24,9 +24,30 @@ public class OutboxListener {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
+    @Autowired
+    private ChainManager chainManager;
+
+    @Scheduled(fixedDelay = 500)
+    public void readWaitingOutbox(){
+
+        List<OutboxEvent> processingEvents = transactionTemplate.execute(status -> {
+            List<OutboxEvent> waitingEvents = outboxEventRepository.findByStatus(OutboxEvent.OutboxEventStatus.WAITING);
+
+            waitingEvents.forEach(outboxEvent -> {
+                outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.PROCESSING);
+                outboxEvent.setLast_update(Instant.now());
+            });
+            return waitingEvents;
+        });
+
+        processingEvents.forEach(chainManager::deserializeAndPublish);
+
+
+    }
 
 
 
+    /*
     @Scheduled(fixedDelay = 500)
     public void readWaitingOutbox(){
         List<OutboxEvent> events = transactionTemplate.execute((status)->{
@@ -48,6 +69,8 @@ public class OutboxListener {
 
     }
 
+     */
+    /*
     // если ивент относится к внешнему сообщению - он проставляется автоматически
     @Scheduled(fixedDelay = 2000)
     public void readProcessingOutbox(){
@@ -62,6 +85,8 @@ public class OutboxListener {
             return null;
         });
     }
+
+     */
 
 
 

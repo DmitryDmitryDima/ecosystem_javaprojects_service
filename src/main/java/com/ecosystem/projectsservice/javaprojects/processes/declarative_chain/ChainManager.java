@@ -1,9 +1,16 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain;
 
+import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.EventQualifier;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -11,9 +18,50 @@ public class ChainManager {
 
 
     private Map<String, Class<? extends DeclarativeChainEvent<? extends ExternalEventContext>>> allInternalEvents = new HashMap<>();
+    private Map<String, Class<? extends ExternalEvent>> allExternalEvents = new HashMap<>();
 
-    public void registerEvent(String name, Class<? extends DeclarativeChainEvent<? extends ExternalEventContext>> clazz){
+    @Autowired
+    private ObjectMapper mapper;
+
+    @Autowired
+    private ApplicationEventPublisher publisher;
+
+    public void registerInternalEvent(String name, Class<? extends DeclarativeChainEvent<? extends ExternalEventContext>> clazz){
         System.out.println(name+" registered");
         allInternalEvents.put(name, clazz);
+    }
+
+    public void registerExternalEvents(List<Class<? extends ExternalEvent>> classes){
+        for (Class<? extends ExternalEvent> clazz:classes){
+            EventQualifier annotation = clazz.getAnnotation(EventQualifier.class);
+            if (annotation==null) throw new IllegalStateException("отсутствует аннотация @EventQualifier");
+            allExternalEvents.put(annotation.value(), clazz);
+
+        }
+    }
+
+    public void deserializeAndPublish(OutboxEvent outboxEvent){
+
+        try {
+            if (allInternalEvents.containsKey(outboxEvent.getType())){
+                Class<? extends DeclarativeChainEvent<? extends ExternalEventContext>> clazz = allInternalEvents.get(outboxEvent.getType());
+                DeclarativeChainEvent<? extends ExternalEventContext> deserializedEvent = mapper.readValue(outboxEvent.getPayload(), clazz);
+                System.out.println(deserializedEvent.getClass().getName());
+                deserializedEvent.getInternalData().setOutboxParent(outboxEvent.getId()); // для callback
+                publisher.publishEvent(deserializedEvent);
+
+            }
+            if (allExternalEvents.containsKey(outboxEvent.getType())){
+                Class<? extends ExternalEvent> clazz = allExternalEvents.get(outboxEvent.getType());
+                ExternalEvent deserializedEvent = mapper.readValue(outboxEvent.getType(), clazz);
+                deserializedEvent.setOutboxParent(outboxEvent.getId());
+                publisher.publishEvent(deserializedEvent);
+            }
+        }
+        catch (Exception e){
+            System.out.println("payload error "+e.getMessage());
+        }
+
+
     }
 }

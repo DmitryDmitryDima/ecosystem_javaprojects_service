@@ -4,10 +4,9 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.Type;
 
 @Retention(value = RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface ResultingName {
+public @interface ExternalResultName {
     String name();
 }

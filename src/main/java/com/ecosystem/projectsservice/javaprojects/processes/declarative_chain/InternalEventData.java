@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,6 +16,8 @@ public abstract class InternalEventData {
     private String currentStep; // if null - it starting step
 
 
-    private long outboxParent = -1;
+    // данное поле вставляется в менеджере
+    @JsonIgnore
+    private Long outboxParent = -1L;
 
 }

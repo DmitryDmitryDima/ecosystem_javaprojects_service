@@ -1,6 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.processes;
 
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.ProjectEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.ChainManager;
+
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -29,6 +31,9 @@ public class ExternalQueueBridge {
     @Autowired
     private InternalEventsManager manager;
 
+    @Autowired
+    private ChainManager chainManager;
+
 
 
 
@@ -44,10 +49,16 @@ public class ExternalQueueBridge {
     @PostConstruct
     public void registerQueueEvents(){
 
-
+        /*
         manager.registerBridge(List.of(
                 ProjectEvent.class,
                 UserEvent.class
+        ));
+
+         */
+
+        chainManager.registerExternalEvents(List.of(
+                ProjectEvent.class
         ));
     }
 
@@ -79,7 +90,7 @@ public class ExternalQueueBridge {
         //System.out.println("project event "+event);
         try {
             MessagePostProcessor postProcessor = (message )->{
-                message.getMessageProperties().setHeader("event_type", event.getEvent_type());
+                message.getMessageProperties().setHeader("event_type", event.getType());
                 return message;
             };
 
