@@ -106,6 +106,7 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
 
     }
 
+    // todo вызывай этот метод сначала и извлекай аннотацию для project event (это аннотация для конвертации, chain event type - > в payload)
     // связываем очередь с одним из результирующих ивентов
     protected abstract ExternalEvent bindResultingEvent();
 
