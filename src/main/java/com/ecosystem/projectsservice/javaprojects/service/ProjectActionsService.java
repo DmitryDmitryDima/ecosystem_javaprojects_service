@@ -14,6 +14,7 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileSaveEventChain;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileSaveInfo;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveOutboxEventChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.FileSaveChain;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
@@ -57,6 +58,9 @@ public class ProjectActionsService {
 
     @Autowired
     private FileSaveOutboxEventChain fileSaveOutboxEventChain;
+
+    @Autowired
+    private FileSaveChain fileSaveChain;
 
 
     @Value("${storage.system}")

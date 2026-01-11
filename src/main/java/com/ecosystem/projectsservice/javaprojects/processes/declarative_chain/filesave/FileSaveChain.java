@@ -1,19 +1,34 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave;
 
 
+import com.ecosystem.projectsservice.javaprojects.model.File;
+import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.DeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveInternalData;
+import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 
 // указывается state event, проходящий через всю очередь, и ивент результат
 @Service
 @ExternalResultName(name = "file_save")
 public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
+
+    @Autowired
+    private FileRepository fileRepository;
 
 
     @Override
@@ -50,7 +65,40 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     public FileSaveEvent lockFile(FileSaveEvent fileSaveEvent){
 
         System.out.println("perform - lock file");
-        fileSaveEvent.setMessage("lock file");
+
+        FileSaveExternalData externalData = (FileSaveExternalData)  fileSaveEvent.getExternalData();
+        FileSaveInternalData internalData = (FileSaveInternalData)  fileSaveEvent.getInternalData();
+
+        fileSaveEvent.setMessage("готовим файл к записи");
+
+        File file = transaction().execute((status -> {
+
+
+
+            Optional<File> fileCheck = fileRepository.findByIdForUpdate(externalData.getFileId());
+
+            if (fileCheck.isEmpty()) throw new IllegalArgumentException("файл отсутствует");
+
+            File fileEntity = fileCheck.get();
+
+            if (fileEntity.getStatus()== FileStatus.WRITING){
+                throw new IllegalStateException("файл занят другим процессом");
+
+            }
+
+            fileEntity.setStatus(FileStatus.WRITING); // пока статус writing - никто не может писать в файл
+
+
+            return fileEntity;
+        }));
+
+        // обновляем tranfer объекты цепи для следующих шагов
+        externalData.setName(file.getName());
+        externalData.setPath(file.getConstructedPath());
+
+        // конструируем полный путь
+        internalData.setFilePath(Path.of(internalData.getProjectsPath(),
+                file.getConstructedPath()).normalize().toString());
 
 
 
@@ -63,10 +111,19 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     @Message
     @MaxRetry(maxCount = 3)
     @Next(name = "releaseFile")
-    public FileSaveEvent writeFileToDisk(FileSaveEvent fileSaveEvent){
+    public FileSaveEvent writeFileToDisk(FileSaveEvent fileSaveEvent) throws IOException {
 
         System.out.println("perform - write to disk");
         fileSaveEvent.setMessage("write to disk");
+
+
+        FileSaveInternalData internalData = (FileSaveInternalData)  fileSaveEvent.getInternalData();
+        FileSaveExternalData externalData = (FileSaveExternalData)  fileSaveEvent.getExternalData();
+
+        Files.writeString(Path.of(internalData.getFilePath()),
+                externalData.getContent(),
+                StandardOpenOption.TRUNCATE_EXISTING
+        );
 
 
         return fileSaveEvent;
@@ -78,6 +135,16 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     public FileSaveEvent releaseFile(FileSaveEvent fileSaveEvent){
         System.out.println("perform - release file");
         fileSaveEvent.setMessage("release file");
+        FileSaveExternalData externalData = (FileSaveExternalData)  fileSaveEvent.getExternalData();
+
+
+        transaction().execute(status -> {
+            Optional<File> fileCheck = fileRepository.findByIdForUpdate(externalData.getFileId());
+
+            fileCheck.ifPresent(file -> file.setStatus(FileStatus.AVAILABLE));
+
+            return null;
+        });
 
         return fileSaveEvent;
     }

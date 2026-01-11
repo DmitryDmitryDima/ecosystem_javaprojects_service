@@ -9,4 +9,5 @@ import lombok.Setter;
 public class FileSaveInternalData extends InternalEventData {
 
     private String filePath;
+    private String projectsPath;
 }
