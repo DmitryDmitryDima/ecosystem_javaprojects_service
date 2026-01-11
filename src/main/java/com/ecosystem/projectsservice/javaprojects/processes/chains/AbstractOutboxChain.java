@@ -7,7 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.InternalEventsManage
 import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.BasicQueueEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.EventStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;

@@ -1,12 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects;
 
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.InternalEventData;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.FileSaveChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.FileSaveEvent;
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveInternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.ProjectExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ProjectExternalEventContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;

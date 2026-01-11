@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.file_save;
 
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.ProjectExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ProjectExternalEventContext;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;

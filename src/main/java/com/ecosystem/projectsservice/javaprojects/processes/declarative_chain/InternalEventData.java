@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public abstract class InternalEventData {
 
-    private long currentRetry;
+    private long currentRetry = 0;
 
     // текущий шаг - зная его, мы можем перейти к следующему
     private String currentStep; // if null - it starting step

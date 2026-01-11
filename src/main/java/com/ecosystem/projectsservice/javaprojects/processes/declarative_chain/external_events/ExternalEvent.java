@@ -9,19 +9,26 @@ import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
-public class ExternalEvent {
+public class ExternalEvent <C extends ExternalEventContext> {
 
 
 
     private String message;
     private String type;
+    private EventStatus status;
     @JsonIgnore
     private Long outboxParent;
 
 
 
-    private ExternalEventData data;
-    private ExternalEventContext context;
+    // raw json data
+    private String data;
+
+    private C context;
+
+
+
+
 
 
 }

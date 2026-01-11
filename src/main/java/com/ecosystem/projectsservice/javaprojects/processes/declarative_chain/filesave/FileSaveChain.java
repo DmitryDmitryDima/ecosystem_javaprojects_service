@@ -4,6 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.f
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.DeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -30,7 +31,15 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     }
 
     @Override
-    protected ExternalEvent bindResultingEvent() {
+    public void compensationStrategy(FileSaveEvent event) {
+        // Шаг, после которого произошла ошибка
+        String step = event.getInternalData().getCurrentStep();
+        System.out.println("compensation for "+step);
+    }
+
+    // связываем цепочку с конкретным типом выходного ивента
+    @Override
+    protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
         return new ProjectEvent();
     }
 
@@ -39,6 +48,10 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     @Message
     @Next(name="writeFileToDisk")
     public FileSaveEvent lockFile(FileSaveEvent fileSaveEvent){
+
+        System.out.println("perform - lock file");
+        fileSaveEvent.setMessage("lock file");
+
 
 
 
@@ -52,11 +65,19 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     @Next(name = "releaseFile")
     public FileSaveEvent writeFileToDisk(FileSaveEvent fileSaveEvent){
 
+        System.out.println("perform - write to disk");
+        fileSaveEvent.setMessage("write to disk");
+
+
         return fileSaveEvent;
+
+
     }
 
     @EndingStep(name = "releaseFile")
     public FileSaveEvent releaseFile(FileSaveEvent fileSaveEvent){
+        System.out.println("perform - release file");
+        fileSaveEvent.setMessage("release file");
 
         return fileSaveEvent;
     }

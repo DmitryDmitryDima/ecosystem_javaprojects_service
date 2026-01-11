@@ -1,9 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects.processes;
 
+import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.ChainManager;
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 
@@ -28,11 +31,15 @@ public class ExternalQueueBridge {
     private RabbitTemplate rabbitTemplate;
 
 
-    @Autowired
-    private InternalEventsManager manager;
 
     @Autowired
     private ChainManager chainManager;
+
+    @Autowired
+    private OutboxEventRepository outboxEventRepository;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
 
 
@@ -49,13 +56,7 @@ public class ExternalQueueBridge {
     @PostConstruct
     public void registerQueueEvents(){
 
-        /*
-        manager.registerBridge(List.of(
-                ProjectEvent.class,
-                UserEvent.class
-        ));
 
-         */
 
         chainManager.registerExternalEvents(List.of(
                 ProjectEvent.class
@@ -63,31 +64,11 @@ public class ExternalQueueBridge {
     }
 
 
-    @EventListener
-    @Async
-    public void catchUserEvent(UserEvent event){
-        //System.out.println(event+" catched");
-        try {
-            MessagePostProcessor postProcessor = (message )->{
-                message.getMessageProperties().setHeader("event_type", event.getEvent_type());
-                return message;
-            };
-
-            String payload = mapper.writeValueAsString(event);
-
-            rabbitTemplate.convertAndSend(USERS_ACTIVITY_EXCHANGE_NAME, "", payload, postProcessor);
-
-
-        }
-        catch (Exception e){
-
-        }
-    }
 
     @EventListener
     @Async
     public void catchProjectUserEvent(ProjectEvent event){
-        //System.out.println("project event "+event);
+        System.out.println("project event "+event);
         try {
             MessagePostProcessor postProcessor = (message )->{
                 message.getMessageProperties().setHeader("event_type", event.getType());
@@ -99,6 +80,25 @@ public class ExternalQueueBridge {
             rabbitTemplate.convertAndSend(USERS_PROJECT_EVENTS_EXCHANGE_NAME, "", payload, postProcessor);
 
 
+        }
+        catch (Exception e){
+
+        }
+
+        outboxCallback(event.getOutboxParent());
+
+
+
+    }
+
+    private void outboxCallback(long id){
+        try {
+            transactionTemplate.execute(status -> {
+                outboxEventRepository.findById(id).ifPresent(outboxEvent -> {
+                    outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.PROCESSED);
+                });
+                return null;
+            });
         }
         catch (Exception e){
 

@@ -9,8 +9,10 @@ import com.ecosystem.projectsservice.javaprojects.processes.chains.AbstractOutbo
 import com.ecosystem.projectsservice.javaprojects.processes.chains.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.EventName;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileSaveInfo;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ProjectExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import lombok.extern.slf4j.Slf4j;

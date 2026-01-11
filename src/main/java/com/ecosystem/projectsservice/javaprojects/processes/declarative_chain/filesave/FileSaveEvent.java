@@ -6,7 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.an
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.ProjectExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ProjectExternalEventContext;
 import lombok.Setter;
 import lombok.ToString;
 

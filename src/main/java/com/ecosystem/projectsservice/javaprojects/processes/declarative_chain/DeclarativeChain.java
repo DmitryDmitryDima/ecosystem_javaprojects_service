@@ -2,8 +2,10 @@ package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -15,6 +17,7 @@ import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends ExternalEventContext>> {
 
@@ -101,7 +104,7 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
         Method[] allMethods = this.getClass().getDeclaredMethods();
 
         for (Method method:allMethods){
-            System.out.println(method.getName());
+
 
             OpeningStep openingStepAnnotation = method.getAnnotation(OpeningStep.class);
             Step stepAnnotation = method.getAnnotation(Step.class);
@@ -189,20 +192,230 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
         // данный объект руководит состоянием ивента.
         InternalEventData internalEventData = event.getInternalData();
 
+        String currentStep = event.getInternalData().getCurrentStep();
+        long retry = internalEventData.getCurrentRetry();
+
+        System.out.println("event catched. Current step is "+currentStep+" current retry is "+retry);
+
+        // в зависимости от сценария ивент либо остается прежним, либо происходит поиск следующего
+        CachedMethod eventStep;
+        if (currentStep==null){
+            eventStep = null;
+        }
+        else if (openingStep.name.equals(currentStep)){
+            eventStep = openingStep;
+        }
+        else if (steps.containsKey(currentStep)){
+            eventStep = steps.get(currentStep);
+        }
+        else {
+            eventStep = endingStep;
+        }
+
+
+        CachedMethod toExecute;
+
+        // тут выполняет стартовый шаг, первая итерация
+        if (eventStep==null){
+            toExecute = openingStep;
+        }
+        // количество ретраев превышает максимальное - это означает переход к компенсации
+        else if (retry>eventStep.maxRetry){
+              toExecute = null;
+        }
+        // механизм ретраев был запущен - выполняем метод в ивенте и обновляем счетчик
+        else if (retry!=0) {
+            toExecute = eventStep;
+        }
+        // переход к следюущему шагу. Если следующий шаг - конечный, то сразу отправляем сообщение и делаем новую транзакцию только при ошибке
+        else {
+            String next = eventStep.next;
+            if (next.equals(endingStep.name)){
+                toExecute = endingStep;
+            }
+            else {
+                toExecute = steps.get(next);
+            }
+        }
 
 
 
+
+
+
+        // вызов метода или компенсации
+        boolean executionSuccess = true;
+        internalEventData.setCurrentStep(toExecute==null?internalEventData.getCurrentStep():toExecute.name);
         try {
+            if (toExecute==null){
+                compensationStrategy(event);
+            }
+            else {
+
+                toExecute.method.invoke(this,event);
+            }
+
+
 
         }
         catch (Exception e){
 
+            executionSuccess = false;
+            // вызов компенсации выбрасывает ошибку - требуется отдельная обработка. Далее нужен только callback
+            if (toExecute==null){
+                // todo
+
+
+            }
+            else {
+                // обновляем счетчик ретраев и сообщение. Если следующий шаг будет успешен, сообщение об ошибке сменится на нормальное
+                internalEventData.setCurrentRetry(internalEventData.getCurrentRetry()+1);
+                event.setMessage("ошибка выполнения шага "+toExecute.name+":Причина "+e.getCause().getMessage());
+            }
         }
 
+        // механизм взаимодействия с event state гарантирует, что там будет либо актуальное сообщение об успехе, либо об ошибке
+
+        // коллбэк + новый outbox event
+        try {
+
+            if (executionSuccess){
+                if (toExecute==endingStep){
+                    ExternalEvent externalEvent = bindResultingEvent();
+                    externalEvent.setContext(event.getContext());
+                    externalEvent.setData(mapper.writeValueAsString(event.getExternalData()));
+                    externalEvent.setType(resultingEventType);
+                    externalEvent.setStatus(EventStatus.SUCCESS);
+                    externalEvent.setMessage(event.getMessage());
+
+                    OutboxEvent outboxEvent = new OutboxEvent();
+                    outboxEvent.setLast_update(Instant.now());
+                    outboxEvent.setType(externalEventQualifier);
+                    outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+                    outboxEvent.setPayload(mapper.writeValueAsString(externalEvent));
+
+                    transaction().execute(status -> {
+                        outboxEventRepository.save(outboxEvent);
+                        outboxCallback(event.getInternalData().getOutboxParent());
+                        return null;
+                    });
+                }
+                // запись для следующего шага или финальное сообщение о фейле цепочки
+                else {
+                    // фейл цепочки
+                    if (toExecute==null){
+                        ExternalEvent externalEvent = bindResultingEvent();
+                        externalEvent.setContext(event.getContext());
+                        externalEvent.setData(mapper.writeValueAsString(event.getExternalData()));
+                        externalEvent.setType(resultingEventType);
+                        externalEvent.setStatus(EventStatus.ERROR);
+                        externalEvent.setMessage(event.getMessage());
+
+                        OutboxEvent outboxEvent = new OutboxEvent();
+                        outboxEvent.setLast_update(Instant.now());
+                        outboxEvent.setType(externalEventQualifier);
+                        outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+                        outboxEvent.setPayload(mapper.writeValueAsString(externalEvent));
+
+                        transaction().execute(status -> {
+                            outboxEventRepository.save(outboxEvent);
+                            outboxCallback(event.getInternalData().getOutboxParent());
+                            return null;
+                        });
+
+                    }
+
+                    else {
+                        final OutboxEvent message = new OutboxEvent();
+                        final OutboxEvent next = new OutboxEvent();
+                        if (toExecute.message){
+
+                            ExternalEvent externalEvent = bindResultingEvent();
+                            externalEvent.setContext(event.getContext());
+                            externalEvent.setData(mapper.writeValueAsString(event.getExternalData()));
+                            externalEvent.setType(resultingEventType);
+                            externalEvent.setStatus(EventStatus.PROCESSING);
+                            externalEvent.setMessage(event.getMessage());
+
+
+
+                            message.setLast_update(Instant.now());
+                            message.setType(externalEventQualifier);
+                            message.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+                            message.setPayload(mapper.writeValueAsString(externalEvent));
+
+                        }
+
+
+                        next.setLast_update(Instant.now());
+                        next.setType(internalEventQualifier);
+                        next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+                        next.setPayload(mapper.writeValueAsString(event));
+
+                        transaction().execute(status -> {
+                            if (message.getStatus()!=null){
+                                outboxEventRepository.save(message);
+                            }
+                            outboxEventRepository.save(next);
+                            outboxCallback(internalEventData.getOutboxParent());
+                            return null;
+                        });
+
+
+
+                    }
+                }
+            }
+
+            // ошибка выполнения - счетчик retry выполнен, ошибка записана
+            else {
+
+                if (toExecute==null){
+                    transaction().execute(status -> {
+                        outboxCallback(event.getInternalData().getOutboxParent());
+                        return null;
+                    });
+
+                    return;
+                }
+
+                OutboxEvent next = new OutboxEvent();
+                next.setType(internalEventQualifier);
+                next.setLast_update(Instant.now());
+                next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+                next.setPayload(mapper.writeValueAsString(event));
+
+                transaction().execute(status -> {
+                    outboxEventRepository.save(next);
+                    outboxCallback(internalEventData.getOutboxParent());
+                    return null;
+                });
+
+            }
+
+
+        }
+        catch (Exception e){
+            // todo ошибка записи в outbox таблицу или при маппинге payload
+            e.printStackTrace();
+        }
+
+
+
+    }
+
+    private void outboxCallback(long id){
+        Optional<OutboxEvent> outboxEventCheck = outboxEventRepository.findById(id);
+        outboxEventCheck.ifPresent(outbox->{
+            outbox.setStatus(OutboxEvent.OutboxEventStatus.PROCESSED);
+        });
     }
 
     // механизм, позволяющей очереди ловить только свои ивенты
     public abstract void catchEvent(E event);
+
+    // механизм компенсации
+    public abstract void compensationStrategy(E event);
 
 
 
@@ -224,19 +437,11 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
         }
     }
 
-    // сохраняем событие сообщения
-    private void sendExternalResult(E internalEvent){
-        ExternalEvent externalEvent = bindResultingEvent();
-        externalEvent.setContext(internalEvent.getContext());
-        externalEvent.setMessage(internalEvent.getMessage());
-        externalEvent.setData(internalEvent.getExternalData());
-        externalEvent.setType(resultingEventType);
 
-    }
 
     // todo вызывай этот метод сначала и извлекай аннотацию для project event (это аннотация для конвертации, chain event type - > в payload)
     // связываем очередь с одним из результирующих ивентов
-    protected abstract ExternalEvent bindResultingEvent();
+    protected abstract ExternalEvent<? extends ExternalEventContext> bindResultingEvent();
 
 
 

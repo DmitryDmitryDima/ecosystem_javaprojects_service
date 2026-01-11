@@ -1,6 +1,5 @@
-package com.ecosystem.projectsservice.javaprojects.processes.to_external_queue;
+package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events;
 
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

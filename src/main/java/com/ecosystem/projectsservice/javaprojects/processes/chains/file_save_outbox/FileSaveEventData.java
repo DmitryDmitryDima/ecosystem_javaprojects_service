@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox;
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.EventStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.EventStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

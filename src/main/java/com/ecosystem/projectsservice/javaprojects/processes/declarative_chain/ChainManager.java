@@ -18,7 +18,7 @@ public class ChainManager {
 
 
     private Map<String, Class<? extends DeclarativeChainEvent<? extends ExternalEventContext>>> allInternalEvents = new HashMap<>();
-    private Map<String, Class<? extends ExternalEvent>> allExternalEvents = new HashMap<>();
+    private Map<String, Class<? extends ExternalEvent<? extends ExternalEventContext>>> allExternalEvents = new HashMap<>();
 
     @Autowired
     private ObjectMapper mapper;
@@ -31,8 +31,8 @@ public class ChainManager {
         allInternalEvents.put(name, clazz);
     }
 
-    public void registerExternalEvents(List<Class<? extends ExternalEvent>> classes){
-        for (Class<? extends ExternalEvent> clazz:classes){
+    public void registerExternalEvents(List<Class<? extends ExternalEvent<? extends ExternalEventContext>>> classes){
+        for (Class<? extends ExternalEvent<? extends ExternalEventContext>> clazz:classes){
             EventQualifier annotation = clazz.getAnnotation(EventQualifier.class);
             if (annotation==null) throw new IllegalStateException("отсутствует аннотация @EventQualifier");
             allExternalEvents.put(annotation.value(), clazz);
@@ -46,19 +46,24 @@ public class ChainManager {
             if (allInternalEvents.containsKey(outboxEvent.getType())){
                 Class<? extends DeclarativeChainEvent<? extends ExternalEventContext>> clazz = allInternalEvents.get(outboxEvent.getType());
                 DeclarativeChainEvent<? extends ExternalEventContext> deserializedEvent = mapper.readValue(outboxEvent.getPayload(), clazz);
-                System.out.println(deserializedEvent.getClass().getName());
+
                 deserializedEvent.getInternalData().setOutboxParent(outboxEvent.getId()); // для callback
                 publisher.publishEvent(deserializedEvent);
 
             }
             if (allExternalEvents.containsKey(outboxEvent.getType())){
-                Class<? extends ExternalEvent> clazz = allExternalEvents.get(outboxEvent.getType());
-                ExternalEvent deserializedEvent = mapper.readValue(outboxEvent.getType(), clazz);
+                Class<? extends ExternalEvent<? extends ExternalEventContext>> clazz = allExternalEvents.get(outboxEvent.getType());
+
+
+                ExternalEvent<? extends ExternalEventContext> deserializedEvent = mapper.readValue(outboxEvent.getPayload(), clazz);
                 deserializedEvent.setOutboxParent(outboxEvent.getId());
                 publisher.publishEvent(deserializedEvent);
+
+
             }
         }
         catch (Exception e){
+            e.printStackTrace();
             System.out.println("payload error "+e.getMessage());
         }
 
