@@ -14,7 +14,11 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileSaveEventChain;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save.FileSaveInfo;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.file_save_outbox.FileSaveOutboxEventChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ProjectExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.FileSaveChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.FileSaveEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
@@ -27,8 +31,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 // todo методы проверки могут быть оптимизированы кастомный join requests
@@ -53,11 +59,7 @@ public class ProjectActionsService {
     @Autowired
     private DirectoryJDBCRepository directoryJDBCRepository;
 
-    @Autowired
-    private FileSaveEventChain fileSaveEventChain;
 
-    @Autowired
-    private FileSaveOutboxEventChain fileSaveOutboxEventChain;
 
     @Autowired
     private FileSaveChain fileSaveChain;
@@ -123,28 +125,39 @@ public class ProjectActionsService {
                     throw new IllegalStateException("Файл не доступен для записи");
                 }
 
-                /*
-                fileSaveEventChain.initChain(securityContext, requestContext, FileSaveInfo.builder()
-                                .content(request.getContent())
-                                .fileId(fileId)
-                                .projectId(projectId)
-                                .projectsPath(Path.of(userStoragePath,
-                                        securityContext.getUuid().toString(),
-                                        "projects").normalize().toString())
-                        .build());
-
-                return;
-
-                 */
-
-                fileSaveOutboxEventChain.init(securityContext, requestContext, FileSaveInfo.builder()
-                        .content(request.getContent())
-                        .fileId(fileId)
+                FileSaveEvent mainEvent = new FileSaveEvent();
+                mainEvent.setMessage("Сохраняем файл...");
+                ProjectExternalEventContext context = ProjectExternalEventContext.builder()
+                        .correlationId(requestContext.getCorrelationId())
+                        .participants(List.of())
                         .projectId(projectId)
-                        .projectsPath(Path.of(userStoragePath,
-                                securityContext.getUuid().toString(),
-                                "projects").normalize().toString())
-                        .build());
+                        .renderId(requestContext.getRenderId())
+                        .timestamp(Instant.now())
+                        .username(securityContext.getUsername())
+                        .userUUID(UUID.randomUUID())
+                        .build();
+
+                mainEvent.setContext(context);
+
+                FileSaveInternalData internalData = new FileSaveInternalData();
+                internalData.setProjectsPath(Path.of(userStoragePath,
+                        securityContext.getUuid().toString(),
+                        "projects").normalize().toString());
+                mainEvent.setInternalData(internalData);
+
+                FileSaveExternalData externalData = new FileSaveExternalData();
+                externalData.setContent(request.getContent());
+                externalData.setFileId(fileId);
+
+                mainEvent.setExternalData(externalData);
+
+                fileSaveChain.init(mainEvent);
+
+
+
+
+
+
 
                 return;
 

@@ -24,7 +24,7 @@ import java.util.Optional;
 
 // указывается state event, проходящий через всю очередь, и ивент результат
 @Service
-@ExternalResultName(name = "file_save")
+@ExternalResultName(name = "java_project_file_save")
 public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
 
     @Autowired
@@ -114,7 +114,7 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     public FileSaveEvent writeFileToDisk(FileSaveEvent fileSaveEvent) throws IOException {
 
         System.out.println("perform - write to disk");
-        fileSaveEvent.setMessage("write to disk");
+        fileSaveEvent.setMessage("выполняем запись в диск");
 
 
         FileSaveInternalData internalData = (FileSaveInternalData)  fileSaveEvent.getInternalData();
@@ -134,7 +134,7 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     @EndingStep(name = "releaseFile")
     public FileSaveEvent releaseFile(FileSaveEvent fileSaveEvent){
         System.out.println("perform - release file");
-        fileSaveEvent.setMessage("release file");
+        fileSaveEvent.setMessage("освобождаем файл");
         FileSaveExternalData externalData = (FileSaveExternalData)  fileSaveEvent.getExternalData();
 
 
