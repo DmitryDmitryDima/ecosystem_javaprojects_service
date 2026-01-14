@@ -8,7 +8,7 @@ import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.UserExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;

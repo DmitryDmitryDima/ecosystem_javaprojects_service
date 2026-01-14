@@ -4,7 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.chains.project_remo
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.UserExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;

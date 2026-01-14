@@ -10,23 +10,34 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public abstract class DeclarativeChainEvent <C extends ExternalEventContext> {
+public abstract class DeclarativeChainEvent <
+
+        Context extends ExternalEventContext,
+        External extends ExternalEventData,
+        Internal extends InternalEventData
+
+        > {
 
 
 
 
 
 
-    private C context;
+    private Context context;
 
     private String message;
 
+    private External externalData;
+
+    private Internal internalData;
 
 
 
-    public abstract InternalEventData getInternalData();
 
-    public abstract ExternalEventData getExternalData();
+
+
+
+
 
 
 

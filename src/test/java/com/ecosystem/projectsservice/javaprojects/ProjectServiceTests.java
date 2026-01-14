@@ -51,9 +51,11 @@ public class ProjectServiceTests {
         request.setName("my_project");
         request.setNeedEntryPoint(true);
 
-        projectLifecycleService.createProject(securityContext, requestContext, request);
-
-
+        try {
+            projectLifecycleService.createProject(securityContext, requestContext, request);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
 
     }

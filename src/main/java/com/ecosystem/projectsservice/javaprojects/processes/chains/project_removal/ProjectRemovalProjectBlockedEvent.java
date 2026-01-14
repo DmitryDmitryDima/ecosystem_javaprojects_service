@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal;
 
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.UserExternalEventContext;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.context.ApplicationEvent;

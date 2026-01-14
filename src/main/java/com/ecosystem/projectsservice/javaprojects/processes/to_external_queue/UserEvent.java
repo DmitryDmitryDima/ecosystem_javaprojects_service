@@ -4,6 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.to_external_queue;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.EventName;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.Retryable;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.UserExternalEventContext;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 

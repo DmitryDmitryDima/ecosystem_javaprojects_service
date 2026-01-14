@@ -6,9 +6,13 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.Project
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectLightweightDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
-import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectBuildFromTemplateInfo;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_creation_system_template.ProjectInternalCreationEventChain;
 import com.ecosystem.projectsservice.javaprojects.processes.chains.project_removal.ProjectRemovalEventChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.UserExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_creation_from_template.event_structure.ProjectCreationFromTemplateExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_creation_from_template.event_structure.ProjectCreationFromTemplateInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -18,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -53,6 +58,9 @@ public class ProjectLifecycleService {
 
     @Autowired
     private ProjectInternalCreationEventChain internalCreationEventChain;
+
+    @Autowired
+    private ProjectCreationFromTemplateChain projectCreationFromTemplateChain;
 
 
 
@@ -92,19 +100,34 @@ public class ProjectLifecycleService {
 
 
 
-    public void createProject(SecurityContext securityContext, RequestContext requestContext, ProjectCreationRequest projectCreationRequest){
+    public void createProject(SecurityContext securityContext, RequestContext requestContext, ProjectCreationRequest projectCreationRequest) throws Exception {
 
-        // todo если есть prompt - обращаемся к ai event chain, если нет - внутренний event chain
-        ProjectBuildFromTemplateInfo info = ProjectBuildFromTemplateInfo.builder()
-                .instructionsPath(Path.of(systemStoragePath, INSTRUCTIONS_FOLDER).normalize().toString())
-                .fileTemplatesPath(Path.of(systemStoragePath, TEMPLATES_FOLDER).normalize().toString())
-                .projectsPath(Path.of(userStoragePath, securityContext.getUuid().toString(), "projects").normalize().toString())
-                .projectType(ProjectType.MAVEN_CLASSIC)
-                .needEntryPoint(projectCreationRequest.isNeedEntryPoint())
-                .projectName(projectCreationRequest.getName())
-                .build();
 
-        internalCreationEventChain.initChain(securityContext, requestContext, info);
+
+        ProjectCreationFromTemplateEvent mainEvent = new ProjectCreationFromTemplateEvent();
+
+        ProjectCreationFromTemplateInternalData internalData = new ProjectCreationFromTemplateInternalData();
+        internalData.setProjectType(ProjectType.MAVEN_CLASSIC);
+        internalData.setProjectsPath(Path.of(userStoragePath, securityContext.getUuid().toString(), "projects").normalize().toString());
+        internalData.setInstructionsPath(Path.of(systemStoragePath, INSTRUCTIONS_FOLDER).normalize().toString());
+        internalData.setNeedEntryPoint(projectCreationRequest.isNeedEntryPoint());
+        internalData.setFileTemplatesPath(Path.of(systemStoragePath, TEMPLATES_FOLDER).normalize().toString());
+
+        ProjectCreationFromTemplateExternalData externalData = new ProjectCreationFromTemplateExternalData();
+        externalData.setName(projectCreationRequest.getName());
+
+        UserExternalEventContext context = new UserExternalEventContext();
+        context.setUsername(securityContext.getUsername());
+        context.setTimestamp(Instant.now());
+        context.setUserUUID(securityContext.getUuid());
+        context.setCorrelationId(requestContext.getCorrelationId());
+        context.setRenderId(requestContext.getRenderId());
+
+        mainEvent.setContext(context);
+        mainEvent.setExternalData(externalData);
+        mainEvent.setInternalData(internalData);
+
+        projectCreationFromTemplateChain.init(mainEvent);
 
 
 

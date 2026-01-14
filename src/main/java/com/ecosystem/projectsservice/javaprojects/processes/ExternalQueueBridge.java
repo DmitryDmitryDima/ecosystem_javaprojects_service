@@ -4,7 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.ChainManager;
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.to_external_queue.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.UserEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -59,8 +59,31 @@ public class ExternalQueueBridge {
 
 
         chainManager.registerExternalEvents(List.of(
-                ProjectEvent.class
+                ProjectEvent.class, UserEvent.class
         ));
+    }
+
+    @EventListener
+    @Async
+    public void catchUserActivityEvent(UserEvent event){
+        System.out.println("user event ");
+        try {
+            MessagePostProcessor postProcessor = (message )->{
+                message.getMessageProperties().setHeader("event_type", event.getType());
+                return message;
+            };
+
+            String payload = mapper.writeValueAsString(event);
+
+            rabbitTemplate.convertAndSend(USERS_ACTIVITY_EXCHANGE_NAME, "", payload, postProcessor);
+
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+        outboxCallback(event.getOutboxParent());
     }
 
 
@@ -82,7 +105,7 @@ public class ExternalQueueBridge {
 
         }
         catch (Exception e){
-
+            e.printStackTrace();
         }
 
         outboxCallback(event.getOutboxParent());

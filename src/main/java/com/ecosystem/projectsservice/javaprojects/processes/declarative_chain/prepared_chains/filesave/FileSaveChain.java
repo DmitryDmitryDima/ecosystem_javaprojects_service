@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave;
+package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.filesave;
 
 
 import com.ecosystem.projectsservice.javaprojects.model.File;
@@ -8,8 +8,6 @@ import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.an
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.filesave.event_structure.FileSaveInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -66,8 +64,7 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
 
         System.out.println("perform - lock file");
 
-        FileSaveExternalData externalData = (FileSaveExternalData)  fileSaveEvent.getExternalData();
-        FileSaveInternalData internalData = (FileSaveInternalData)  fileSaveEvent.getInternalData();
+
 
         fileSaveEvent.setMessage("готовим файл к записи");
 
@@ -75,7 +72,7 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
 
 
 
-            Optional<File> fileCheck = fileRepository.findByIdForUpdate(externalData.getFileId());
+            Optional<File> fileCheck = fileRepository.findByIdForUpdate(fileSaveEvent.getExternalData().getFileId());
 
             if (fileCheck.isEmpty()) throw new IllegalArgumentException("файл отсутствует");
 
@@ -93,12 +90,15 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
         }));
 
         // обновляем tranfer объекты цепи для следующих шагов
-        externalData.setName(file.getName());
-        externalData.setPath(file.getConstructedPath());
+        fileSaveEvent.getExternalData().setName(file.getName());
+        fileSaveEvent.getExternalData().setPath(file.getConstructedPath());
 
         // конструируем полный путь
-        internalData.setFilePath(Path.of(internalData.getProjectsPath(),
-                file.getConstructedPath()).normalize().toString());
+        fileSaveEvent.getInternalData()
+                .setFilePath(
+                        Path.of(fileSaveEvent.getInternalData().getProjectsPath(),
+                file.getConstructedPath()).normalize().toString()
+                );
 
 
 
@@ -117,11 +117,11 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
         fileSaveEvent.setMessage("выполняем запись в диск");
 
 
-        FileSaveInternalData internalData = (FileSaveInternalData)  fileSaveEvent.getInternalData();
-        FileSaveExternalData externalData = (FileSaveExternalData)  fileSaveEvent.getExternalData();
 
-        Files.writeString(Path.of(internalData.getFilePath()),
-                externalData.getContent(),
+
+
+        Files.writeString(Path.of(fileSaveEvent.getInternalData().getFilePath()),
+                fileSaveEvent.getExternalData().getContent(),
                 StandardOpenOption.TRUNCATE_EXISTING
         );
 
@@ -135,11 +135,11 @@ public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
     public FileSaveEvent releaseFile(FileSaveEvent fileSaveEvent){
         System.out.println("perform - release file");
         fileSaveEvent.setMessage("освобождаем файл");
-        FileSaveExternalData externalData = (FileSaveExternalData)  fileSaveEvent.getExternalData();
+
 
 
         transaction().execute(status -> {
-            Optional<File> fileCheck = fileRepository.findByIdForUpdate(externalData.getFileId());
+            Optional<File> fileCheck = fileRepository.findByIdForUpdate(fileSaveEvent.getExternalData().getFileId());
 
             fileCheck.ifPresent(file -> file.setStatus(FileStatus.AVAILABLE));
 

@@ -5,6 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.an
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventData;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends ExternalEventContext>> {
+public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends ExternalEventContext,
+        ? extends ExternalEventData,
+        ? extends InternalEventData>> {
 
 
     @Autowired
@@ -192,6 +195,7 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
         // данный объект руководит состоянием ивента.
         InternalEventData internalEventData = event.getInternalData();
 
+
         String currentStep = event.getInternalData().getCurrentStep();
         long retry = internalEventData.getCurrentRetry();
 
@@ -252,6 +256,8 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
             }
             else {
 
+                System.out.println("executing "+toExecute.name);
+
                 toExecute.method.invoke(this,event);
             }
 
@@ -259,6 +265,7 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
 
         }
         catch (Exception e){
+            e.printStackTrace();
 
             executionSuccess = false;
             // вызов компенсации выбрасывает ошибку - требуется отдельная обработка. Далее нужен только callback
