@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends ExternalEventContext,
+public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? extends ExternalEventContext,
         ? extends ExternalEventData,
         ? extends InternalEventData>> {
 
@@ -84,7 +84,7 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
 
     // кешируем и регистрируем chain state event
     private void cacheAndRegisterInternalEvent() throws Exception{
-        Class<E> chainEventClass = (Class<E>) GenericTypeResolver.resolveTypeArgument(getClass(), DeclarativeChain.class);
+        Class<E> chainEventClass = (Class<E>) GenericTypeResolver.resolveTypeArgument(getClass(), OutboxDeclarativeChain.class);
         EventQualifier annotation = chainEventClass.getAnnotation(EventQualifier.class);
         if (annotation==null) throw new IllegalStateException("Не прописано имя внутреннего ивента для цепи. Используйте @EventQuailifier");
         internalEventQualifier = annotation.value();

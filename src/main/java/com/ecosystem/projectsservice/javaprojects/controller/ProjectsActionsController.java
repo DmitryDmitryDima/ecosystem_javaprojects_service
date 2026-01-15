@@ -7,7 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.F
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
-import com.ecosystem.projectsservice.javaprojects.service.ProjectActionsService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

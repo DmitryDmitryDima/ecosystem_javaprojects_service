@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.filesave;
 
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.DeclarativeChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
@@ -23,7 +23,7 @@ import java.util.Optional;
 // указывается state event, проходящий через всю очередь, и ивент результат
 @Service
 @ExternalResultName(name = "java_project_file_save")
-public class FileSaveChain extends DeclarativeChain<FileSaveEvent> {
+public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
 
     @Autowired
     private FileRepository fileRepository;

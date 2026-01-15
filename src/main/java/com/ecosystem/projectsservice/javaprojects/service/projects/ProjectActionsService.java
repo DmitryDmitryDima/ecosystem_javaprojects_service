@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service;
+package com.ecosystem.projectsservice.javaprojects.service.projects;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
@@ -11,7 +11,9 @@ import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ProjectExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.filesave.FileSaveChain;
 import com.ecosystem.projectsservice.javaprojects.processes.filesave.FileSaveEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.filesave.event_structure.FileSaveExternalData;
@@ -20,11 +22,15 @@ import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCReposi
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
+import com.ecosystem.projectsservice.javaprojects.service.cache.FileContent;
+import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
+import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCacheImpl;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -53,9 +59,15 @@ public class ProjectActionsService {
     @Autowired
     private ProjectActionsUtils utils;
 
+
+
     @Autowired
     private DirectoryJDBCRepository directoryJDBCRepository;
 
+
+
+    @Autowired
+    private FileContentCache<FileContent, Long> fileContentCache;
 
 
     @Autowired
@@ -67,6 +79,11 @@ public class ProjectActionsService {
 
     @Value("${storage.user}")
     private String userStoragePath;
+
+    @Autowired
+    private ApplicationEventPublisher publisher;
+
+
 
 
     // данный метод ориентируется на выброс исключений, перехватываемых в advice
@@ -96,9 +113,58 @@ public class ProjectActionsService {
                          Long fileId,
                          FileSaveRequest request) throws Exception{
 
-        checks(securityContext, requestContext, projectId);
 
-        // запись данных в редис с последующей генерацией ивента (если данных нет, их нужно создать)
+
+        Project project = checks(securityContext, requestContext, projectId);
+
+        ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());
+
+        for (FileReadOnly fileReadOnly:snapshot.getFiles()){
+
+            if (fileReadOnly.getId().equals(fileId)){
+                if (fileReadOnly.isHidden() || !fileReadOnly.getStatus().equals(FileStatus.AVAILABLE)){
+
+                    throw new IllegalStateException("Файл не доступен для записи");
+                }
+            }
+        }
+
+
+        // пишем в кеш
+        fileContentCache.save(FileContent.builder()
+                        .id(fileId)
+                        .text(request.getContent())
+                .build());
+
+        // публикуем ивент напрямую, без задействования outbox цепочек
+        ProjectEvent projectEvent = new ProjectEvent();
+        ProjectExternalEventContext externalEventContext = new ProjectExternalEventContext();
+        externalEventContext.setProjectId(projectId);
+        externalEventContext.setRenderId(requestContext.getRenderId());
+        externalEventContext.setCorrelationId(requestContext.getCorrelationId());
+        externalEventContext.setTimestamp(Instant.now());
+        externalEventContext.setUsername(securityContext.getUsername());
+        externalEventContext.setUserUUID(securityContext.getUuid());
+
+        projectEvent.setContext(externalEventContext);
+
+        FileSaveExternalData externalData = new FileSaveExternalData();
+        externalData.setFileId(fileId);
+        externalData.setContent(request.getContent());
+
+        projectEvent.setStatus(EventStatus.SUCCESS);
+        projectEvent.setType("java_project_file_save");
+
+
+
+        publisher.publishEvent(projectEvent);
+
+
+
+
+
+
+
 
 
     }
@@ -145,6 +211,8 @@ public class ProjectActionsService {
                 FileSaveExternalData externalData = new FileSaveExternalData();
                 externalData.setContent(request.getContent());
                 externalData.setFileId(fileId);
+
+
 
                 mainEvent.setExternalData(externalData);
 
@@ -234,6 +302,9 @@ public class ProjectActionsService {
 
 
     // так как каждый запрос базируется на id, мы должны извлечь проект и провести базовую проверку по нему
+
+    // todo это можно кешировать с помощью ограниченного токена
+    // todo тут же извлекается лист участников проекта
     private Project checks(SecurityContext securityContext, RequestContext requestContext, Long projectId) throws Exception{
         Optional<Project> projectCheck = projectRepository.findById(projectId);
 

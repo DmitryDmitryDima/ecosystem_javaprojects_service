@@ -5,7 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.Constru
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.DeclarativeChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
@@ -13,7 +13,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.ex
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
-import com.ecosystem.projectsservice.javaprojects.service.ProjectConstructor;
+import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectConstructor;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectLifecycleUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -26,7 +26,7 @@ import java.util.Optional;
 
 @Service
 @ExternalResultName(name = "java_project_creation_from_template")
-public class ProjectCreationFromTemplateChain extends DeclarativeChain<ProjectCreationFromTemplateEvent> {
+public class ProjectCreationFromTemplateChain extends OutboxDeclarativeChain<ProjectCreationFromTemplateEvent> {
 
 
     @Autowired

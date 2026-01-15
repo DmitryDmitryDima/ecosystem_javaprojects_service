@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.project_removal;
 
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.DeclarativeChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ExternalEventContext;
@@ -20,9 +20,10 @@ import org.springframework.util.FileSystemUtils;
 import java.nio.file.Path;
 import java.util.Optional;
 
+// todo добавить инвалидацию кеша
 @Service
 @ExternalResultName(name = "java_project_removal")
-public class ProjectRemovalChain extends DeclarativeChain<ProjectRemovalEvent> {
+public class ProjectRemovalChain extends OutboxDeclarativeChain<ProjectRemovalEvent> {
 
 
     @Autowired
