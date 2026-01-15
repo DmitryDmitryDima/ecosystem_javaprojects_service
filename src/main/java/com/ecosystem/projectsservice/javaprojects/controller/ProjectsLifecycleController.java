@@ -42,7 +42,7 @@ public class ProjectsLifecycleController {
 
 
     @PostMapping("/deleteProject")
-    public ResponseEntity<Void> deleteProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectRemovalRequest request)  {
+    public ResponseEntity<Void> deleteProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectRemovalRequest request) throws Exception {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
         projectLifecycleService.deleteProject(securityContext, requestContext, request);

@@ -10,6 +10,6 @@ import lombok.Setter;
 public class ProjectRemovalInternalData extends InternalEventData {
 
     private String projectPath;
-    private String projectsPath;
+
 
 }

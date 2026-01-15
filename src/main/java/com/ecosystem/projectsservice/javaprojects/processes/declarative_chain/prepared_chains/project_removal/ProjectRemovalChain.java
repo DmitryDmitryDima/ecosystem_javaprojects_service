@@ -55,9 +55,7 @@ public class ProjectRemovalChain extends DeclarativeChain<ProjectRemovalEvent> {
     }
 
 
-    @OpeningStep(
-            name = "blockProject"
-    )
+    @OpeningStep(name = "blockProject")
     @Next(name = "clearDisk")
     @Message
     public ProjectRemovalEvent blockProject(ProjectRemovalEvent event){

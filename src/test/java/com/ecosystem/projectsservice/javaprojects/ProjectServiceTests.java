@@ -22,7 +22,7 @@ public class ProjectServiceTests {
 
 
     @Test
-    public void testProjectRemoval(){
+    public void testProjectRemoval() throws Exception {
         SecurityContext securityContext = SecurityContext.builder()
                 .role("USER")
                 .username("dima")

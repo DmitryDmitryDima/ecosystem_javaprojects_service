@@ -13,6 +13,10 @@ import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.pr
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_creation_from_template.event_structure.ProjectCreationFromTemplateExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_creation_from_template.event_structure.ProjectCreationFromTemplateInternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_removal.ProjectRemovalChain;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_removal.ProjectRemovalEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_removal.event_structure.ProjectRemovalExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.prepared_chains.project_removal.event_structure.ProjectRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -52,12 +56,10 @@ public class ProjectLifecycleService {
     private FileRepository fileRepository;
 
 
-    // цепочки событий
-    @Autowired
-    private ProjectRemovalEventChain removalEventChain;
+
 
     @Autowired
-    private ProjectInternalCreationEventChain internalCreationEventChain;
+    private ProjectRemovalChain removalChain;
 
     @Autowired
     private ProjectCreationFromTemplateChain projectCreationFromTemplateChain;
@@ -85,14 +87,35 @@ public class ProjectLifecycleService {
     пока что удаление происходит безвозвратно, возможно на более поздних этапах разработки добавлю что-то вроде корзины
      */
 
-    public void deleteProject(SecurityContext securityContext, RequestContext requestContext, ProjectRemovalRequest request){
+    public void deleteProject(SecurityContext securityContext, RequestContext requestContext, ProjectRemovalRequest request)
+            throws Exception {
+
+        ProjectRemovalEvent mainEvent = new ProjectRemovalEvent();
+
+        UserExternalEventContext context = new UserExternalEventContext();
+        context.setRenderId(requestContext.getRenderId());
+        context.setUsername(securityContext.getUsername());
+        context.setTimestamp(Instant.now());
+        context.setUserUUID(securityContext.getUuid());
+        context.setCorrelationId(requestContext.getCorrelationId());
+
+        ProjectRemovalExternalData externalData = new ProjectRemovalExternalData();
+        externalData.setProjectId(request.getProjectId());
 
 
-        removalEventChain.initProjectRemovalChain(securityContext,
-                requestContext,
-                request.getProjectId(),
-                Path.of(userStoragePath, securityContext.getUuid().toString(),"projects").toString()
-                );
+        ProjectRemovalInternalData internalData = new ProjectRemovalInternalData();
+        internalData.setProjectPath(Path.of(userStoragePath, securityContext.getUuid().toString(),"projects").toString());
+
+
+
+
+        mainEvent.setContext(context);
+        mainEvent.setExternalData(externalData);
+        mainEvent.setInternalData(internalData);
+
+        removalChain.init(mainEvent);
+
+
 
 
 
