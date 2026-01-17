@@ -1,5 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure;
-
+package com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action;
 
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
@@ -7,21 +6,17 @@ import lombok.Getter;
 import lombok.Setter;
 
 
-
 @Getter
 @Setter
-public abstract class DeclarativeChainEvent <
+public class ActionResult <
 
         Context extends ExternalEventContext,
-        External extends ExternalEventData,
-        Internal extends InternalEventData
+        External extends ExternalEventData
 
-        > {
-
+        >
 
 
-
-
+{
 
     private Context context;
 
@@ -29,28 +24,11 @@ public abstract class DeclarativeChainEvent <
 
     private External externalData;
 
-    private Internal internalData;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    public ActionResult(Context context, External externalData, String message){
+        this.context = context;
+        this.externalData = externalData;
+        this.message = message;
+    }
 
 
 }

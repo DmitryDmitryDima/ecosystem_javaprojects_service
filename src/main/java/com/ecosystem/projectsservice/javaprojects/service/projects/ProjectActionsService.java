@@ -11,20 +11,21 @@ import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.EventStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.ProjectExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.external_events.markers.ProjectEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.filesave.FileSaveChain;
-import com.ecosystem.projectsservice.javaprojects.processes.filesave.FileSaveEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.filesave.event_structure.FileSaveExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.filesave.event_structure.FileSaveInternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventName;
+import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionResult;
+import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ProjectExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.markers.ProjectEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.FileSaveChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.FileSaveEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.event_structure.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.event_structure.FileSaveInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
-import com.ecosystem.projectsservice.javaprojects.service.cache.FileContent;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
-import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCacheImpl;
+import com.ecosystem.projectsservice.javaprojects.service.cache.LockedValueException;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import jakarta.transaction.Transactional;
@@ -34,10 +35,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 
 // todo методы проверки могут быть оптимизированы кастомный join requests
@@ -67,11 +66,18 @@ public class ProjectActionsService {
 
 
     @Autowired
-    private FileContentCache<FileContent, Long> fileContentCache;
+    private FileContentCache<FileDTO, Long> fileContentCache;
+
+
+    // сервис для генерации действий из одного шага с публикацией внешнего ивента
+    @Autowired
+    private BroadcastableAction broadcastableAction;
 
 
     @Autowired
     private FileSaveChain fileSaveChain;
+
+
 
 
     @Value("${storage.system}")
@@ -113,11 +119,13 @@ public class ProjectActionsService {
                          Long fileId,
                          FileSaveRequest request) throws Exception{
 
-
+        System.out.println("triggered");
 
         Project project = checks(securityContext, requestContext, projectId);
 
         ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());
+
+        FileReadOnly dbFile =null;
 
         for (FileReadOnly fileReadOnly:snapshot.getFiles()){
 
@@ -126,38 +134,60 @@ public class ProjectActionsService {
 
                     throw new IllegalStateException("Файл не доступен для записи");
                 }
+                dbFile = fileReadOnly;
+
             }
         }
 
+        if (dbFile == null) throw new IllegalStateException("Файл отсутствует или не принадлежит проекту");
 
-        // пишем в кеш
-        fileContentCache.save(FileContent.builder()
-                        .id(fileId)
-                        .text(request.getContent())
-                .build());
-
-        // публикуем ивент напрямую, без задействования outbox цепочек
-        ProjectEvent projectEvent = new ProjectEvent();
-        ProjectExternalEventContext externalEventContext = new ProjectExternalEventContext();
-        externalEventContext.setProjectId(projectId);
-        externalEventContext.setRenderId(requestContext.getRenderId());
-        externalEventContext.setCorrelationId(requestContext.getCorrelationId());
-        externalEventContext.setTimestamp(Instant.now());
-        externalEventContext.setUsername(securityContext.getUsername());
-        externalEventContext.setUserUUID(securityContext.getUuid());
-
-        projectEvent.setContext(externalEventContext);
-
-        FileSaveExternalData externalData = new FileSaveExternalData();
-        externalData.setFileId(fileId);
-        externalData.setContent(request.getContent());
-
-        projectEvent.setStatus(EventStatus.SUCCESS);
-        projectEvent.setType("java_project_file_save");
+        FileDTO fileDTO = FileDTO.builder()
+                .content(request.getContent())
+                .constructedPath(dbFile.getConstructed_path())
+                .id(dbFile.getId())
+                .extension(dbFile.getExtension())
+                .name(dbFile.getName())
+                        .build();
 
 
+        broadcastableAction.createAction(()->{
 
-        publisher.publishEvent(projectEvent);
+            try {
+
+                fileContentCache.save(fileId, fileDTO);
+            }
+
+            catch (LockedValueException lockedValueException){
+                // без какой-либо ошибки
+                throw new IllegalStateException("locked entry");
+
+            }
+
+
+            ProjectExternalEventContext context = ProjectExternalEventContext.from(securityContext,
+                    requestContext,
+                    projectId,
+                    List.of());
+
+            FileSaveExternalData externalData = new FileSaveExternalData();
+            externalData.setContent(request.getContent());
+            externalData.setFileId(fileId);
+
+
+
+            return new ActionResult<>(context, externalData, "Файл сохранен");
+
+
+
+
+        })
+                .withExternalEvent(new ProjectEvent())
+                .withExternalName(ExternalEventName.JAVA_PROJECT_FILE_SAVE)
+                .execute();
+
+
+
+
 
 
 
@@ -188,17 +218,11 @@ public class ProjectActionsService {
                     throw new IllegalStateException("Файл не доступен для записи");
                 }
 
+                // готовим ивент - задаем контекст, внутренние (event state) и внешние данные
+
                 FileSaveEvent mainEvent = new FileSaveEvent();
                 mainEvent.setMessage("Сохраняем файл...");
-                ProjectExternalEventContext context = ProjectExternalEventContext.builder()
-                        .correlationId(requestContext.getCorrelationId())
-                        .participants(List.of())
-                        .projectId(projectId)
-                        .renderId(requestContext.getRenderId())
-                        .timestamp(Instant.now())
-                        .username(securityContext.getUsername())
-                        .userUUID(UUID.randomUUID())
-                        .build();
+                ProjectExternalEventContext context = ProjectExternalEventContext.from(securityContext, requestContext, projectId, List.of());
 
                 mainEvent.setContext(context);
 
@@ -267,34 +291,44 @@ public class ProjectActionsService {
     public FileDTO readFile(SecurityContext securityContext, RequestContext requestContext, Long projectId, Long fileId) throws Exception{
         Project project = checks(securityContext, requestContext, projectId);
 
-        ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());
+        Optional<FileDTO> fileDTOFromCache = fileContentCache.read(fileId);
 
-        for (FileReadOnly fileReadOnly:snapshot.getFiles()){
-            if (fileReadOnly.getId().equals(fileId)){
-                if (fileReadOnly.isHidden()){
-                    throw new IllegalStateException("Файл не доступен для чтения");
+        if (fileDTOFromCache.isEmpty()){
+            ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());
+
+            for (FileReadOnly fileReadOnly:snapshot.getFiles()){
+                if (fileReadOnly.getId().equals(fileId)){
+                    if (fileReadOnly.isHidden()){
+                        throw new IllegalStateException("Файл не доступен для чтения");
+                    }
+
+                    FileDTO fileDTO = new FileDTO();
+
+                    fileDTO.setName(fileReadOnly.getName());
+                    fileDTO.setExtension(fileReadOnly.getExtension());
+                    //fileDTO.setLastUpdate(fileReadOnly.getUpdated_at());
+                    fileDTO.setConstructedPath(fileReadOnly.getConstructed_path());
+                    fileDTO.setId(fileReadOnly.getId());
+                    try {
+                        Path path = ProjectUtils.constructPathToFile(userStoragePath, project, fileReadOnly.getConstructed_path());
+                        fileDTO.setContent(ProjectUtils.readFile(path));
+
+                    }
+                    catch (Exception e){
+                        throw new IllegalStateException("Ошибка чтения файла. Причина: "+e.getMessage());
+                    }
+
+                    return fileDTO;
+
                 }
-
-                FileDTO fileDTO = new FileDTO();
-                fileDTO.setName(fileReadOnly.getName());
-                fileDTO.setExtension(fileReadOnly.getExtension());
-                fileDTO.setLastUpdate(fileReadOnly.getUpdated_at());
-                fileDTO.setConstructedPath(fileReadOnly.getConstructed_path());
-                try {
-                    Path path = ProjectUtils.constructPathToFile(userStoragePath, project, fileReadOnly.getConstructed_path());
-                    fileDTO.setContent(ProjectUtils.readFile(path));
-
-                }
-                catch (Exception e){
-                    throw new IllegalStateException("Ошибка чтения файла. Причина: "+e.getMessage());
-                }
-
-                return fileDTO;
-
             }
+
+            throw new IllegalStateException("файл не найден в проекте");
         }
 
-        throw new IllegalStateException("файл не найден в проекте");
+        else return fileDTOFromCache.get();
+
+
     }
 
 

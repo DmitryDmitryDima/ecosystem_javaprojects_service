@@ -1,44 +1,61 @@
 package com.ecosystem.projectsservice.javaprojects.service.cache;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class FileContentCacheImpl implements FileContentCache<FileContent, Long>{
+public class FileContentCacheImpl implements FileContentCache<FileDTO, Long>{
 
-    private final Map<Long, FileContent> cache = new ConcurrentHashMap<>();
+
+
+
+    private final Map<Long, CacheValueWrapper<FileDTO>> cache = new ConcurrentHashMap<>();
 
     @Override
-    public void save(FileContent content) {
-        if (content.getId()==null){
-            throw new IllegalStateException("null id");
-        }
+    public void save(Long id, FileDTO dto) {
+
 
         // атомарные проверки внутри hashmap
-        cache.compute(content.getId(), (k,v)->{
-            content.setLastUpdate(Instant.now());
+        cache.compute(id, (k,v)->{
+
+            // если запись есть, проверяем, не заблокирована ли она
             if (v!=null) {
                 if (v.isLocked()){
-                    throw new IllegalStateException("locked");
+                    throw new LockedValueException("locked");
                 }
+                v.setValue(dto);
+                return v;
+
 
             }
-            return content;
+
+            else {
+                return new CacheValueWrapper<>(dto);
+            }
+
+
+
+
+
 
         });
     }
 
     @Override
-    public FileContent read(Long id) {
-        return cache.get(id);
+    public Optional<FileDTO> read(Long id) {
+        CacheValueWrapper<FileDTO> wrapper = cache.get(id);
+        if (wrapper == null) return Optional.empty();
+        else {
+            return Optional.of(wrapper.getValue());
+        }
     }
 
     @Override
-    public List<FileContent> readAll() {
-        return cache.values().stream().toList();
+    public List<FileDTO> readAll() {
+        return cache.values().stream().map(CacheValueWrapper::getValue).toList();
     }
 
     @Override
