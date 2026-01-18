@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -90,6 +91,8 @@ public class ProjectsActionsController {
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        System.out.println(Arrays.toString(request.getContent().split("\\n")));
 
         actionsService.saveFile(securityContext, requestContext, projectId, fileId, request);
 

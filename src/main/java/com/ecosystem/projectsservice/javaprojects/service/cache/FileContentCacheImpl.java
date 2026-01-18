@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.service.cache;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,6 +27,7 @@ public class FileContentCacheImpl implements FileContentCache<FileDTO, Long>{
                 if (v.isLocked()){
                     throw new LockedValueException("locked");
                 }
+                v.setLastUpdate(Instant.now());
                 v.setValue(dto);
                 return v;
 
@@ -60,7 +62,7 @@ public class FileContentCacheImpl implements FileContentCache<FileDTO, Long>{
 
     @Override
     public void remove(Long id) {
-
+        cache.remove(id);
     }
 
     @Override
