@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.prepared.project_creation_from_template.event_structure;
+package com.ecosystem.projectsservice.javaprojects.processes.external_events.data;
 
 
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;

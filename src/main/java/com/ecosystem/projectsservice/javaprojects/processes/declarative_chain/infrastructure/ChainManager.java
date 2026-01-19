@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.i
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.EventQualifier;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;

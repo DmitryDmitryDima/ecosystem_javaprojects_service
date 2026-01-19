@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.external_events;
+package com.ecosystem.projectsservice.javaprojects.processes.external_events.context;
 
 import lombok.*;
 
@@ -18,7 +18,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class UserExternalEventContext implements ExternalEventContext {
+public class UserPersonalEventContext implements ExternalEventContext {
     private Instant timestamp;
     private String username;
     private UUID userUUID;

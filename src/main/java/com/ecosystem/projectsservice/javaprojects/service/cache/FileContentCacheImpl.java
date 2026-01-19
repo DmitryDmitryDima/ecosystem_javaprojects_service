@@ -3,7 +3,9 @@ package com.ecosystem.projectsservice.javaprojects.service.cache;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.TemporalField;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,9 +26,7 @@ public class FileContentCacheImpl implements FileContentCache<FileDTO, Long>{
 
             // если запись есть, проверяем, не заблокирована ли она
             if (v!=null) {
-                if (v.isLocked()){
-                    throw new LockedValueException("locked");
-                }
+
                 v.setLastUpdate(Instant.now());
                 v.setValue(dto);
                 return v;
@@ -51,13 +51,26 @@ public class FileContentCacheImpl implements FileContentCache<FileDTO, Long>{
         CacheValueWrapper<FileDTO> wrapper = cache.get(id);
         if (wrapper == null) return Optional.empty();
         else {
+            wrapper.setLastUpdate(Instant.now());
             return Optional.of(wrapper.getValue());
         }
     }
 
     @Override
     public List<FileDTO> readAll() {
-        return cache.values().stream().map(CacheValueWrapper::getValue).toList();
+        return cache.values().stream()
+                .map(CacheValueWrapper::getValue).toList();
+    }
+
+    @Override
+    public List<FileDTO> readAllByLastActivity(Long seconds){
+        return cache.values().stream().filter(entry-> Duration.between(entry.getLastUpdate(), Instant.now()).getSeconds()>=seconds)
+                .map(CacheValueWrapper::getValue).toList();
+    }
+
+    @Override
+    public List<CacheValueWrapper<FileDTO>> readAllEntries() {
+        return cache.values().stream().toList();
     }
 
     @Override
@@ -70,10 +83,7 @@ public class FileContentCacheImpl implements FileContentCache<FileDTO, Long>{
 
     }
 
-    @Override
-    public boolean lock(Long aLong) {
-        return false;
-    }
+
 
 
 }

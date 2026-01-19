@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.external_events;
 
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;

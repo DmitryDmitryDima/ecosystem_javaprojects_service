@@ -14,11 +14,15 @@ public interface FileContentCache<ContentData, Id> {
 
     List<ContentData> readAll();
 
+    List<ContentData> readAllByLastActivity(Long seconds);
+
+    List<CacheValueWrapper<ContentData>> readAllEntries();
+
     void remove(Id id);
 
     void removeAll(List<Id> ids);
 
-    public boolean lock(Id id);
+
 
 
 

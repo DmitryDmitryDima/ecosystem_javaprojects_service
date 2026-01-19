@@ -1,9 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action;
 
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventName;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ public class BroadcastableAction {
     public class StepBuilder{
         private Supplier<ActionResult<? extends ExternalEventContext,? extends ExternalEventData>> action;
         private Runnable onError;
-        private ExternalEventName externalEventName;
+        private ExternalEventType externalEventType;
         private ExternalEvent<? extends ExternalEventContext> externalEvent;
         private boolean needErrorMessage;
 
@@ -57,13 +57,13 @@ public class BroadcastableAction {
         }
 
         // имя ивента
-        public StepBuilder withExternalName(ExternalEventName name){
-            this.externalEventName = name;
+        public StepBuilder withExternalEventType(ExternalEventType name){
+            this.externalEventType = name;
             return this;
         }
 
         // тип ивента
-        public StepBuilder withExternalEvent(ExternalEvent<? extends ExternalEventContext> event){
+        public StepBuilder withExternalEventCategory(ExternalEvent<? extends ExternalEventContext> event){
             this.externalEvent = event;
             return this;
         }
@@ -84,7 +84,7 @@ public class BroadcastableAction {
             externalEvent.setMessage(result.getMessage());
             externalEvent.setStatus(EventStatus.SUCCESS);
             externalEvent.setContext(result.getContext());
-            externalEvent.setType(stepBuilder.externalEventName.getName());
+            externalEvent.setType(stepBuilder.externalEventType.getName());
             System.out.println(result.getExternalData());
             externalEvent.setData(mapper.writeValueAsString(result.getExternalData()));
 

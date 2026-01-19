@@ -1,14 +1,14 @@
-package com.ecosystem.projectsservice.javaprojects.processes.prepared.project_removal;
+package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal;
 
 
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventName;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.markers.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.UserPersonalEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -23,7 +23,7 @@ import java.util.Optional;
 
 // todo добавить инвалидацию кеша
 @Service
-@ExternalResultName(event = ExternalEventName.JAVA_PROJECT_REMOVAL)
+@ExternalResultType(event = ExternalEventType.JAVA_PROJECT_REMOVAL)
 public class ProjectRemovalChain extends OutboxDeclarativeChain<ProjectRemovalEvent> {
 
 
@@ -53,7 +53,7 @@ public class ProjectRemovalChain extends OutboxDeclarativeChain<ProjectRemovalEv
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
-        return new UserEvent();
+        return new UserPersonalEvent();
     }
 
 

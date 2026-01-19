@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.prepared.project_creation_from_template.event_structure;
+package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template;
 
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.InternalEventData;

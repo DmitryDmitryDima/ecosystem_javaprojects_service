@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.prepared.project_removal.event_structure;
+package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal;
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.InternalEventData;
 import lombok.Getter;

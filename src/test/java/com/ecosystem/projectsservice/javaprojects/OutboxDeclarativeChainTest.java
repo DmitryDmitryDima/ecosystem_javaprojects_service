@@ -1,11 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects;
 
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.FileSaveChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.FileSaveEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
 
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.event_structure.FileSaveExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.event_structure.FileSaveInternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ProjectExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveInternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -49,7 +49,7 @@ public class OutboxDeclarativeChainTest {
 
         FileSaveEvent mainEvent = new FileSaveEvent();
 
-        ProjectExternalEventContext context = ProjectExternalEventContext.builder()
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.builder()
                 .correlationId(UUID.randomUUID())
                 .participants(List.of())
                 .projectId(5L)

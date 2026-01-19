@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -17,6 +18,11 @@ public class FileDTO {
     private String name;
     private String constructedPath;
     private Long id;
+
+    // кешируем uuid владельца файла
+    private UUID ownerUUID;
+
+    private Long projectId;
 
 
 }

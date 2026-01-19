@@ -4,7 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -77,9 +77,9 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
     // кешируем значение типа внешнего ивента
     private void cacheResultingEventType() throws Exception{
         // Название результирующего ивента необходимо как для расшифровки payload, так и для event_type во внешнем ивенте
-        ExternalResultName externalResultName = this.getClass().getAnnotation(ExternalResultName.class);
-        if (externalResultName ==null) throw new IllegalStateException("Не указан тип внешнего ивента для цепи. Используйте @ExternalResultName");
-        resultingEventType = externalResultName.event().getName();
+        ExternalResultType externalResultType = this.getClass().getAnnotation(ExternalResultType.class);
+        if (externalResultType ==null) throw new IllegalStateException("Не указан тип внешнего ивента для цепи. Используйте @ExternalResultName");
+        resultingEventType = externalResultType.event().getName();
     }
 
     // кешируем и регистрируем chain state event

@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.external_events;
+package com.ecosystem.projectsservice.javaprojects.processes.external_events.context;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
@@ -15,7 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ProjectExternalEventContext implements ExternalEventContext {
+public class ProjectEventFromUserContext implements ExternalEventContext {
     private Instant timestamp;
     private String username;
     private UUID userUUID;
@@ -32,12 +32,12 @@ public class ProjectExternalEventContext implements ExternalEventContext {
     private List<UUID> participants;
 
 
-    public static ProjectExternalEventContext from(SecurityContext securityContext,
-                                            RequestContext requestContext,
-                                            Long projectId,
-                                            List<UUID> participants){
+    public static ProjectEventFromUserContext from(SecurityContext securityContext,
+                                                   RequestContext requestContext,
+                                                   Long projectId,
+                                                   List<UUID> participants){
 
-        return ProjectExternalEventContext.builder()
+        return ProjectEventFromUserContext.builder()
 
                 .correlationId(requestContext.getCorrelationId())
                 .participants(participants)

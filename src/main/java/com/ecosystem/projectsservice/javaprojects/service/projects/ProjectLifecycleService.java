@@ -7,15 +7,15 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.Project
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.UserExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.project_creation_from_template.ProjectCreationFromTemplateChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.project_creation_from_template.ProjectCreationFromTemplateEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.project_creation_from_template.event_structure.ProjectCreationFromTemplateExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.project_creation_from_template.event_structure.ProjectCreationFromTemplateInternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.project_removal.ProjectRemovalChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.project_removal.ProjectRemovalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.project_removal.event_structure.ProjectRemovalExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.project_removal.event_structure.ProjectRemovalInternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.UserPersonalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ProjectCreationFromTemplateExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateInternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ProjectRemovalExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
@@ -91,7 +91,7 @@ public class ProjectLifecycleService {
 
         ProjectRemovalEvent mainEvent = new ProjectRemovalEvent();
 
-        UserExternalEventContext context = new UserExternalEventContext();
+        UserPersonalEventContext context = new UserPersonalEventContext();
         context.setRenderId(requestContext.getRenderId());
         context.setUsername(securityContext.getUsername());
         context.setTimestamp(Instant.now());
@@ -138,7 +138,7 @@ public class ProjectLifecycleService {
         ProjectCreationFromTemplateExternalData externalData = new ProjectCreationFromTemplateExternalData();
         externalData.setName(projectCreationRequest.getName());
 
-        UserExternalEventContext context = new UserExternalEventContext();
+        UserPersonalEventContext context = new UserPersonalEventContext();
         context.setUsername(securityContext.getUsername());
         context.setTimestamp(Instant.now());
         context.setUserUUID(securityContext.getUuid());

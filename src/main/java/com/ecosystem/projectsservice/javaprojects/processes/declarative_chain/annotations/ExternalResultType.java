@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations;
 
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventName;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
 
 @Retention(value = RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface ExternalResultName {
-    ExternalEventName event();
+public @interface ExternalResultType {
+    ExternalEventType event();
 }

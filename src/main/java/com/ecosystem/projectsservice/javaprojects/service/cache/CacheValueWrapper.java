@@ -6,7 +6,6 @@ import java.time.Instant;
 
 @Data
 public class CacheValueWrapper<Value>{
-    private boolean locked;
     private Instant lastUpdate;
     private Value value;
 

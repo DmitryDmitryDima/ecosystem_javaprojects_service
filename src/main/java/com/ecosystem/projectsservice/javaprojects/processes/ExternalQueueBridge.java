@@ -2,8 +2,9 @@ package com.ecosystem.projectsservice.javaprojects.processes;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.markers.ProjectEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.markers.UserEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromSystem;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.UserPersonalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ChainManager;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,19 +54,49 @@ public class ExternalQueueBridge {
     @Value("${users.projects_events.exchange.name}")
     private String USERS_PROJECT_EVENTS_EXCHANGE_NAME;
 
+
+    @Value("${system.projects_events.exchange.name}")
+    private String SYSTEM_PROJECTS_EVENTS_EXCHANGE_NAME;
+
+
+    // точка регистрации категорий
+
     @PostConstruct
     public void registerQueueEvents(){
 
-
-
         chainManager.registerExternalEvents(List.of(
-                ProjectEvent.class, UserEvent.class
+                ProjectEventFromUser.class, UserPersonalEvent.class, ProjectEventFromSystem.class
         ));
+    }
+
+
+    @EventListener
+    @Async
+    public void catchProjectSystemEvent(ProjectEventFromSystem projectEventFromSystem){
+        try {
+            MessagePostProcessor postProcessor = (message )->{
+                message.getMessageProperties().setHeader("event_type", projectEventFromSystem.getType());
+                return message;
+            };
+
+            String payload = mapper.writeValueAsString(projectEventFromSystem);
+
+            rabbitTemplate.convertAndSend(SYSTEM_PROJECTS_EVENTS_EXCHANGE_NAME, "", payload, postProcessor);
+
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+        if (projectEventFromSystem.getOutboxParent()!=null){
+            outboxCallback(projectEventFromSystem.getOutboxParent());
+        }
     }
 
     @EventListener
     @Async
-    public void catchUserActivityEvent(UserEvent event){
+    public void catchUserActivityEvent(UserPersonalEvent event){
         System.out.println("user event ");
         try {
             MessagePostProcessor postProcessor = (message )->{
@@ -92,7 +123,7 @@ public class ExternalQueueBridge {
 
     @EventListener
     @Async
-    public void catchProjectUserEvent(ProjectEvent event){
+    public void catchProjectUserEvent(ProjectEventFromUser event){
         System.out.println("project event "+event);
         try {
             MessagePostProcessor postProcessor = (message )->{

@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.event_structure;
+package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave;
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.InternalEventData;
 import lombok.Getter;

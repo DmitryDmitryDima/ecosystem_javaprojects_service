@@ -1,15 +1,17 @@
-package com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave;
+package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave;
 
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventName;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.markers.ProjectEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -23,11 +25,15 @@ import java.util.Optional;
 
 // указывается state event, проходящий через всю очередь, и ивент результат
 @Service
-@ExternalResultName(event = ExternalEventName.JAVA_PROJECT_FILE_SAVE)
+@ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_SAVE)
 public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
 
     @Autowired
     private FileRepository fileRepository;
+
+    // обновляем кеш в конце цепочки
+    @Autowired
+    private FileContentCache<FileDTO, Long> fileContentCache;
 
 
     @Override
@@ -49,12 +55,23 @@ public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
         // Шаг, после которого произошла ошибка
         String step = event.getInternalData().getCurrentStep();
         System.out.println("compensation for "+step);
+
+        // нужно освободить файл. Примечание - файл не может быть изменен. если какой либо процесс занимает лок
+        if (!step.equals("lockFile")){
+            transaction().execute(status -> {
+                Optional<File> fileCheck = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
+
+                fileCheck.ifPresent(file -> file.setStatus(FileStatus.AVAILABLE));
+
+                return null;
+            });
+        }
     }
 
     // связываем цепочку с конкретным типом выходного ивента
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
-        return new ProjectEvent();
+        return new ProjectEventFromUser();
     }
 
 
@@ -79,7 +96,7 @@ public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
 
             File fileEntity = fileCheck.get();
 
-            if (fileEntity.getStatus()== FileStatus.WRITING){
+            if (fileEntity.getStatus()== FileStatus.WRITING || fileEntity.getStatus() == FileStatus.REMOVING){
                 throw new IllegalStateException("файл занят другим процессом");
 
             }
@@ -146,6 +163,28 @@ public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
 
             return null;
         });
+
+        // обновляем запись в кеше - чтобы с этого момента чтение было актуальным
+
+
+        FileDTO fileDTO = FileDTO.builder()
+                .content(fileSaveEvent.getExternalData().getContent())
+                .constructedPath(fileSaveEvent.getExternalData().getPath())
+                .id(fileSaveEvent.getExternalData().getFileId())
+                .extension(fileSaveEvent.getExternalData().getExtension())
+                .name(fileSaveEvent.getExternalData().getName())
+                .projectId(fileSaveEvent.getContext().getProjectId())
+                .ownerUUID(fileSaveEvent.getExternalData().getFileOwner())
+                .build();
+
+        try {
+            fileContentCache.save(fileDTO.getId(), fileDTO);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+
 
         return fileSaveEvent;
     }

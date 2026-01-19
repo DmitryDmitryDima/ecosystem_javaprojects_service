@@ -11,15 +11,15 @@ import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventName;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionResult;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ProjectExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.markers.ProjectEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.FileSaveChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.FileSaveEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.event_structure.FileSaveExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared.filesave.event_structure.FileSaveInternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
@@ -147,6 +147,8 @@ public class ProjectActionsService {
                 .id(dbFile.getId())
                 .extension(dbFile.getExtension())
                 .name(dbFile.getName())
+                .projectId(projectId)
+                .ownerUUID(project.getUserUUID())
                         .build();
 
 
@@ -164,7 +166,7 @@ public class ProjectActionsService {
             }
 
 
-            ProjectExternalEventContext context = ProjectExternalEventContext.from(securityContext,
+            ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext,
                     requestContext,
                     projectId,
                     List.of());
@@ -181,8 +183,8 @@ public class ProjectActionsService {
 
 
         })
-                .withExternalEvent(new ProjectEvent())
-                .withExternalName(ExternalEventName.JAVA_PROJECT_FILE_SAVE)
+                .withExternalEventCategory(new ProjectEventFromUser())
+                .withExternalEventType(ExternalEventType.JAVA_PROJECT_FILE_SAVE)
                 .execute();
 
 
@@ -210,6 +212,7 @@ public class ProjectActionsService {
 
         ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());
 
+
         for (FileReadOnly fileReadOnly:snapshot.getFiles()){
 
             if (fileReadOnly.getId().equals(fileId)){
@@ -222,7 +225,7 @@ public class ProjectActionsService {
 
                 FileSaveEvent mainEvent = new FileSaveEvent();
                 mainEvent.setMessage("Сохраняем файл...");
-                ProjectExternalEventContext context = ProjectExternalEventContext.from(securityContext, requestContext, projectId, List.of());
+                ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, projectId, List.of());
 
                 mainEvent.setContext(context);
 
@@ -235,6 +238,9 @@ public class ProjectActionsService {
                 FileSaveExternalData externalData = new FileSaveExternalData();
                 externalData.setContent(request.getContent());
                 externalData.setFileId(fileId);
+                externalData.setExtension(fileReadOnly.getExtension());
+                // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
+                externalData.setFileOwner(project.getUserUUID());
 
 
 
@@ -299,16 +305,22 @@ public class ProjectActionsService {
             for (FileReadOnly fileReadOnly:snapshot.getFiles()){
                 if (fileReadOnly.getId().equals(fileId)){
                     if (fileReadOnly.isHidden()){
-                        throw new IllegalStateException("Файл не доступен для чтения");
+                        throw new IllegalStateException("Файл скрыт");
+                    }
+                    if (fileReadOnly.getStatus()==FileStatus.REMOVING){
+                        throw new IllegalStateException("файл удален");
                     }
 
-                    FileDTO fileDTO = new FileDTO();
+                    FileDTO fileDTO = FileDTO.builder()
+                            .name(fileReadOnly.getName())
+                            .extension(fileReadOnly.getExtension())
+                            .constructedPath(fileReadOnly.getConstructed_path())
+                            .id(fileReadOnly.getId())
+                            .ownerUUID(project.getUserUUID())
+                            .projectId(projectId)
+                            .build();
 
-                    fileDTO.setName(fileReadOnly.getName());
-                    fileDTO.setExtension(fileReadOnly.getExtension());
-                    //fileDTO.setLastUpdate(fileReadOnly.getUpdated_at());
-                    fileDTO.setConstructedPath(fileReadOnly.getConstructed_path());
-                    fileDTO.setId(fileReadOnly.getId());
+
                     try {
                         Path path = ProjectUtils.constructPathToFile(userStoragePath, project, fileReadOnly.getConstructed_path());
                         fileDTO.setContent(ProjectUtils.readFile(path));
