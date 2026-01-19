@@ -152,6 +152,7 @@ public class FileOperationsListener {
 
             try {
 
+
                 broadcast.statelessAction(()-> performDiskWrite(file))
                         .withContext(()->{
                             // не нужны, адресат - комната
