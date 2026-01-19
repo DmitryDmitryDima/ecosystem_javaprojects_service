@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 import java.util.function.Supplier;
 
 
+
+
+
 // данный сервис позволяет обернуть действие, совершаемое за один шаг, и при этом генерирующее ивент для внешних систем
 @Service
 public class BroadcastableAction {
@@ -27,6 +30,102 @@ public class BroadcastableAction {
     public StepBuilder createAction(Supplier<ActionResult<? extends ExternalEventContext,? extends ExternalEventData>> action){
 
         return new StepBuilder(action);
+    }
+
+    public Context statelessAction(Runnable action){
+        return new StatelessStepBuilder(action);
+    }
+
+
+
+    public interface Context{
+        Data withContext(Supplier<? extends ExternalEventContext> context);
+    }
+
+    public interface Data{
+        Event withData(Supplier<? extends ExternalEventData> data);
+    }
+
+    public interface Event{
+        Type withEvent(Supplier<ExternalEvent<? extends ExternalEventContext>> event);
+    }
+
+    public interface Type {
+        Message withType(ExternalEventType externalEventType);
+    }
+
+    public interface Message {
+        Execute withMessage(String message);
+    }
+
+    public interface Execute{
+        void execute() throws ActionExecutionException;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // используется в случае, если действие не вносит какие-либо изменения во входящие данные
+    private class StatelessStepBuilder implements Context, Data, Event, Type, Message, Execute{
+        private Runnable action;
+        private ExternalEventType externalEventType;
+        private Supplier<? extends ExternalEventContext> context;
+        private Supplier<? extends ExternalEventData> data;
+        private String message;
+
+        private Supplier<ExternalEvent<? extends ExternalEventContext>> externalEvent;
+
+
+
+
+        public StatelessStepBuilder(Runnable action){
+            this.action = action;
+        }
+
+
+        @Override
+        public Data withContext(Supplier<? extends ExternalEventContext> context) {
+            this.context = context;
+            return this;
+        }
+
+        @Override
+        public Event withData(Supplier<? extends ExternalEventData> data) {
+            this.data = data;
+            return this;
+        }
+
+        @Override
+        public Type withEvent(Supplier<ExternalEvent<? extends ExternalEventContext>> event) {
+            this.externalEvent = event;
+            return this;
+        }
+
+        @Override
+        public void execute() throws ActionExecutionException {
+            BroadcastableAction.this.execute(this);
+        }
+
+        @Override
+        public Execute withMessage(String message) {
+            this.message = message;
+            return this;
+        }
+
+        @Override
+        public Message withType(ExternalEventType externalEventType) {
+            this.externalEventType = externalEventType;
+            return this;
+        }
     }
 
 
@@ -74,6 +173,37 @@ public class BroadcastableAction {
 
 
     }
+
+    private void execute(StatelessStepBuilder statelessStepBuilder) throws ActionExecutionException {
+        try {
+            statelessStepBuilder.action.run();
+
+            ExternalEvent externalEvent = statelessStepBuilder.externalEvent.get();
+
+            externalEvent.setMessage(statelessStepBuilder.message);
+            externalEvent.setStatus(EventStatus.SUCCESS);
+            externalEvent.setContext(statelessStepBuilder.context.get());
+            externalEvent.setType(statelessStepBuilder.externalEventType.getName());
+
+            externalEvent.setData(mapper.writeValueAsString(statelessStepBuilder.data.get()));
+
+
+
+            publisher.publishEvent(externalEvent);
+
+        }
+        catch (Exception e){
+
+
+
+
+            // todo onError
+            throw new ActionExecutionException("ошибка выполнения действия. Причина "+e.getCause().getMessage());
+        }
+    }
+
+
+
 
     private void execute(StepBuilder stepBuilder) throws Exception{
         try {

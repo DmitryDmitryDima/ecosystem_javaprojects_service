@@ -62,6 +62,30 @@ public class FileOperationsListener {
         );
     }
 
+    private void performDiskWrite(CacheValueWrapper<FileDTO> file){
+        Path filePath = Path.of(userStoragePath,
+                file.getValue().getOwnerUUID().toString(),
+                "projects", file.getValue().getConstructedPath());
+
+
+
+        boolean canWrite = Boolean.TRUE.equals(transactionTemplate.execute(status -> {
+            Optional<File> dbCheck = fileRepository.findById(file.getValue().getId());
+
+            return dbCheck.isPresent() && dbCheck.get().getStatus() == FileStatus.AVAILABLE;
+        }));
+
+        if (canWrite){
+            try {
+                Files.writeString(filePath, file.getValue().getContent(), StandardOpenOption.TRUNCATE_EXISTING);
+                System.out.println("background write");
+            }
+            catch (Exception e){
+
+            }
+        }
+    }
+
     private ActionResult<ProjectEventFromSystemContext, FileSaveExternalData> performFileDiskWrite(CacheValueWrapper<FileDTO> file){
         Path filePath = Path.of(userStoragePath,
                 file.getValue().getOwnerUUID().toString(),
@@ -127,12 +151,46 @@ public class FileOperationsListener {
 
 
             try {
+
+                broadcast.statelessAction(()-> performDiskWrite(file))
+                        .withContext(()->{
+                            // не нужны, адресат - комната
+                            return ProjectEventFromSystemContext.builder()
+                                            .correlationId(UUID.randomUUID())
+                                            .origin("background disk writer process")
+                                            .timestamp(Instant.now())
+                                            .participants(List.of()) // не нужны, адресат - комната
+                                            .projectId(file.getValue().getProjectId())
+                                            .build();
+                        })
+
+
+                        .withData(()->{
+                            FileSaveExternalData data = new FileSaveExternalData();
+                            data.setFileOwner(file.getValue().getOwnerUUID());
+                            data.setFileId(file.getValue().getId());
+                            data.setPath(file.getValue().getConstructedPath());
+                            data.setName(file.getValue().getName());
+                            data.setExtension(file.getValue().getExtension());
+                            return data;
+                        })
+                        .withEvent(ProjectEventFromSystem::new)
+                        .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
+                        .withMessage("Данные записаны")
+                        .execute();
+
+
+                /*
                 broadcast.createAction(()-> performFileDiskWrite(file))
                         .withExternalEventCategory(new ProjectEventFromSystem())
                         .withExternalEventType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
                         .execute();
 
+                 */
+
             } catch (Exception e) {
+
+
             }
 
 
