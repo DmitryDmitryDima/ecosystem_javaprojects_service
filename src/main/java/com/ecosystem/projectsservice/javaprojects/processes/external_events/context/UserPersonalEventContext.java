@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes.external_events.context;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -14,14 +15,15 @@ import java.util.UUID;
 
 
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class UserPersonalEventContext implements ExternalEventContext {
-    private Instant timestamp;
+@SuperBuilder
+public class UserPersonalEventContext extends ExternalEventContext {
+
     private String username;
     private UUID userUUID;
-    private UUID correlationId;
+
     private UUID renderId;
 }

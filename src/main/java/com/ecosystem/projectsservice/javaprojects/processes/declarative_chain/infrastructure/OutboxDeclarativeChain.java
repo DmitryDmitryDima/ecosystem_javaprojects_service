@@ -168,6 +168,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
         outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
 
         String payload = mapper.writeValueAsString(event);
+
         outboxEvent.setPayload(payload);
 
         transaction().execute(status -> {

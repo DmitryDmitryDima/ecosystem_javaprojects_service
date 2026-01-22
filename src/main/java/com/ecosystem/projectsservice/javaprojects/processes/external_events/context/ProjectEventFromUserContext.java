@@ -2,24 +2,23 @@ package com.ecosystem.projectsservice.javaprojects.processes.external_events.con
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-public class ProjectEventFromUserContext implements ExternalEventContext {
-    private Instant timestamp;
+@SuperBuilder
+public class ProjectEventFromUserContext extends ExternalEventContext {
+
     private String username;
     private UUID userUUID;
-    private UUID correlationId;
+
     private UUID renderId;
 
     // todo participant role - роль участника - к примеру author, project admin (not always author only)
@@ -38,6 +37,7 @@ public class ProjectEventFromUserContext implements ExternalEventContext {
                                                    List<UUID> participants){
 
         return ProjectEventFromUserContext.builder()
+
 
                 .correlationId(requestContext.getCorrelationId())
                 .participants(participants)
