@@ -20,17 +20,8 @@ public class ProjectActionsUtils {
 
 
     // метод вызывается из контекста @Transactional
-    public ProjectDTO generateStructureForDTO(Long rootId, ProjectDTO projectDTO,
+    public void generateStructureForDTO(Long rootId, ProjectDTO projectDTO,
                                               ProjectSnapshot snapshot){
-
-
-
-
-
-
-
-
-
 
 
 
@@ -54,7 +45,7 @@ public class ProjectActionsUtils {
 
 
 
-        return projectDTO;
+
 
 
 

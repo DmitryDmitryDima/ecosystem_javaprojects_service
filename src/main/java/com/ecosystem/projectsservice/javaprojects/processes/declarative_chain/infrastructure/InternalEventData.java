@@ -20,4 +20,6 @@ public abstract class InternalEventData {
     @JsonIgnore
     private Long outboxParent = -1L;
 
+
+
 }

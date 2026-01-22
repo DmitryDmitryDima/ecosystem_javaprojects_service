@@ -161,6 +161,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
     // изначальный currentStep = null
     public void init(E event) throws Exception{
 
+
         OutboxEvent outboxEvent = new OutboxEvent();
         outboxEvent.setLast_update(Instant.now());
         outboxEvent.setType(internalEventQualifier);

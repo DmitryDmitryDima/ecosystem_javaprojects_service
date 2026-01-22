@@ -86,47 +86,7 @@ public class FileOperationsListener {
         }
     }
 
-    private ActionResult<ProjectEventFromSystemContext, FileSaveExternalData> performFileDiskWrite(CacheValueWrapper<FileDTO> file){
-        Path filePath = Path.of(userStoragePath,
-                file.getValue().getOwnerUUID().toString(),
-                "projects", file.getValue().getConstructedPath());
 
-
-
-        boolean canWrite = Boolean.TRUE.equals(transactionTemplate.execute(status -> {
-            Optional<File> dbCheck = fileRepository.findById(file.getValue().getId());
-
-            return dbCheck.isPresent() && dbCheck.get().getStatus() == FileStatus.AVAILABLE;
-        }));
-
-        if (canWrite){
-            try {
-                Files.writeString(filePath, file.getValue().getContent(), StandardOpenOption.TRUNCATE_EXISTING);
-                System.out.println("background write");
-            }
-            catch (Exception e){
-
-            }
-        }
-
-        ProjectEventFromSystemContext context = ProjectEventFromSystemContext.builder()
-                .correlationId(UUID.randomUUID())
-                .origin("background disk writer process")
-                .timestamp(Instant.now())
-                .participants(List.of()) // не нужны, адресат - комната
-                .projectId(file.getValue().getProjectId())
-                .build();
-
-        FileSaveExternalData data = new FileSaveExternalData();
-        data.setFileOwner(file.getValue().getOwnerUUID());
-        data.setFileId(file.getValue().getId());
-        data.setPath(file.getValue().getConstructedPath());
-        data.setName(file.getValue().getName());
-        data.setExtension(file.getValue().getExtension());
-
-
-        return new ActionResult<>(context, data, "Данные записаны на диск");
-    }
 
 
     /*
@@ -181,13 +141,7 @@ public class FileOperationsListener {
                         .execute();
 
 
-                /*
-                broadcast.createAction(()-> performFileDiskWrite(file))
-                        .withExternalEventCategory(new ProjectEventFromSystem())
-                        .withExternalEventType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
-                        .execute();
 
-                 */
 
             } catch (Exception e) {
 
