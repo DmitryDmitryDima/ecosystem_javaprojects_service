@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -37,6 +38,8 @@ public class OutboxEvent {
 
     // тип ивента - его string форма хранится в каждом из ивентов. Тип + payload => application event для публикации в цепочку после прочтения из outbox
     private String type;
+
+    private UUID correlationId;
 
 
 
