@@ -52,6 +52,17 @@ public class ProcessAggregator {
         }
     }
 
+    public ChainProcess getChainProcessByCorrelationId(UUID correlationId){
+        readLock.lock();
+
+        try {
+            return allProcesses.get(correlationId);
+        }
+        finally {
+            readLock.unlock();
+        }
+    }
+
 
 
 

@@ -55,6 +55,7 @@ public abstract class ChainProcess {
     private final AtomicReference<ProcessStatus> status = new AtomicReference<>(ProcessStatus.WAITING);
 
 
+    // ивент, прихода которого на данный момент ждет процесс
     private final AtomicReference<String> waitingForEvent = new AtomicReference<>(null);
 
 
@@ -108,8 +109,9 @@ public abstract class ChainProcess {
 
 
     // заканчиваем шаг
-    public void endStep(){
+    public void stepOnEnd(String nextEventName){
         currentStep.set(null);
+        waitingForEvent.set(nextEventName); // устанавливаем имя следующего ивента
 
         currentNativeProcesses.getAndUpdate((processes -> {
             if (processes!=null){
@@ -132,7 +134,7 @@ public abstract class ChainProcess {
 
     }
 
-    public void startStep(String step){
+    public void stepOnStart(String step){
         currentStep.set(step);
         currentThread.set(Thread.currentThread());
         status.set(ProcessStatus.RUNNING);
@@ -146,6 +148,10 @@ public abstract class ChainProcess {
             return processes;
         });
     }
+
+
+
+
 
 
 

@@ -44,6 +44,8 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
     @Autowired
     private TransactionTemplate transactionTemplate;
 
+
+
     private CachedMethod openingStep;
 
     private CachedMethod endingStep;
@@ -59,18 +61,24 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
     public TransactionTemplate transaction(){return transactionTemplate;}
 
-    public abstract void configure() throws Exception;
+    // todo java конфигурация - fluent интерфейс - если она есть, аннотационная настройка не актуальна
+    protected void configure() throws Exception{};
+
+    // подготовка функций, специфичных для какой-либо из категорий цепочки
+    protected void specificPreparation(){}
 
     @PostConstruct
     public final void initiation() throws Exception{
 
+       configure();
+
+       // todo если configure переопределен - значит оставшаяся часть игнорируется
        cacheResultingEventType();
        cacheAndRegisterInternalEvent();
        cacheExternalEvent();
        prepareSteps();
+       specificPreparation();
 
-       // пользовательский конфтг
-       configure();
 
     }
 
@@ -100,6 +108,10 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
         externalEventQualifier = annotation.value();
     }
 
+
+
+
+
     // анализируем структуру цепочки
     // todo добавить проверку корректности конфигурации
     private void prepareSteps(){
@@ -114,6 +126,9 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
             Next nextAnnotation = method.getAnnotation(Next.class);
             MaxRetry maxRetry = method.getAnnotation(MaxRetry.class);
             Message message = method.getAnnotation(Message.class);
+
+
+
 
             if (openingStepAnnotation!=null){
                 openingStep = new CachedMethod();
@@ -426,13 +441,14 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
     public abstract void compensationStrategy(E event);
 
 
-
-    private class CachedMethod{
+    // универсальный кеш дял методов всех цепочек
+    protected class CachedMethod{
         Method method;
         long maxRetry;
         String next;
         boolean message;
         String name;
+
 
         @Override
         public String toString() {
@@ -443,6 +459,21 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
                     ", name='" + name + '\'' +
                     '}';
         }
+    }
+
+
+    // геттеры для добавления функционала (дополнительный анализ аннотаций)
+
+    protected CachedMethod getOpeningStep() {
+        return openingStep;
+    }
+
+    protected CachedMethod getEndingStep(){
+        return endingStep;
+    }
+
+    protected Map<String, CachedMethod> getSteps(){
+        return steps;
     }
 
 
