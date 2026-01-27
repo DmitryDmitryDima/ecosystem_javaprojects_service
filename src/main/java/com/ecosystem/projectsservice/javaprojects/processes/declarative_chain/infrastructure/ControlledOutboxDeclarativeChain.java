@@ -1,14 +1,18 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure;
 
+import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.MaxDuration;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.WaitingFor;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.exceptions.ChainInitiationException;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ChainProcess;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ProcessAggregator;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.lang.reflect.Method;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +34,10 @@ public abstract class ControlledOutboxDeclarativeChain <E extends DeclarativeCha
     @Autowired
     private ProcessAggregator processAggregator;
 
+    protected ProcessAggregator aggregator(){
+        return processAggregator;
+    }
+
     // регистрация нативного cmd процесса - обязательно для ситуаций, когда таковые имеются в шаге
     protected void registerNativeProcess(UUID correlationId, Process process){
 
@@ -44,9 +52,116 @@ public abstract class ControlledOutboxDeclarativeChain <E extends DeclarativeCha
 
     @Override
     protected void specificPreparation() {
-        super.specificPreparation();
+
         extractTimeControlParams();
 
+
+    }
+
+    protected void performCompensation(E event, ChainProcess chainProcess){
+
+
+        try {
+            compensationStrategy(event);
+
+            ExternalEvent externalEvent = bindResultingEvent();
+            externalEvent.setContext(event.getContext());
+            externalEvent.setData(mapper().writeValueAsString(event.getExternalData()));
+            externalEvent.setType(getResultingEventType().getName());
+            externalEvent.setStatus(EventStatus.ERROR);
+            externalEvent.setMessage(event.getMessage());
+
+            OutboxEvent outboxEvent = new OutboxEvent();
+            outboxEvent.setLast_update(Instant.now());
+            outboxEvent.setType(externalEventQualifier);
+            outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+            outboxEvent.setPayload(mapper().writeValueAsString(externalEvent));
+
+            // todo
+            transaction().execute(status -> {
+                outboxEventRepository.save(outboxEvent);
+                return null;
+            });
+
+        }
+        catch (Exception e){
+            // todo специальная обработка исключения
+
+        }
+
+
+
+        finally {
+
+            // STOPPED + NULL + NULL = КОМПЕНСАЦИЯ ОБРАБОТАНА
+            chainProcess.getStatus().set(ChainProcess.ProcessStatus.STOPPED);
+            transaction().execute(status -> {
+                outboxCallback(event.getInternalData().getOutboxParent());
+                return null;
+            });
+
+        }
+    }
+
+
+    @Override
+    protected void processEvent(E event){
+
+        // данный объект несет в себе персистентное состояние процесса
+        InternalEventData internalEventData = event.getInternalData();
+
+        // объект управления процессом
+        ChainProcess chainProcess = aggregator().getChainProcessByCorrelationId(event.getContext().getCorrelationId());
+
+        // метод, который будет выполняться следующим
+        CachedMethod toExecute = resolveNextExecution(internalEventData);
+
+        // сценарий компенсации
+        if (toExecute==null){
+
+            // RUNNING + NULL + NULL = КОМПЕНСАЦИЯ
+            chainProcess.getWaitingForEvent().set(null); // ничего не ожидается - это означает компенсацию
+            chainProcess.getCurrentStep().set(null); // ни один шаг цепочки не выполняется
+            chainProcess.getStatus().set(ChainProcess.ProcessStatus.RUNNING);
+
+
+            performCompensation(event, chainProcess);
+        }
+
+
+
+    }
+
+
+
+
+    // если процесс необходимо ассоциировать не только с correlation id, но и с другими сущностями, необходимо внести функционал в этот метод
+    public abstract void setProcessAssociations(E event);
+
+
+
+
+
+    @Override
+    public void init(E event) throws Exception {
+
+        // создаем процесс
+        ChainProcess chainProcess = new ChainProcess(event.getContext().getCorrelationId(),
+                getResultingEventType(),
+                getOpeningStep().name);
+
+        try {
+
+
+
+             aggregator().registerChainProcess(chainProcess);
+
+             setProcessAssociations(event); // настройка ассоциаций
+        }
+        catch (Exception e){
+            throw new ChainInitiationException("Ошибка создания state объекта");
+        }
+        super.init(event);
     }
 
     private void extractTimeControlParams(){

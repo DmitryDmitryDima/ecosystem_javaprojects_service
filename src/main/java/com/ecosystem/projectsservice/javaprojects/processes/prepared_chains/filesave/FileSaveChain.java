@@ -113,6 +113,7 @@ public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
         fileSaveEvent.getExternalData().setName(file.getName());
         fileSaveEvent.getExternalData().setPath(file.getConstructedPath());
 
+
         // конструируем полный путь
         fileSaveEvent.getInternalData()
                 .setFilePath(

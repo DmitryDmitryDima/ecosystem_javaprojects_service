@@ -1,7 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.exceptions.ChainInitiationException;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
@@ -25,12 +27,12 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
 
     @Autowired
-    private OutboxEventRepository outboxEventRepository;
+    protected OutboxEventRepository outboxEventRepository;
 
-    private String resultingEventType; // совпадает с именем state event'а
+    private ExternalEventType resultingEventType; // совпадает с именем state event'а
 
     private String internalEventQualifier;
-    private String externalEventQualifier;
+    protected String externalEventQualifier;
 
 
 
@@ -61,6 +63,8 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
     public TransactionTemplate transaction(){return transactionTemplate;}
 
+    protected ObjectMapper mapper(){return mapper;}
+
     // todo java конфигурация - fluent интерфейс - если она есть, аннотационная настройка не актуальна
     protected void configure() throws Exception{};
 
@@ -87,7 +91,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
         // Название результирующего ивента необходимо как для расшифровки payload, так и для event_type во внешнем ивенте
         ExternalResultType externalResultType = this.getClass().getAnnotation(ExternalResultType.class);
         if (externalResultType ==null) throw new IllegalStateException("Не указан тип внешнего ивента для цепи. Используйте @ExternalResultName");
-        resultingEventType = externalResultType.event().getName();
+        resultingEventType = externalResultType.event();
     }
 
     // кешируем и регистрируем chain state event
@@ -187,7 +191,12 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
         outboxEvent.setPayload(payload);
 
         transaction().execute(status -> {
-            outboxEventRepository.save(outboxEvent);
+            try {
+                outboxEventRepository.save(outboxEvent);
+            }
+            catch (Exception e){
+                throw new ChainInitiationException("chain is not initiated. Reason "+e.getCause().getMessage());
+            }
             return null;
         });
     }
@@ -199,19 +208,68 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
 
 
+    protected CachedMethod resolveNextExecution(InternalEventData internalEventData){
 
 
+
+        String currentStep = internalEventData.getCurrentStep();
+        long retry = internalEventData.getCurrentRetry();
+
+        System.out.println("event catched. Current step is "+currentStep+" current retry is "+retry);
+
+        // в зависимости от сценария ивент либо остается прежним, либо происходит поиск следующего
+        CachedMethod eventStep;
+        if (currentStep==null){
+            eventStep = null;
+        }
+        else if (openingStep.name.equals(currentStep)){
+            eventStep = openingStep;
+        }
+        else if (steps.containsKey(currentStep)){
+            eventStep = steps.get(currentStep);
+        }
+        else {
+            eventStep = endingStep;
+        }
+
+
+        CachedMethod toExecute;
+
+        // тут выполняет стартовый шаг, первая итерация
+        if (eventStep==null){
+            toExecute = openingStep;
+        }
+        // количество ретраев превышает максимальное - это означает переход к компенсации
+        else if (retry>eventStep.maxRetry){
+            toExecute = null;
+        }
+        // механизм ретраев был запущен - выполняем метод в ивенте и обновляем счетчик
+        else if (retry!=0) {
+            toExecute = eventStep;
+        }
+        // переход к следюущему шагу. Если следующий шаг - конечный, то сразу отправляем сообщение и делаем новую транзакцию только при ошибке
+        else {
+            String next = eventStep.next;
+            if (next.equals(endingStep.name)){
+                toExecute = endingStep;
+            }
+            else {
+                toExecute = steps.get(next);
+            }
+        }
+        return toExecute;
+    }
 
 
 
 
     // данный метод определяет, какой метод выполняется, базируясь на current step. При успешном выполнении current step проставляется на следующий
-    protected final void processEvent(E event){
+    protected void processEvent(E event){
 
         // данный объект руководит состоянием ивента.
         InternalEventData internalEventData = event.getInternalData();
 
-
+        /*
         String currentStep = event.getInternalData().getCurrentStep();
         long retry = internalEventData.getCurrentRetry();
 
@@ -257,6 +315,11 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
                 toExecute = steps.get(next);
             }
         }
+
+
+         */
+
+        CachedMethod toExecute = resolveNextExecution(internalEventData);
 
 
 
@@ -307,7 +370,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
                     ExternalEvent externalEvent = bindResultingEvent();
                     externalEvent.setContext(event.getContext());
                     externalEvent.setData(mapper.writeValueAsString(event.getExternalData()));
-                    externalEvent.setType(resultingEventType);
+                    externalEvent.setType(resultingEventType.getName());
                     externalEvent.setStatus(EventStatus.SUCCESS);
                     externalEvent.setMessage(event.getMessage());
 
@@ -330,7 +393,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
                         ExternalEvent externalEvent = bindResultingEvent();
                         externalEvent.setContext(event.getContext());
                         externalEvent.setData(mapper.writeValueAsString(event.getExternalData()));
-                        externalEvent.setType(resultingEventType);
+                        externalEvent.setType(resultingEventType.getName());
                         externalEvent.setStatus(EventStatus.ERROR);
                         externalEvent.setMessage(event.getMessage());
 
@@ -356,7 +419,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
                             ExternalEvent externalEvent = bindResultingEvent();
                             externalEvent.setContext(event.getContext());
                             externalEvent.setData(mapper.writeValueAsString(event.getExternalData()));
-                            externalEvent.setType(resultingEventType);
+                            externalEvent.setType(resultingEventType.getName());
                             externalEvent.setStatus(EventStatus.PROCESSING);
                             externalEvent.setMessage(event.getMessage());
 
@@ -427,7 +490,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
     }
 
-    private void outboxCallback(long id){
+    protected void outboxCallback(long id){
         Optional<OutboxEvent> outboxEventCheck = outboxEventRepository.findById(id);
         outboxEventCheck.ifPresent(outbox->{
             outbox.setStatus(OutboxEvent.OutboxEventStatus.PROCESSED);
@@ -474,6 +537,10 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
     protected Map<String, CachedMethod> getSteps(){
         return steps;
+    }
+
+    protected ExternalEventType getResultingEventType(){
+        return resultingEventType;
     }
 
 

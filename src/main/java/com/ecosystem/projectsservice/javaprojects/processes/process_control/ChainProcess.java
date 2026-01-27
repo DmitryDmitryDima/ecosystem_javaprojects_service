@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Getter
 @Setter
-public abstract class ChainProcess {
+public class ChainProcess {
 
     /* WAITING - процесс не выполняет шаг, но при этом активен
          - ждет ивента для его запуска
@@ -56,17 +56,15 @@ public abstract class ChainProcess {
 
 
     // ивент, прихода которого на данный момент ждет процесс
+    // waiting for == waiting status, при running waiting for равен null,
     private final AtomicReference<String> waitingForEvent = new AtomicReference<>(null);
 
 
 
-    // данный флаг нужен для того, чтобы в случае прихода запоздавшего ивента (или если процесс на паузе) система знала, что его не нужно выполнять
-    // также на него может ориентироваться сам шаг
-    // todo - вопрос. сразу ли удалять state из агрегатора, или какое то время держать его с running false??
-    private AtomicBoolean running;
 
 
-    private AtomicReference<Instant> lastModified;
+
+    private AtomicReference<Instant> lastModified = new AtomicReference<>(Instant.now());
 
 
     private ExternalEventType processType;
@@ -83,7 +81,9 @@ public abstract class ChainProcess {
 
 
 
-    // ситуация, где ивент прилетел, но увидел, что state вообще отсутствует - ивент так же не обрабатывается
+    // current step = null & waiting = состояние вне выполнения шага -> смотрим на waiting for
+
+    // если Running, но при
     private AtomicReference<String> currentStep;
 
     // универсальный идентификатор процесса
@@ -93,11 +93,14 @@ public abstract class ChainProcess {
     // используем interrupt для остановки текущего потока (аннотация @Duration).
     // исходя из этого, перед входом в каждый из методов происходит регистрация потока в state (это делаем под капотом)
     // нужно, чтобы методы, связанные с временем, выбрасывали interrupted exception - нужно дать понять пользователю, что это нужно сделать
+    // актуально на время выполнения шага
+    // null если никакой шаг не выполняется
     private AtomicReference<Thread> currentThread;
 
     // если шаг содержит в себе обращение к внешним системам машины через cmd - эти процессы должны быть уничтожены
     // таким образом, пользуясь аннотацией @Duration, пользователь обязан регистрировать процессы через stateManager
     // (как его заставить это сделать - отдельный вопрос)
+    // null если никакой из шагов не выполняется
     private AtomicReference<List<Process>> currentNativeProcesses = new AtomicReference<>(null);
 
     public ChainProcess(UUID correlationId, ExternalEventType type, String firstStep){
@@ -112,7 +115,7 @@ public abstract class ChainProcess {
     public void stepOnEnd(String nextEventName){
         currentStep.set(null);
         waitingForEvent.set(nextEventName); // устанавливаем имя следующего ивента
-
+        status.set(ProcessStatus.WAITING);
         currentNativeProcesses.getAndUpdate((processes -> {
             if (processes!=null){
                 processes.forEach((process)->{

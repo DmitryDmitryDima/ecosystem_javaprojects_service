@@ -1,5 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects.processes.process_control;
 
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.exceptions.ChainInitiationException;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.DeclarativeChainEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.InternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -29,23 +35,19 @@ public class ProcessAggregator {
     private final Lock writeLock = globalLock.writeLock();
 
 
+
+
+
     public void registerChainProcess(ChainProcess chainProcess){
         writeLock.lock();
-        try {
-            allProcesses.putIfAbsent(chainProcess.getCorrelationId(), chainProcess);
 
-            // если процесс относится к проекту - вставляем в список процессов
-            if (chainProcess instanceof ProjectAssociatedProcess projectAssociatedProcess){
-                projectProcesses.compute(projectAssociatedProcess.getProjectId(), (k,v)->{
-                    if (v==null){
-                        v = new ArrayList<>(List.of(chainProcess));
-                    }
-                    else {
-                        v.add(chainProcess);
-                    }
-                    return v;
-                });
-            }
+
+        try {
+            // idempotency guard
+            if (allProcesses.containsKey(chainProcess.getCorrelationId())) throw new IllegalStateException("Process already registered");
+            allProcesses.put(chainProcess.getCorrelationId(), chainProcess);
+
+
         }
         finally {
             writeLock.unlock();

@@ -3,7 +3,6 @@ package com.ecosystem.projectsservice.javaprojects;
 
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ChainProcess;
-import com.ecosystem.projectsservice.javaprojects.processes.process_control.ProjectAssociatedProcess;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -19,7 +18,7 @@ public class ChainStateTests {
 
         ProjectAssociatedProcess process = new ProjectAssociatedProcess(UUID.randomUUID(),
                 ExternalEventType.JAVA_PROJECT_CREATION_FROM_TEMPLATE,
-                "nothing",
+                1L,
                 1L);
 
         process.getStatus().set(ChainProcess.ProcessStatus.RUNNING);
