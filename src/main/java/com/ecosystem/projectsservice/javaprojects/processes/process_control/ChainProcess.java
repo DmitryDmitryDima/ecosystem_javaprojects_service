@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes.process_control;
 
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 
 @Getter
-@Setter
+
 public class ChainProcess {
 
     /* WAITING - процесс не выполняет шаг, но при этом активен
@@ -55,9 +56,7 @@ public class ChainProcess {
     private final AtomicReference<ProcessStatus> status = new AtomicReference<>(ProcessStatus.WAITING);
 
 
-    // ивент, прихода которого на данный момент ждет процесс
-    // waiting for == waiting status, при running waiting for равен null,
-    private final AtomicReference<String> waitingForEvent = new AtomicReference<>(null);
+
 
 
 
@@ -103,19 +102,21 @@ public class ChainProcess {
     // null если никакой из шагов не выполняется
     private AtomicReference<List<Process>> currentNativeProcesses = new AtomicReference<>(null);
 
-    public ChainProcess(UUID correlationId, ExternalEventType type, String firstStep){
+    public ChainProcess(UUID correlationId, ExternalEventType type){
         this.correlationId = correlationId;
         this.processType = type;
-        this.waitingForEvent.set(firstStep);
     }
 
 
 
+
+
     // заканчиваем шаг
-    public void stepOnEnd(String nextEventName){
+    public void processCleanup(ProcessStatus nextStatus){
+        lastModified.set(Instant.now());
         currentStep.set(null);
-        waitingForEvent.set(nextEventName); // устанавливаем имя следующего ивента
-        status.set(ProcessStatus.WAITING);
+         // устанавливаем имя следующего ивента
+        status.set(nextStatus);
         currentNativeProcesses.getAndUpdate((processes -> {
             if (processes!=null){
                 processes.forEach((process)->{
@@ -141,6 +142,7 @@ public class ChainProcess {
         currentStep.set(step);
         currentThread.set(Thread.currentThread());
         status.set(ProcessStatus.RUNNING);
+        lastModified.set(Instant.now());
     }
 
     // регистрация процесса внутри метода шага - должно быть совершенно пользователем
@@ -152,6 +154,23 @@ public class ChainProcess {
         });
     }
 
+    public void setStatus(ProcessStatus newStatus){
+        lastModified.set(Instant.now());
+        status.set(newStatus);
+    }
+
+    public void setCurrentStep(String step){
+        currentStep.set(step);
+    }
+
+    public void setCurrentThread(Thread thread){
+        currentThread.set(thread);
+    }
+    public void terminate(){
+        lastModified.set(Instant.now());
+        status.set(ProcessStatus.TERMINATED);
+    }
+
 
 
 
@@ -160,9 +179,16 @@ public class ChainProcess {
 
     // прежде всего, проставляем флаг running в false
 
-    // может вызываться как снаружи, так и изнутри
+    // может вызываться как снаружи, так и изнутри. Метод cleanup вызывается из цепочки
     public void stop(){
-
+        lastModified.set(Instant.now());
+        currentThread.getAndUpdate(thread -> {
+            if (thread!=null) {
+                thread.interrupt();
+            }
+            return thread;
+        });
+        status.set(ProcessStatus.STOPPED);
     }
 
     // пока что не реализуем, в проекте нет примеров таких процессов

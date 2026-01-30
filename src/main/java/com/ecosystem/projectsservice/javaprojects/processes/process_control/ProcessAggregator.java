@@ -65,6 +65,31 @@ public class ProcessAggregator {
         }
     }
 
+    // атомарная операция чтения и (опционально) создания процесса
+    public ChainProcess getOrRestoreChainProcessByCorrelationId(UUID correlationId, ChainProcess toRestore, Runnable associationsRestore){
+        writeLock.lock();
+
+        try {
+            if (allProcesses.containsKey(correlationId)) {
+                ChainProcess chainProcess = allProcesses.get(correlationId);
+                chainProcess.getCurrentThread().set(Thread.currentThread());
+                return chainProcess;
+            }
+            else {
+                allProcesses.put(correlationId, toRestore);
+                // восстанавливаем пользовательские ассоциации
+                if (associationsRestore!=null){
+                    associationsRestore.run();
+                }
+
+                return toRestore;
+            }
+        }
+        finally {
+            writeLock.unlock();
+        }
+    }
+
 
 
 

@@ -50,5 +50,9 @@ public class OutboxEvent {
     // последняя смена статуса
     private Instant last_update;
 
+    // если это значение null, то шаг не имеет времени устаревания. Если не null, то это означает, что была применена аннотация maxDuration
+
+    private Instant expiredAt = null;
+
 
 }

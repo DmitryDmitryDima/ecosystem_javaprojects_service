@@ -90,7 +90,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
     private void cacheResultingEventType() throws Exception{
         // Название результирующего ивента необходимо как для расшифровки payload, так и для event_type во внешнем ивенте
         ExternalResultType externalResultType = this.getClass().getAnnotation(ExternalResultType.class);
-        if (externalResultType ==null) throw new IllegalStateException("Не указан тип внешнего ивента для цепи. Используйте @ExternalResultName");
+        if (externalResultType ==null) throw new IllegalStateException("Не указан тип внешнего ивента для цепи. Используйте @ExternalResultType");
         resultingEventType = externalResultType.event();
     }
 
@@ -174,7 +174,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
 
 
-
+    // с этого метода начинается каждый из процессов
     // метод входа в цепь, выбрасывает исключение при неправильности данных или ошибки записи в outbox
     // todo создание объекта процесса в оперативной памяти
     // изначальный currentStep = null
@@ -193,6 +193,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
         transaction().execute(status -> {
             try {
                 outboxEventRepository.save(outboxEvent);
+
             }
             catch (Exception e){
                 throw new ChainInitiationException("chain is not initiated. Reason "+e.getCause().getMessage());
