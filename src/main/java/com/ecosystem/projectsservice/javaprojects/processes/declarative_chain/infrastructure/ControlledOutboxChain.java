@@ -113,13 +113,13 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
     private void cacheResultingEventType() throws Exception{
         // Название результирующего ивента необходимо как для расшифровки payload, так и для event_type во внешнем ивенте
         ExternalResultType externalResultTypeAnno = this.getClass().getAnnotation(ExternalResultType.class);
-        if (externalResultType ==null) throw new IllegalStateException("Не указан тип внешнего ивента для цепи. Используйте @ExternalResultType");
+        if (externalResultTypeAnno==null) throw new IllegalStateException("Не указан тип внешнего ивента для цепи. Используйте @ExternalResultType");
         externalResultType = externalResultTypeAnno.event();
     }
 
     // кешируем и регистрируем chain state event
     private void cacheAndRegisterInternalEvent() throws Exception{
-        Class<E> chainEventClass = (Class<E>) GenericTypeResolver.resolveTypeArgument(getClass(), OutboxDeclarativeChain.class);
+        Class<E> chainEventClass = (Class<E>) GenericTypeResolver.resolveTypeArgument(getClass(), ControlledOutboxChain.class);
         EventQualifier annotation = chainEventClass.getAnnotation(EventQualifier.class);
         if (annotation==null) throw new IllegalStateException("Не прописано имя внутреннего ивента для цепи. Используйте @EventQuailifier");
         internalEventQualifier = annotation.value();
@@ -274,6 +274,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         // todo сценарий остановки - пока не решил, объединять ли сценарии остановки и компеснации
         if (chainProcess.getStatus().get()== ChainProcess.ProcessStatus.STOPPED){
             onProcessStop(event, chainProcess);
+            return;
         }
 
 
@@ -288,19 +289,34 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 successEndingStepScenario(event, chainProcess);
             }
             else {
+
+
+                // в конце шага так же проверяем флаг
+                if (chainProcess.getStatus().get()== ChainProcess.ProcessStatus.STOPPED){
+                    System.out.println("Процесс остановлен после выполнения шага");
+                    onProcessStop(event, chainProcess);
+                    return;
+                }
+
+
                 successStepScenario(event, toExecute, chainProcess);
             }
         }
 
 
-        // в данном случае произошла остановка шага. Внутри шага мы должны все исключения, связанные с остановкой, делегировать в это исключение
-        catch (StepInterruptedException e){
-            onProcessStop(event, chainProcess);
-        }
 
-        // ошибка, не связанная с остановкой - логика, сбои т д. Требует ретрая, если он предусмотрен
+
+
         catch (Exception e){
-            stepExecutionErrorScenario(event, toExecute, chainProcess, e.getCause().getMessage());
+            if (e.getCause() instanceof StepInterruptedException){
+                System.out.println("Процесс остановлен в момент выполнения шага");
+                onProcessStop(event, chainProcess);
+            }
+            else {
+                System.out.println("сбой логики - классическая ошибка - проброс на ретрай");
+                stepExecutionErrorScenario(event, toExecute, chainProcess, e.getCause().getMessage());
+            }
+
         }
 
 
@@ -430,6 +446,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
     private void onProcessStop(E event, ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.STOPPED);
 
+
         try {
             compensationStrategy(event);
         }
@@ -453,6 +470,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 outboxEvent.setPayload(mapper.writeValueAsString(externalEvent));
 
                 transaction().execute(status -> {
+                    outboxEventRepository.save(outboxEvent);
                     outboxCallback(event.getInternalData().getOutboxParent());
                     return null;
                 });
@@ -481,7 +499,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
         // null + running = компенсация
-        chainProcess.setStatus(ChainProcess.ProcessStatus.RUNNING);
+        //chainProcess.setStatus(ChainProcess.ProcessStatus.RUNNING); // противоречие - процесс может быть stopped
 
 
         try {
@@ -489,6 +507,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         }
         catch (Exception e){
             // todo сценарий сбоя компенсации - требует отдельной обработки
+            e.printStackTrace();
         }
         finally {
 
@@ -506,19 +525,23 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
                 outboxEvent.setPayload(mapper.writeValueAsString(externalEvent));
 
+                transaction().execute(status -> {
+                    outboxCallback(event.getInternalData().getOutboxParent());
+                    outboxEventRepository.save(outboxEvent);
+                    return null;
+                });
+                chainProcess.terminate();
+
             }
             catch (Exception e){
                 // todo сценарий сбоя отправки error сообщения
+                e.printStackTrace();
             }
 
 
 
 
-            transaction().execute(status -> {
-                outboxCallback(event.getInternalData().getOutboxParent());
-                return null;
-            });
-            chainProcess.terminate();
+
         }
     }
 

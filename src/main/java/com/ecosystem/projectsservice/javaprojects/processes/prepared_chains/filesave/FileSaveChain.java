@@ -44,12 +44,16 @@ public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
 
 
     @Override
-    @Async("taskExecutor")
-    @EventListener
+    //@Async("taskExecutor")
+    //@EventListener
     public void catchEvent(FileSaveEvent event) {
+
+        /*
         System.out.println(event.getMessage());
         System.out.println(event.getContext());
         super.processEvent(event);
+
+         */
     }
 
     @Override

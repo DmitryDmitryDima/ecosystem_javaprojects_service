@@ -83,7 +83,7 @@ public class ChainProcess {
     // current step = null & waiting = состояние вне выполнения шага -> смотрим на waiting for
 
     // если Running, но при
-    private AtomicReference<String> currentStep;
+    private AtomicReference<String> currentStep = new AtomicReference<>(null);
 
     // универсальный идентификатор процесса
 
@@ -94,7 +94,7 @@ public class ChainProcess {
     // нужно, чтобы методы, связанные с временем, выбрасывали interrupted exception - нужно дать понять пользователю, что это нужно сделать
     // актуально на время выполнения шага
     // null если никакой шаг не выполняется
-    private AtomicReference<Thread> currentThread;
+    private AtomicReference<Thread> currentThread = new AtomicReference<>(null);
 
     // если шаг содержит в себе обращение к внешним системам машины через cmd - эти процессы должны быть уничтожены
     // таким образом, пользуясь аннотацией @Duration, пользователь обязан регистрировать процессы через stateManager
@@ -116,7 +116,7 @@ public class ChainProcess {
         lastModified.set(Instant.now());
         currentStep.set(null);
          // устанавливаем имя следующего ивента
-        status.set(nextStatus);
+        setStatus(nextStatus);
         currentNativeProcesses.getAndUpdate((processes -> {
             if (processes!=null){
                 processes.forEach((process)->{
@@ -156,6 +156,7 @@ public class ChainProcess {
 
     public void setStatus(ProcessStatus newStatus){
         lastModified.set(Instant.now());
+        if (status.get()==ProcessStatus.STOPPED && newStatus!=ProcessStatus.TERMINATED) return; // если был остановлен, замена на другой статус  не происходит
         status.set(newStatus);
     }
 
@@ -168,7 +169,7 @@ public class ChainProcess {
     }
     public void terminate(){
         lastModified.set(Instant.now());
-        status.set(ProcessStatus.TERMINATED);
+        setStatus(ProcessStatus.TERMINATED);
     }
 
 
