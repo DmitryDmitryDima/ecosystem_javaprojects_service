@@ -30,7 +30,7 @@ public class ControlTestChain extends ControlledOutboxChain<FileSaveEvent> {
     @Async("taskExecutor")
     @EventListener
     public void catchEvent(FileSaveEvent event) {
-        super.processEvent2(event);
+        super.processEvent(event);
     }
 
     @Override
@@ -55,6 +55,7 @@ public class ControlTestChain extends ControlledOutboxChain<FileSaveEvent> {
 
     @Step(name="middleStepTwo")
     @Next(name="endingStep")
+    @MaxDuration(timeInSec = 4)
     public void middleStepTwo(FileSaveEvent fileSaveEvent){
         System.out.println("middle step two");
 
@@ -71,9 +72,13 @@ public class ControlTestChain extends ControlledOutboxChain<FileSaveEvent> {
             }
         }
 
+
+
         if(chainProcess.getStatus().get()== ChainProcess.ProcessStatus.STOPPED){
             throw new StepInterruptedException("middle two was stopped");
         }
+
+
 
 
 

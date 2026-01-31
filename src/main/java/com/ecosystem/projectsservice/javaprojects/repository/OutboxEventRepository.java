@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> {
 
-    public List<OutboxEvent> findByStatus(OutboxEvent.OutboxEventStatus status);
+    List<OutboxEvent> findByStatus(OutboxEvent.OutboxEventStatus status);
 }

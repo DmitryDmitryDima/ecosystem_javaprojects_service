@@ -20,14 +20,20 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalUnit;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? extends ExternalEventContext,
         ? extends ExternalEventData,
         ? extends InternalEventData>> {
+
+
+    // постоянные
+
+    // данное значение предотвращает зависание процессов, в которых явно не указан @Duration
+    private static final long DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS = 30;
 
     // зависимости, необходимые для работы фреймворка
 
@@ -204,7 +210,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
     }
 
-    public void init2(E event) throws Exception{
+    public void init(E event) throws Exception{
         // пробуем следующий подход - вычисляем следующий шаг перед публикацией outbox ивента, а не перед выполнением шага
 
         // проставляем начальный шаг
@@ -214,6 +220,10 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         outboxEvent.setType(internalEventQualifier);
         outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
 
+        // Duration параметры
+        outboxEvent.setExpiredAt(Instant.now()
+                .plusSeconds(Objects.requireNonNullElse(openingStep.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
+
         String payload = mapper.writeValueAsString(event);
 
         outboxEvent.setPayload(payload);
@@ -240,54 +250,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
 
-    // с этого метода начинается каждый из процессов
-    // метод входа в цепь, выбрасывает исключение при неправильности данных или ошибки записи в outbox
-    // todo создание объекта процесса в оперативной памяти
-    // изначальный currentStep = null
-    public void init(E event) throws Exception{
 
-
-
-        // создаем outbox объект
-        OutboxEvent outboxEvent = new OutboxEvent();
-        outboxEvent.setLast_update(Instant.now());
-        outboxEvent.setType(internalEventQualifier);
-        outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
-
-        String payload = mapper.writeValueAsString(event);
-
-        outboxEvent.setPayload(payload);
-
-
-        // создаем process state объект
-        // создаем процесс
-        ChainProcess chainProcess = new ChainProcess(event.getContext().getCorrelationId(),
-                externalResultType);
-
-
-        transaction().execute(status -> {
-            try {
-                outboxEventRepository.save(outboxEvent);
-                processAggregator.registerChainProcess(chainProcess);
-
-                setProcessAssociations(event);
-            }
-            catch (Exception e){
-                throw new ChainInitiationException("chain is not initiated. Reason "+e.getCause().getMessage());
-            }
-            return null;
-        });
-
-
-
-
-
-
-
-
-
-
-    }
 
     private CachedMethod findMethodByName(String name){
 
@@ -304,7 +267,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         }
     }
 
-    protected void processEvent2(E event){
+    protected void processEvent(E event){
         // шаг выполнения уже вычислен
         // данный объект руководит состоянием ивента
         InternalEventData internalEventData = event.getInternalData();
@@ -366,7 +329,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                     return;
                 }
 
-                successStepScenario2(event, toExecuteMethod, chainProcess);
+                successStepScenario(event, toExecuteMethod, chainProcess);
             }
         }
 
@@ -379,7 +342,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             else {
                 System.out.println("сбой логики - классическая ошибка - проброс на ретрай");
                 event.setMessage("ошибка выполнения шага "+toExecuteName+". Причина "+e.getCause().getMessage());
-                stepExecutionErrorScenario2(event, toExecuteMethod, chainProcess);
+                stepExecutionErrorScenario(event, toExecuteMethod, chainProcess);
             }
         }
 
@@ -391,100 +354,14 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
 
-    // обработка ивента
-    protected void processEvent(E event){
-        // данный объект руководит состоянием ивента.
-        InternalEventData internalEventData = event.getInternalData();
 
-        // объект управления процессом
-        /*
-        сценарий, когда chain process отсутствует, является защищенным - в данном случае мы должны воскресить state объект, базируясь на данных ивента
-        ВАЖНО - если chain manager обнаруживает, что processing event завис и это было связано с падением jvm, то при восстановлении он должен обновить retry счетчик
-         */
-        ChainProcess chainProcess = processAggregator
-                .getOrRestoreChainProcessByCorrelationId(event.getContext().getCorrelationId(),
-                        new ChainProcess(event.getContext().getCorrelationId(), externalResultType),
-                        ()-> setProcessAssociations(event)
-                        );
-
-
-
-        // определяем, что сейчас будет исполнено
-        CachedMethod toExecute = resolveNextExecution(internalEventData);
-
-        // сценарий компенсации
-        if (toExecute == null){
-            performCompensationAndSendFinalErrorResult(event, chainProcess);
-            return;
-        }
-        // todo сценарий остановки - пока не решил, объединять ли сценарии остановки и компеснации
-        if (chainProcess.getStatus().get()== ChainProcess.ProcessStatus.STOPPED){
-            onProcessStop(event, chainProcess);
-            event.setMessage("Процесс остановлен");
-            return;
-        }
-
-
-
-        chainProcess.stepOnStart(toExecute.name);
-        internalEventData.setCurrentStep(toExecute.name);
-
-        try {
-            toExecute.method.invoke(this,event);
-
-            if (toExecute==endingStep){
-                successEndingStepScenario(event, chainProcess);
-            }
-            else {
-
-
-                // в конце шага так же проверяем флаг
-                if (chainProcess.getStatus().get()== ChainProcess.ProcessStatus.STOPPED){
-                    System.out.println("Процесс остановлен после выполнения шага");
-                    event.setMessage("Процесс остановлен после выполнения шага");
-                    onProcessStop(event, chainProcess);
-                    return;
-                }
-
-
-                successStepScenario(event, toExecute, chainProcess);
-            }
-        }
-
-
-
-
-
-        catch (Exception e){
-            if (e.getCause() instanceof StepInterruptedException){
-                System.out.println("Процесс остановлен в момент выполнения шага");
-                event.setMessage("Процесс остановлен в момент выполнения шага");
-                onProcessStop(event, chainProcess);
-            }
-            else {
-                System.out.println("сбой логики - классическая ошибка - проброс на ретрай");
-                event.setMessage("ошибка выполнения шага "+toExecute.name+". Причина "+e.getCause().getMessage());
-                stepExecutionErrorScenario(event, toExecute, chainProcess, e.getCause().getMessage());
-            }
-
-        }
-
-
-
-
-
-
-
-
-
-    }
     // метод, используемый в цепочках для внутреннего контроля выполнения. В случае с запуском java приложения мы посылаем этот объект во всю обертку
     public ChainProcess getProcessState(UUID uuid){
         return processAggregator.getChainProcessByCorrelationId(uuid);
     }
 
     // задача этого сценария - зафиксировать, достигнуто ли состояние компенсации. Шаг сохраняется тот же
-    private void stepExecutionErrorScenario2(E event, CachedMethod executed, ChainProcess chainProcess){
+    private void stepExecutionErrorScenario(E event, CachedMethod executed, ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.WAITING);
         InternalEventData internalEventData = event.getInternalData();
         long currentRetry = internalEventData.getCurrentRetry()+1;
@@ -502,6 +379,11 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
             next.setPayload(mapper.writeValueAsString(event));
 
+            // Duration параметры
+            next.setExpiredAt(Instant.now()
+                    .plusSeconds(Objects.requireNonNullElse(executed.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
+
+
             transaction().execute(status -> {
                 outboxEventRepository.save(next);
                 outboxCallback(internalEventData.getOutboxParent());
@@ -518,32 +400,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
 
-    private void stepExecutionErrorScenario(E event, CachedMethod executed, ChainProcess chainProcess, String errorReason){
-        chainProcess.processCleanup(ChainProcess.ProcessStatus.WAITING);
 
-        InternalEventData internalEventData = event.getInternalData();
-        internalEventData.setCurrentRetry(internalEventData.getCurrentRetry()+1);
-        event.setMessage("ошибка выполнения шага "+executed.name+":Причина "+errorReason);
-
-        try {
-            OutboxEvent next = new OutboxEvent();
-            next.setType(internalEventQualifier);
-            next.setLast_update(Instant.now());
-            next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
-            next.setPayload(mapper.writeValueAsString(event));
-
-            transaction().execute(status -> {
-                outboxEventRepository.save(next);
-                outboxCallback(internalEventData.getOutboxParent());
-                return null;
-            });
-
-        }
-        catch (Exception e){
-
-        }
-
-    }
 
     // сценарий успешного выполнения последнего шага
     private void successEndingStepScenario(E event, ChainProcess chainProcess){
@@ -581,7 +438,8 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
     // задача этого метода - вычислить следующий шаг и записать его в outbox
     // в зависимости от наличия аннотаций времени необходимо задать соответствующие поля
-    private void successStepScenario2(E event, CachedMethod executed, ChainProcess chainProcess){
+    // duration на next - создается соответствующая запись expired_at в outbox либо в waiting object
+    private void successStepScenario(E event, CachedMethod executed, ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.WAITING);
 
         CachedMethod nextMethod = findMethodByName(executed.next);
@@ -593,6 +451,8 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         try {
 
             final OutboxEvent message = new OutboxEvent();
+
+            // дальнейшая запись зависит от наличия waitingFor !
             final OutboxEvent next = new OutboxEvent();
             if (executed.message){
 
@@ -618,6 +478,11 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
             next.setPayload(mapper.writeValueAsString(event));
 
+            // Duration параметры
+            next.setExpiredAt(Instant.now()
+                    .plusSeconds(Objects.requireNonNullElse(nextMethod.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
+
+
             transaction().execute(status -> {
                 if (message.getStatus()!=null){
                     outboxEventRepository.save(message);
@@ -636,50 +501,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
     }
 
-    private void successStepScenario(E event, CachedMethod executed,  ChainProcess chainProcess){
 
-        chainProcess.processCleanup(ChainProcess.ProcessStatus.WAITING);
-        try {
-
-            final OutboxEvent message = new OutboxEvent();
-            final OutboxEvent next = new OutboxEvent();
-            if (executed.message){
-
-                ExternalEvent externalEvent = bindResultingEvent();
-                externalEvent.setContext(event.getContext());
-                externalEvent.setData(mapper.writeValueAsString(event.getExternalData()));
-                externalEvent.setType(externalResultType.getName());
-                externalEvent.setStatus(EventStatus.PROCESSING);
-                externalEvent.setMessage(event.getMessage());
-
-
-
-                message.setLast_update(Instant.now());
-                message.setType(externalEventQualifier);
-                message.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
-                message.setPayload(mapper.writeValueAsString(externalEvent));
-
-            }
-
-
-            next.setLast_update(Instant.now());
-            next.setType(internalEventQualifier);
-            next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
-            next.setPayload(mapper.writeValueAsString(event));
-
-            transaction().execute(status -> {
-                if (message.getStatus()!=null){
-                    outboxEventRepository.save(message);
-                }
-                outboxEventRepository.save(next);
-                outboxCallback(event.getInternalData().getOutboxParent());
-                return null;
-            });
-        }
-        catch (Exception e){
-            // todo ошибка записи в аутбокс
-        }
-    }
 
 
     private void onProcessStop(E event, ChainProcess chainProcess){
@@ -700,7 +522,11 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 externalEvent.setData(mapper.writeValueAsString(event.getExternalData()));
                 externalEvent.setType(externalResultType.getName());
                 externalEvent.setStatus(EventStatus.SUCCESS);
-                externalEvent.setMessage("Процесс "+externalResultType.getName()+" успешно остановлен");
+
+                // внешняя система может оставить сообщение с причиной остановки
+                String externalMessage = chainProcess.getExternalMessage().get();
+                externalMessage = externalMessage==null?"":"Дополнительные сообщения: "+externalMessage;
+                externalEvent.setMessage("Процесс "+externalResultType.getName()+" успешно остановлен. "+externalMessage);
 
                 OutboxEvent outboxEvent = new OutboxEvent();
                 outboxEvent.setLast_update(Instant.now());
@@ -787,57 +613,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
 
-    private CachedMethod resolveNextExecution(InternalEventData internalEventData){
 
-
-
-        String currentStep = internalEventData.getCurrentStep();
-        long retry = internalEventData.getCurrentRetry();
-
-        System.out.println("event catched. Current step is "+currentStep+" current retry is "+retry);
-
-        // в зависимости от сценария ивент либо остается прежним, либо происходит поиск следующего
-        CachedMethod eventStep;
-        if (currentStep==null){
-            eventStep = null;
-        }
-        else if (openingStep.name.equals(currentStep)){
-            eventStep = openingStep;
-        }
-        else if (steps.containsKey(currentStep)){
-            eventStep = steps.get(currentStep);
-        }
-        else {
-            eventStep = endingStep;
-        }
-
-
-        CachedMethod toExecute;
-
-        // тут выполняет стартовый шаг, первая итерация
-        if (eventStep==null){
-            toExecute = openingStep;
-        }
-        // количество ретраев превышает максимальное - это означает переход к компенсации
-        else if (retry>eventStep.maxRetry){
-            toExecute = null;
-        }
-        // механизм ретраев был запущен - выполняем метод в ивенте и обновляем счетчик
-        else if (retry!=0) {
-            toExecute = eventStep;
-        }
-        // переход к следюущему шагу. Если следующий шаг - конечный, то сразу отправляем сообщение и делаем новую транзакцию только при ошибке
-        else {
-            String next = eventStep.next;
-            if (next.equals(endingStep.name)){
-                toExecute = endingStep;
-            }
-            else {
-                toExecute = steps.get(next);
-            }
-        }
-        return toExecute;
-    }
 
 
 

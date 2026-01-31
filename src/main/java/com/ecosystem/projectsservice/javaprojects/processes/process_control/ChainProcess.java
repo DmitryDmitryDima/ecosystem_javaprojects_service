@@ -55,6 +55,9 @@ public class ChainProcess {
 
     private final AtomicReference<ProcessStatus> status = new AtomicReference<>(ProcessStatus.WAITING);
 
+    // тот, кто останавливает или как то взаимодействует с процессом. может оставить сообщение
+    private final AtomicReference<String> externalMessage = new AtomicReference<>(null);
+
 
 
 
@@ -166,6 +169,10 @@ public class ChainProcess {
 
     public void setCurrentThread(Thread thread){
         currentThread.set(thread);
+    }
+
+    public void setExternalMessage(String message){
+        externalMessage.set(message);
     }
     public void terminate(){
         lastModified.set(Instant.now());

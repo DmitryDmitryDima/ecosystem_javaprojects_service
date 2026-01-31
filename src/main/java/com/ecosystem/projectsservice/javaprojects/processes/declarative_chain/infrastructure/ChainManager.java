@@ -5,6 +5,8 @@ import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.an
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.ChainProcess;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.ProcessAggregator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,6 +31,9 @@ public class ChainManager {
     @Autowired
     private ApplicationEventPublisher publisher;
 
+    @Autowired
+    private ProcessAggregator aggregator;
+
     public void registerInternalEvent(String name, Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
             ? extends ExternalEventData, ? extends InternalEventData>> clazz){
         System.out.println(name+" registered");
@@ -40,6 +45,44 @@ public class ChainManager {
             EventQualifier annotation = clazz.getAnnotation(EventQualifier.class);
             if (annotation==null) throw new IllegalStateException("отсутствует аннотация @EventQualifier");
             allExternalEvents.put(annotation.value(), clazz);
+
+        }
+    }
+
+
+    // todo пока что обрабатываем только зависшие шаги цепочек, без внимания к сообщениям
+    public void processExpiredProcessingEvent(OutboxEvent outboxEvent){
+
+        try {
+            if (allInternalEvents.containsKey(outboxEvent.getType())){
+                Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
+                        ? extends ExternalEventData, ? extends InternalEventData>> clazz = allInternalEvents.get(outboxEvent.getType());
+                DeclarativeChainEvent<? extends ExternalEventContext,
+                        ? extends ExternalEventData, ? extends InternalEventData> deserializedEvent = mapper.readValue(outboxEvent.getPayload(), clazz);
+
+                deserializedEvent.getInternalData().setOutboxParent(outboxEvent.getId()); // для callback
+
+                ChainProcess chainProcess = aggregator.getChainProcessByCorrelationId(deserializedEvent.getContext().getCorrelationId());
+
+                // если процесс существует - останавливаем его
+                if (chainProcess!=null){
+                    chainProcess.setExternalMessage("Время на выполнение истекло");
+                    chainProcess.stop();
+                }
+                // процесса не существует - это означает состояние ошибки. Провоцируем компенсацию
+                else {
+                    deserializedEvent.getInternalData().setCompensationPhase(true);
+                    deserializedEvent.setMessage("Время на выполнение истекло");
+                    publisher.publishEvent(deserializedEvent);
+                }
+
+
+
+
+            }
+        }
+
+        catch (Exception e){
 
         }
     }

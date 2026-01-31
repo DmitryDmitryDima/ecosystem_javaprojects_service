@@ -44,6 +44,31 @@ public class OutboxListener {
 
     }
 
+    @Scheduled(fixedDelay = 1000)
+    public void readExpiredProcessingOutboxEvents(){
+
+
+        List<OutboxEvent> expiredEvents = transactionTemplate.execute(status ->{
+            List<OutboxEvent> expiredProcessing  = outboxEventRepository
+                    .findByStatus(OutboxEvent.OutboxEventStatus.PROCESSING).stream()
+                    .filter(event->{
+                        if (event.getExpiredAt()!=null){
+                            return event.getExpiredAt().isBefore(Instant.now());
+                        }
+                        return false;
+
+                        })
+                    .toList();
+
+
+
+            return expiredProcessing;
+        });
+        expiredEvents.forEach(chainManager::processExpiredProcessingEvent);
+
+
+    }
+
 
     // TODO обработка processing - ориентируемся на last update и expired поле (контроль таймеров)
     // Processing + expiredAt - > обращение к state объекту для убийства процесса, если он есть в jvm. если его нет,
