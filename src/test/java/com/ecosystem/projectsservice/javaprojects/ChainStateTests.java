@@ -58,15 +58,15 @@ public class ChainStateTests {
 
         mainEvent.setMessage("starting a chain");
 
-        controlTestChain.init(mainEvent);
+        controlTestChain.init2(mainEvent);
 
 
         Thread.sleep(new Random().nextInt(10000));
 
 
-        //aggregator.getChainProcessByCorrelationId(context.getCorrelationId()).stop();
+        aggregator.getChainProcessByCorrelationId(context.getCorrelationId()).stop();
 
-        //Thread.sleep(20000);
+        Thread.sleep(20000);
         System.out.println(aggregator.getChainProcessByCorrelationId(context.getCorrelationId()).getStatus().get());
 
 

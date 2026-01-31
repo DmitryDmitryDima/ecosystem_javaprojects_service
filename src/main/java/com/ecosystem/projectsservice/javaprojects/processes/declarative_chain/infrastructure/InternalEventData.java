@@ -20,6 +20,9 @@ public abstract class InternalEventData {
     @JsonIgnore
     private Long outboxParent = -1L;
 
+    // явно указываем, что достигнуто и должно быть исполнено состояние компенсации
+    private boolean compensationPhase = false;
+
 
 
 }
