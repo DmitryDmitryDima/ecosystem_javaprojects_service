@@ -19,10 +19,6 @@ public abstract class DeclarativeChainEvent <
         > {
 
 
-
-
-
-
     private Context context;
 
     private String message;
@@ -30,27 +26,6 @@ public abstract class DeclarativeChainEvent <
     private External externalData;
 
     private Internal internalData;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

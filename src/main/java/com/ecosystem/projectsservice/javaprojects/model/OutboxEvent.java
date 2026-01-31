@@ -31,6 +31,9 @@ public class OutboxEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // дублируем correlation id в теле outbox ивента
+    private UUID correlationId;
+
     @Enumerated(EnumType.STRING)
     private OutboxEvent.OutboxEventStatus status;
 

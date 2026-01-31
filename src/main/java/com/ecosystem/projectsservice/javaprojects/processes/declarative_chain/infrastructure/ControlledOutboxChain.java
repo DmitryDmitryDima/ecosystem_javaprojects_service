@@ -219,6 +219,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         outboxEvent.setLast_update(Instant.now());
         outboxEvent.setType(internalEventQualifier);
         outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+        outboxEvent.setCorrelationId(event.getContext().getCorrelationId());
 
         // Duration параметры
         outboxEvent.setExpiredAt(Instant.now()
@@ -378,6 +379,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             next.setLast_update(Instant.now());
             next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
             next.setPayload(mapper.writeValueAsString(event));
+            next.setCorrelationId(event.getContext().getCorrelationId());
 
             // Duration параметры
             next.setExpiredAt(Instant.now()
@@ -421,6 +423,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             outboxEvent.setType(externalEventQualifier);
             outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
             outboxEvent.setPayload(mapper.writeValueAsString(externalEvent));
+            outboxEvent.setCorrelationId(event.getContext().getCorrelationId());
 
             transaction().execute(status -> {
                 outboxEventRepository.save(outboxEvent);
@@ -469,6 +472,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 message.setType(externalEventQualifier);
                 message.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
                 message.setPayload(mapper.writeValueAsString(externalEvent));
+                message.setCorrelationId(event.getContext().getCorrelationId());
 
             }
 
@@ -477,6 +481,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             next.setType(internalEventQualifier);
             next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
             next.setPayload(mapper.writeValueAsString(event));
+            next.setCorrelationId(event.getContext().getCorrelationId());
 
             // Duration параметры
             next.setExpiredAt(Instant.now()
@@ -533,6 +538,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 outboxEvent.setType(externalEventQualifier);
                 outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
                 outboxEvent.setPayload(mapper.writeValueAsString(externalEvent));
+                outboxEvent.setCorrelationId(event.getContext().getCorrelationId());
 
                 transaction().execute(status -> {
                     outboxEventRepository.save(outboxEvent);
@@ -589,6 +595,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 outboxEvent.setType(externalEventQualifier);
                 outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
                 outboxEvent.setPayload(mapper.writeValueAsString(externalEvent));
+                outboxEvent.setCorrelationId(event.getContext().getCorrelationId());
 
                 transaction().execute(status -> {
                     outboxCallback(event.getInternalData().getOutboxParent());
