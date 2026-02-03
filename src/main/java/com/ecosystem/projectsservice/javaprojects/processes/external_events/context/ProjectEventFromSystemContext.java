@@ -18,6 +18,8 @@ public class ProjectEventFromSystemContext extends ExternalEventContext{
 
     private Long projectId;
 
+
+
     // название системного процесса (опционально)
     private String origin;
 
