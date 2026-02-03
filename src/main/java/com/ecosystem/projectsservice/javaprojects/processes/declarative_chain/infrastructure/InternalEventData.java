@@ -23,6 +23,10 @@ public abstract class InternalEventData {
     // явно указываем, что достигнуто и должно быть исполнено состояние компенсации
     private boolean compensationPhase = false;
 
+    // todo - причина компенсации
+
+
+
 
 
 }

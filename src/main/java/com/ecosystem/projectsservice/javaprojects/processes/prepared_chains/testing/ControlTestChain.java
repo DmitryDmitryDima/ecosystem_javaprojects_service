@@ -56,8 +56,8 @@ public class ControlTestChain extends ControlledOutboxChain<FileSaveEvent> {
 
     @Step(name="middleStepTwo")
     @Next(name="endingStep")
-    @MaxDuration(timeInSec = 4)
-
+    @MaxDuration(timeInSec = 60)
+    @WaitingFor(timeInSec = 60)
     public void middleStepTwo(FileSaveEvent fileSaveEvent){
         System.out.println("middle step two");
 

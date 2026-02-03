@@ -49,6 +49,27 @@ public class ChainManager {
         }
     }
 
+    public void processExpiredWaitingForEvent(OutboxEvent outboxEvent){
+        // мы должны спровоцировать компенсацию на текущем шаге
+        try {
+            if (allInternalEvents.containsKey(outboxEvent.getType())) {
+                Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
+                        ? extends ExternalEventData, ? extends InternalEventData>> clazz = allInternalEvents.get(outboxEvent.getType());
+                DeclarativeChainEvent<? extends ExternalEventContext,
+                        ? extends ExternalEventData, ? extends InternalEventData> deserializedEvent = mapper.readValue(outboxEvent.getPayload(), clazz);
+
+                deserializedEvent.getInternalData().setOutboxParent(outboxEvent.getId()); // для callback
+
+                deserializedEvent.setMessage("Превышено ожидание ответа "+deserializedEvent.getInternalData().getCurrentStep());
+                deserializedEvent.getInternalData().setCompensationPhase(true);
+                publisher.publishEvent(deserializedEvent);
+            }
+        }
+        catch (Exception e){
+
+        }
+    }
+
 
     // todo пока что обрабатываем только зависшие шаги цепочек, без внимания к сообщениям
     public void processExpiredProcessingEvent(OutboxEvent outboxEvent){
@@ -87,7 +108,29 @@ public class ChainManager {
         }
     }
 
-    public void deserializeAndPublish(OutboxEvent outboxEvent){
+    // сценарий чтения waiting ивента с просроченным временем на чтение (допустим, если упала outbox бд)
+    public void processExpiredWaitingEvents(OutboxEvent outboxEvent){
+        try {
+            if (allInternalEvents.containsKey(outboxEvent.getType())){
+                Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
+                        ? extends ExternalEventData, ? extends InternalEventData>> clazz = allInternalEvents.get(outboxEvent.getType());
+                DeclarativeChainEvent<? extends ExternalEventContext,
+                        ? extends ExternalEventData, ? extends InternalEventData> deserializedEvent = mapper.readValue(outboxEvent.getPayload(), clazz);
+
+                deserializedEvent.getInternalData().setOutboxParent(outboxEvent.getId()); // для callback
+                deserializedEvent.getInternalData().setCompensationPhase(true);
+                deserializedEvent.setMessage("Ошибка системы - просрочено время чтения waiting ивента");
+                publisher.publishEvent(deserializedEvent);
+
+            }
+        }
+        catch (Exception e){
+
+        }
+    }
+
+    // сценарий обычного чтения с переводом в processing
+    public void processWaitingEvents(OutboxEvent outboxEvent){
 
         try {
             if (allInternalEvents.containsKey(outboxEvent.getType())){

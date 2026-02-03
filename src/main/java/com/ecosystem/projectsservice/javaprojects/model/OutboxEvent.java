@@ -22,10 +22,11 @@ public class OutboxEvent {
        для поимки зависших в этом статусе событий мы должны иметь некий timestamp, last touch, по которому мы будем понимать, что дальше ждать нет смысла
        Что делать в таком сценарии - отдельный вопрос.
      - processed - работа с событием закончена, оно больше не актуально, нужно только для истории и может быть стерто. Проставляется внутренним ивентом
+     - waiting_for_external - outbox с таймером ожидает активации от некоего внешнего процесса, который переведет его в waiting
      */
 
 
-    public static enum OutboxEventStatus {PROCESSING, PROCESSED, WAITING}
+    public static enum OutboxEventStatus {PROCESSING, PROCESSED, WAITING, WAITING_FOR_EXTERNAL}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,9 +54,14 @@ public class OutboxEvent {
     // последняя смена статуса
     private Instant last_update;
 
-    // если это значение null, то шаг не имеет времени устаревания. Если не null, то это означает, что была применена аннотация maxDuration
 
     private Instant expiredAt = null;
+
+    // время, до которого ивент должен быть прочитан (комбинация с waiting for или waiting)
+    private Instant readExpiration;
+
+    // время, за которое ивент должен получить состояние processed
+    private Long performanceExpirationPeriod;
 
 
 }

@@ -13,7 +13,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-
 public abstract class ExternalEventContext {
 
     // correlation id процесса - каждый процесс в системе должен иметь свой correlation id

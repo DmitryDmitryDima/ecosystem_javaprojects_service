@@ -20,10 +20,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
-import java.time.temporal.TemporalAmount;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? extends ExternalEventContext,
         ? extends ExternalEventData,
@@ -34,6 +31,12 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
     // данное значение предотвращает зависание процессов, в которых явно не указан @Duration
     private static final long DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS = 30;
+
+    // период устаревания запущенного шага
+    private static final long DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS = 10;
+
+    //
+    private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 30;
 
     // зависимости, необходимые для работы фреймворка
 
@@ -161,7 +164,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             Message message = method.getAnnotation(Message.class);
 
             MaxDuration maxDuration = method.getAnnotation(MaxDuration.class);
-            WaitingPoint waitingPoint = method.getAnnotation(WaitingPoint.class);
+            WaitingFor waitingFor = method.getAnnotation(WaitingFor.class);
 
 
 
@@ -183,7 +186,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 endingStep.method = method;
                 endingStep.name = endingAnnotation.name();
                 endingStep.maxDuration = maxDuration==null?null:maxDuration.timeInSec();
-                endingStep.waitingPoint = waitingPoint ==null?null: waitingPoint.timeInSec();
+                endingStep.waitingFor = waitingFor ==null?null: waitingFor.timeInSec();
             }
 
             if (stepAnnotation!=null){
@@ -195,7 +198,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 cachedMethod.name = stepAnnotation.name();
 
                 cachedMethod.maxDuration = maxDuration==null?null:maxDuration.timeInSec();
-                cachedMethod.waitingPoint = waitingPoint == null?null: waitingPoint.timeInSec();
+                cachedMethod.waitingFor = waitingFor == null?null: waitingFor.timeInSec();
 
                 steps.put(stepAnnotation.name(), cachedMethod);
             }
@@ -221,9 +224,21 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
         outboxEvent.setCorrelationId(event.getContext().getCorrelationId());
 
-        // Duration параметры
+        // Duration параметры для opening step.
+        // Opening step не может иметь аннотации waiting for, поэтому время просрочки на чтение тут равно performance expiration
+
+        Long maxDuration = openingStep.maxDuration;
+        // проставляем время на чтение (дефолт, так как в первом шаге мы не учитываем waiting for)
+        outboxEvent.setReadExpiration(Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS));
+        // период выполнения шага после чтения - ивент считается просроченным,
+        // если разница между last_update и временем прочтения processing больше этого периода
+        outboxEvent.setPerformanceExpirationPeriod(Objects.requireNonNullElse(maxDuration, DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS));
+
+
         outboxEvent.setExpiredAt(Instant.now()
                 .plusSeconds(Objects.requireNonNullElse(openingStep.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
+
+
 
         String payload = mapper.writeValueAsString(event);
 
@@ -362,6 +377,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
     }
 
     // задача этого сценария - зафиксировать, достигнуто ли состояние компенсации. Шаг сохраняется тот же
+    // в случае ошибки мы повторно не учитываем waiting for
     private void stepExecutionErrorScenario(E event, CachedMethod executed, ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.WAITING);
         InternalEventData internalEventData = event.getInternalData();
@@ -377,6 +393,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             OutboxEvent next = new OutboxEvent();
             next.setType(internalEventQualifier);
             next.setLast_update(Instant.now());
+            // игнорируем waiting for
             next.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
             next.setPayload(mapper.writeValueAsString(event));
             next.setCorrelationId(event.getContext().getCorrelationId());
@@ -384,6 +401,9 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             // Duration параметры
             next.setExpiredAt(Instant.now()
                     .plusSeconds(Objects.requireNonNullElse(executed.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
+
+            // проставляем параметр времени на чтение waiting ивента / игнорируем waiting for
+            next.setReadExpiration(Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS));
 
 
             transaction().execute(status -> {
@@ -418,12 +438,14 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             externalEvent.setStatus(EventStatus.SUCCESS);
             externalEvent.setMessage(event.getMessage());
 
+            // для информационных ивентов read время может быть null
             OutboxEvent outboxEvent = new OutboxEvent();
             outboxEvent.setLast_update(Instant.now());
             outboxEvent.setType(externalEventQualifier);
             outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
             outboxEvent.setPayload(mapper.writeValueAsString(externalEvent));
             outboxEvent.setCorrelationId(event.getContext().getCorrelationId());
+
 
             transaction().execute(status -> {
                 outboxEventRepository.save(outboxEvent);
@@ -441,7 +463,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
     // задача этого метода - вычислить следующий шаг и записать его в outbox
     // в зависимости от наличия аннотаций времени необходимо задать соответствующие поля
-    // duration на next - создается соответствующая запись expired_at в outbox либо в waiting object
+
     private void successStepScenario(E event, CachedMethod executed, ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.WAITING);
 
@@ -484,8 +506,29 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             next.setCorrelationId(event.getContext().getCorrelationId());
 
             // Duration параметры
+            Long maxDuration = nextMethod.maxDuration;
+            Long waitingFor = nextMethod.waitingFor;
+
+
             next.setExpiredAt(Instant.now()
                     .plusSeconds(Objects.requireNonNullElse(nextMethod.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
+
+            // записываем максимальный период выполнения
+            next.setPerformanceExpirationPeriod(
+                    Objects.requireNonNullElse(maxDuration, DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+            );
+            // не забываем изменить статус. Задача внешней системы - изменить статус на waiting (таким образом,
+            // решение принимает waiting чтец
+            // если записи в outbox нет, то ивент точно не актуален
+            if (waitingFor!=null){
+                next.setReadExpiration(Instant.now().plusSeconds(waitingFor));
+                System.out.println("status");
+                next.setStatus(OutboxEvent.OutboxEventStatus.WAITING_FOR_EXTERNAL);
+            }
+            else {
+                next.setReadExpiration(Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS));
+            }
+
 
 
             transaction().execute(status -> {
@@ -645,7 +688,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
         // optional параметры контроля времени
         Long maxDuration = null;
-        Long waitingPoint = null;
+        Long waitingFor = null;
 
 
         @Override
