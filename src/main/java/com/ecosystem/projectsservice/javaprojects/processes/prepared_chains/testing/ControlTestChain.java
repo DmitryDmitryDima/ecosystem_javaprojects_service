@@ -9,6 +9,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.cont
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ChainProcess;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.YesOrNotTrigger;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,8 @@ public class ControlTestChain extends ControlledOutboxChain<FileSaveEvent> {
     @OpeningStep(name="openingStep")
     @Next(name="middleStepOne")
     public void openingStep(FileSaveEvent fileSaveEvent){
+
+
         System.out.println("opening step");
 
     }
@@ -51,6 +54,7 @@ public class ControlTestChain extends ControlledOutboxChain<FileSaveEvent> {
     @Message
     public void middleStepOne(FileSaveEvent fileSaveEvent){
         System.out.println("middle step one");
+        createUserTrigger(new YesOrNotTrigger(fileSaveEvent.getContext().getCorrelationId(), "Выполнять ли действие 2?"));
 
     }
 

@@ -11,7 +11,10 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ChainProcess;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ProcessAggregator;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.Trigger;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +62,9 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
     // агрегатор in memory process - state объектов
     @Autowired
     private ProcessAggregator processAggregator;
+
+    @Autowired
+    private TriggersAggregator triggersAggregator;
 
     // во всех цепочках используется данный геттер (желательно)
     public TransactionTemplate transaction(){return transactionTemplate;}
@@ -177,6 +183,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 openingStep.method = method;
                 openingStep.name = openingStepAnnotation.name();
                 openingStep.maxDuration = maxDuration==null?null:maxDuration.timeInSec();
+
             }
 
             // в данном случае сообщение отправляется в любом случае
@@ -262,6 +269,12 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             }
             return null;
         });
+    }
+
+    // данный метод вызывается создателем цепочки в методе перед waiting for,
+    // если предполагается, что активация продолжения очереди происходит со стороны ui
+    protected void createUserTrigger(Trigger trigger){
+        triggersAggregator.createTrigger(trigger);
     }
 
 
@@ -524,6 +537,11 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 next.setReadExpiration(Instant.now().plusSeconds(waitingFor));
                 System.out.println("status");
                 next.setStatus(OutboxEvent.OutboxEventStatus.WAITING_FOR_EXTERNAL);
+
+
+
+
+
             }
             else {
                 next.setReadExpiration(Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS));
@@ -539,6 +557,21 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 outboxCallback(event.getInternalData().getOutboxParent());
                 return null;
             });
+
+            if (waitingFor!=null){
+                // работа с триггером ЮЗЕР ДОЛЖЕН ЯВНО СОЗДАТЬ ТРИГГЕР ВНУТРИ ОЧЕРЕДИ, ЕСЛИ ЕГО НЕТ - НИКАКОГО ДЕЙСТВИЯ С ИВЕНТОМ НЕ ПРОИСХОДИТ
+                try {
+
+                    triggersAggregator.activateTrigger(event, bindResultingEvent(), externalResultType);
+                }
+                catch (Exception e){
+                    System.out.println("trigger system exception");
+                    e.printStackTrace();
+                }
+            }
+
+
+
         }
         catch (Exception e){
             // todo ошибка записи в аутбокс
@@ -548,6 +581,8 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
     }
+
+
 
 
 

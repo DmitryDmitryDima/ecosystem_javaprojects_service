@@ -1,24 +1,29 @@
 package com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers;
 
+import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.DeclarativeChainEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.InternalEventData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromSystemContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.triggers.SimpleUserControlledProjectTriggerData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromSystem;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.triggers.TriggerDataEnvelope;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 // данная система работает в совокупности с механизмом waiting for
@@ -29,16 +34,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TriggersAggregator {
 
 
-
-
+    @Autowired
+    private ApplicationEventPublisher publisher;
 
     @Autowired
     private ObjectMapper mapper;
 
-    private ConcurrentHashMap<UUID, Trigger> triggers = new ConcurrentHashMap<>();
-
     @Autowired
-    private ApplicationEventPublisher publisher;
+    private TransactionTemplate transaction;
 
     @Autowired
     private OutboxEventRepository outboxEventRepository;
@@ -46,63 +49,149 @@ public class TriggersAggregator {
 
 
 
-    public void registerTrigger(Trigger trigger){
-        triggers.put(trigger.getParentProcess(), trigger);
+
+
+
+    private ConcurrentHashMap<UUID, Trigger> triggers = new ConcurrentHashMap<>();
+
+
+    public void createTrigger(Trigger trigger){
+        triggers.put(trigger.getCorrelationId(), trigger);
     }
 
-    // ui определяет, причастен ли он к триггеру, если да - занимает место
-    public void takeASeat(UUID userUUID, UUID correlationId){
-        Trigger trigger = triggers.get(correlationId);
-        // если активность собрана (таймер), то регистрация прекращается
-        if (trigger == null || trigger.getActivityGained().get()) return;
+    public void activateTrigger(DeclarativeChainEvent<?,?,?> chainEvent,
+                                ExternalEvent externalEvent,
+                                ExternalEventType externalType) throws Exception{
 
-        if (trigger instanceof SimpleUserControlledProjectTrigger simpleUserControlledProjectTrigger){
-            ConcurrentHashMap<UUID, Boolean> opinions = simpleUserControlledProjectTrigger.getOpinions();
-            opinions.put(userUUID, false);
 
+        System.out.println("attempt to activate trigger");
+
+        Trigger trigger = getTrigger(chainEvent.getContext().getCorrelationId());
+
+        if (trigger==null) return;
+
+
+        externalEvent.setStatus(EventStatus.POLLING);
+        externalEvent.setType(externalType.getName());
+
+
+
+        TriggerDataEnvelope envelope = trigger.getTriggerEnvelope();
+        envelope.setData(chainEvent.getExternalData());
+        externalEvent.setContext(chainEvent.getContext());
+        externalEvent.setMessage(trigger.getTriggerMessage());
+        externalEvent.setData(mapper.writeValueAsString(envelope));
+
+        publisher.publishEvent(externalEvent);
+
+        try (ScheduledExecutorService service = Executors.newScheduledThreadPool(2)) {
+            service.schedule(()->{
+                if (trigger.hasApproval()){
+
+                    try {
+                        pushProcess(trigger, chainEvent, true);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }, 500, TimeUnit.MILLISECONDS);
+
+            service.schedule(()->{
+                // ПРОВЕРЯЕМ, НЕ БЫЛ ЛИ ТРИГГЕР ОСТАНОВЛЕН РАНЕЕ
+                if (trigger.isActive()){
+                    try {
+                        pushProcess(trigger, chainEvent, trigger.hasApproval());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }, 5000, TimeUnit.MILLISECONDS);
         }
+
+
+
+
+
+
+
     }
 
 
-    // фаза инициации - сбор информации о юзерах с помощью специального ивента
-    public void initiateTrigger(UUID correlationId){
 
-        Trigger trigger = triggers.get(correlationId);
-
-        if (trigger==null){
-            return;
-        }
-
-        if (trigger instanceof SimpleUserControlledProjectTrigger simpleProjectTrigger){
+    private void pushProcess(Trigger trigger, DeclarativeChainEvent<?,?,?> chainEvent,  boolean pushNext) throws Exception{
+        trigger.stop();
 
 
 
+        // todo в некоторых случаях необходимо активировать дополнительные действия с data
+        if (trigger instanceof YesOrNotTrigger){
 
-            ProjectEventFromSystem externalEvent = new ProjectEventFromSystem();
-            externalEvent.setStatus(EventStatus.ACTIVITY_POLL);
-            externalEvent.setType(simpleProjectTrigger.getTriggerType().getValue());
-            ProjectEventFromSystemContext context = ProjectEventFromSystemContext
-                    .builder()
-                    .projectId(simpleProjectTrigger.getProjectId())
-                    .origin("trigger activity phase")
-                    .build();
+            // успешный сценарий для push next
+            if (pushNext){
+                trigger.onApprove(chainEvent.getInternalData()); // todo не меняется. оставляем для демонстрации
 
-            SimpleUserControlledProjectTriggerData data = new SimpleUserControlledProjectTriggerData();
-            data.setFileId(simpleProjectTrigger.getFileId());
+                transaction.execute(status -> {
 
-            externalEvent.setMessage("Request activity");
-            externalEvent.setContext(context);
-            try {
-                externalEvent.setData(mapper.writeValueAsString(data));
-                publisher.publishEvent(externalEvent);
+                    Optional<OutboxEvent> outboxEvent = outboxEventRepository
+                            .findByStatusAndCorrelationIdForUpdate(OutboxEvent.OutboxEventStatus.WAITING_FOR_EXTERNAL,
+                                    trigger.getCorrelationId()
+                                    );
 
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
+                    outboxEvent.ifPresent(event -> {
+                        event.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+                        event.setLast_update(Instant.now());
+
+                    });
+
+                    return null;
+
+                });
             }
+            else {
+                // disapprove означает прекращение процесса,
+                // об этом следует помнить при заполнении стратегии по тому как оценивать успешность опроса
+                chainEvent.getInternalData().setCompensationPhase(true);
+                chainEvent.setMessage("не получено одобрение на стадии: "+chainEvent.getMessage());
+                String payload = mapper.writeValueAsString(chainEvent);
+
+                transaction.execute(status -> {
+
+                    Optional<OutboxEvent> outboxEvent = outboxEventRepository
+                            .findByStatusAndCorrelationIdForUpdate(OutboxEvent.OutboxEventStatus.WAITING_FOR_EXTERNAL,
+                                    trigger.getCorrelationId()
+                            );
+
+                    outboxEvent.ifPresent(event -> {
+                        event.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+                        event.setLast_update(Instant.now());
+                        event.setPayload(payload);
+
+                    });
+
+                    return null;
+
+                });
+            }
+        }
 
 
+    }
+
+
+
+    // вызывается с внешнего сервиса
+    public void provideAnswer(UserTriggerAnswer answer){
+        Trigger trigger = getTrigger(answer.getCorrelationId());
+        if (trigger!=null){
+            trigger.consumeAnswer(answer);
         }
     }
+
+    public Trigger getTrigger(UUID correlationId){
+        return triggers.get(correlationId);
+    }
+
+
 
     @Scheduled(fixedRate = 1000*60*60)
     public void clearExpiredTriggers(){
