@@ -33,10 +33,10 @@ public class ControlTestChain extends ControlledOutboxChain<FileSaveEvent> {
     }
 
     @Override
-    @Async("taskExecutor")
-    @EventListener
+    //@Async("taskExecutor")
+    //@EventListener
     public void catchEvent(FileSaveEvent event) {
-        super.processEvent(event);
+        //super.processEvent(event);
     }
 
     @Override
@@ -68,10 +68,10 @@ public class ControlTestChain extends ControlledOutboxChain<FileSaveEvent> {
                         .activityPhaseApprovalStrategy(
                                 (answers)->{
 
-                                    System.out.println("activity check");
+                                    System.out.println("activity check "+answers);
 
                                     for (TriggerAnswer answer:answers.values()){
-                                        if (answer.getContent().equals("no")){
+                                        if (!answer.isDecision()){
                                             return false;
                                         }
                                     }

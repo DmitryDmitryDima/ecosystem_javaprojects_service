@@ -20,6 +20,9 @@ import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveInternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.testing.ControlTestChain;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
@@ -58,6 +61,9 @@ public class ProjectActionsService {
     @Autowired
     private ProjectActionsUtils utils;
 
+    @Autowired
+    private TriggersAggregator triggersAggregator;
+
 
 
     @Autowired
@@ -80,11 +86,34 @@ public class ProjectActionsService {
 
 
 
+
+
+
     @Value("${storage.system}")
     private String systemStoragePath;
 
     @Value("${storage.user}")
     private String userStoragePath;
+
+
+
+    public void triggerPollingProcess(SecurityContext securityContext,
+                                      RequestContext requestContext, Long projectId, TriggerAnswer answer) throws Exception {
+
+        // проверяем, имеет ли право отвечающий на то, чтобы взаимодействовать с процессом, связанным с проектом
+        // пример кейса - участника выкинули, но у него еще есть process uuid
+        checks(securityContext, requestContext, projectId);
+
+        // обогащаем контекстом
+        answer.setUser(securityContext.getUuid());
+        answer.setCorrelationId(requestContext.getCorrelationId());
+        answer.setRenderId(requestContext.getRenderId());
+
+        triggersAggregator.notifyTrigger(answer);
+
+
+
+    }
 
 
 
@@ -226,7 +255,12 @@ public class ProjectActionsService {
 
 
 
+
+
+
     }
+
+
 
     // todo внутри данной функции должен быть добавлен запрос участников проекта вместе с ролями (admin, author, viewer)
     private ProjectSnapshot getProjectSnapshot(Long rootId){

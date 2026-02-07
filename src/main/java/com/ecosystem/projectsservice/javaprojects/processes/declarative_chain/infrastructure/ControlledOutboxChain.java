@@ -328,6 +328,8 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
         String toExecuteName = internalEventData.getCurrentStep();
 
+        System.out.println(toExecuteName);
+
 
         CachedMethod toExecuteMethod = findMethodByName(toExecuteName);
 
@@ -343,6 +345,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         chainProcess.stepOnStart(toExecuteMethod.name);
 
         try {
+            System.out.println("Процесс запускает шаг "+toExecuteName);
             event.setMessage("Процесс запускает шаг "+toExecuteName);
             toExecuteMethod.method.invoke(this, event);
 

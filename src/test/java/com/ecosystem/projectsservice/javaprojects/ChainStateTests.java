@@ -36,6 +36,8 @@ public class ChainStateTests {
     public void testChainState() throws Exception {
 
 
+        Thread.sleep(30000);
+
         FileSaveEvent mainEvent = new FileSaveEvent();
 
         UUID corrId = UUID.randomUUID();
@@ -43,10 +45,10 @@ public class ChainStateTests {
         ProjectEventFromUserContext context = ProjectEventFromUserContext.builder()
                 .correlationId(corrId)
                 .participants(List.of())
-                .projectId(5L)
+                .projectId(120L)
                 .renderId(UUID.randomUUID())
                 .timestamp(Instant.now())
-                .username("dima")
+                .username("dima3")
                 .userUUID(UUID.randomUUID())
                 .build();
 
@@ -66,7 +68,7 @@ public class ChainStateTests {
         mainEvent.setMessage("starting a chain");
 
         controlTestChain.init(mainEvent);
-
+        /*
         Thread.ofVirtual().start(()->{
             try {
                 while (true){
@@ -84,10 +86,12 @@ public class ChainStateTests {
             }
         });
 
+         */
 
 
 
-        Thread.sleep(1000000);
+
+        Thread.sleep(3000000);
 
 
         //aggregator.getChainProcessByCorrelationId(context.getCorrelationId()).stop();

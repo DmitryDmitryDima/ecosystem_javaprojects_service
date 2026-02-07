@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
@@ -27,7 +28,7 @@ import java.util.Optional;
 
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_CREATION_FROM_TEMPLATE)
-public class ProjectCreationFromTemplateChain extends OutboxDeclarativeChain<ProjectCreationFromTemplateEvent> {
+public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<ProjectCreationFromTemplateEvent> {
 
 
     @Autowired
@@ -68,9 +69,15 @@ public class ProjectCreationFromTemplateChain extends OutboxDeclarativeChain<Pro
         return new UserPersonalEvent();
     }
 
+    @Override
+    protected void setProcessAssociations(ProjectCreationFromTemplateEvent event) {
+
+    }
+
     @OpeningStep(name = "projectEntityCreation")
     @Message
     @Next(name = "directoryCreation")
+
     public ProjectCreationFromTemplateEvent projectEntityCreation(ProjectCreationFromTemplateEvent event){
 
         event.setMessage("Создаем сущность проекта");
@@ -142,6 +149,7 @@ public class ProjectCreationFromTemplateChain extends OutboxDeclarativeChain<Pro
 
 
     @EndingStep(name="prepareStructure")
+    @MaxDuration(timeInSec = 10)
     public ProjectCreationFromTemplateEvent prepareStructure(ProjectCreationFromTemplateEvent event) throws Exception{
         event.setMessage("Готовим первоначальную структуру проекта");
 

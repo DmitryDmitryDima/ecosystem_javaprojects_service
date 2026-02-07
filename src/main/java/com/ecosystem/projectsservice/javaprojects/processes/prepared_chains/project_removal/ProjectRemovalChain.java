@@ -4,6 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.pro
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
@@ -24,7 +25,7 @@ import java.util.Optional;
 // todo добавить инвалидацию кеша
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_REMOVAL)
-public class ProjectRemovalChain extends OutboxDeclarativeChain<ProjectRemovalEvent> {
+public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEvent> {
 
 
     @Autowired
@@ -54,6 +55,11 @@ public class ProjectRemovalChain extends OutboxDeclarativeChain<ProjectRemovalEv
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
         return new UserPersonalEvent();
+    }
+
+    @Override
+    protected void setProcessAssociations(ProjectRemovalEvent event) {
+
     }
 
 

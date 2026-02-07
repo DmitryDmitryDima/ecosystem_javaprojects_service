@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+// старая версия цепочки без контроля времени
+@Deprecated
 public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? extends ExternalEventContext,
         ? extends ExternalEventData,
         ? extends InternalEventData>> {

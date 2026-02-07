@@ -7,6 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.F
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 
 /*
@@ -45,6 +47,22 @@ public class ProjectsActionsController {
     private ProjectActionsService actionsService;
 
 
+
+    // эндпоинт для воздействия на триггер процесса внутри проекта
+    // используется для ответов ui на polling ивенты
+    @PostMapping("/trigger/{uuid}")
+    public ResponseEntity<Void> triggerProcess(@PathVariable("uuid") UUID processId, @PathVariable("id") Long projectId,
+                                               @RequestHeader Map<String, String> headers, @RequestBody TriggerAnswer answer)
+            throws Exception {
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        actionsService.triggerPollingProcess(securityContext, requestContext, projectId, answer);
+
+        return ResponseEntity.noContent().build();
+
+    }
 
 
     // читаем проект, получаем всю необходимую информацию

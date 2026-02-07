@@ -5,6 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.F
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
@@ -26,7 +27,7 @@ import java.util.Optional;
 // указывается state event, проходящий через всю очередь, и ивент результат
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_SAVE)
-public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
+public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
     @Autowired
     private FileRepository fileRepository;
@@ -44,16 +45,15 @@ public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
 
 
     @Override
-    //@Async("taskExecutor")
-    //@EventListener
+    @Async("taskExecutor")
+    @EventListener
     public void catchEvent(FileSaveEvent event) {
 
-        /*
-        System.out.println(event.getMessage());
-        System.out.println(event.getContext());
+
+
         super.processEvent(event);
 
-         */
+
     }
 
     @Override
@@ -80,10 +80,16 @@ public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
         return new ProjectEventFromUser();
     }
 
+    @Override
+    protected void setProcessAssociations(FileSaveEvent event) {
+
+    }
+
 
     @OpeningStep(name = "lockFile")
     @Message
     @Next(name="writeFileToDisk")
+    @MaxDuration(timeInSec = 5)
     public FileSaveEvent lockFile(FileSaveEvent fileSaveEvent){
 
         System.out.println("perform - lock file");
@@ -149,6 +155,8 @@ public class FileSaveChain extends OutboxDeclarativeChain<FileSaveEvent> {
                 fileSaveEvent.getExternalData().getContent(),
                 StandardOpenOption.TRUNCATE_EXISTING
         );
+
+
 
 
         return fileSaveEvent;
