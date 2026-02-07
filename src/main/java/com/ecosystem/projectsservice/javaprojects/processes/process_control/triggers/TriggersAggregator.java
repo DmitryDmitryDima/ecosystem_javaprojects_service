@@ -3,12 +3,8 @@ package com.ecosystem.projectsservice.javaprojects.processes.process_control.tri
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.DeclarativeChainEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.InternalEventData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.triggers.TriggerDataEnvelope;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,151 +48,126 @@ public class TriggersAggregator {
 
 
 
-    private ConcurrentHashMap<UUID, Trigger> triggers = new ConcurrentHashMap<>();
 
 
-    public void createTrigger(Trigger trigger){
-        triggers.put(trigger.getCorrelationId(), trigger);
+    private final ConcurrentHashMap <UUID, CustomTrigger> triggersStore = new ConcurrentHashMap<>();
+
+
+    public void registerTrigger(CustomTrigger customTrigger){
+        triggersStore.put(customTrigger.getCorrelationId(), customTrigger);
     }
 
-    public void activateTrigger(DeclarativeChainEvent<?,?,?> chainEvent,
+    public void notifyTrigger(TriggerAnswer answer){
+        CustomTrigger trigger = triggersStore.get(answer.getCorrelationId());
+        if (trigger!=null){
+            trigger.registerAnswer(answer);
+        }
+    }
+
+    public void initiateTrigger(DeclarativeChainEvent<?,?,?> chainEvent,
                                 ExternalEvent externalEvent,
-                                ExternalEventType externalType) throws Exception{
+                                ExternalEventType externalEventType, Long waitingFor) throws Exception{
+        System.out.println("активируем триггер если он существует");
+        CustomTrigger customTrigger = triggersStore.get(chainEvent.getContext().getCorrelationId());
+        // если пользователь не создал триггер, то waiting for активируется по-другому или при создании очереди создать его забыли
+        if (customTrigger == null){
+            return;
+        }
 
-
-        System.out.println("attempt to activate trigger");
-
-        Trigger trigger = getTrigger(chainEvent.getContext().getCorrelationId());
-
-        if (trigger==null) return;
-
+        // обновляем время устаревания
+        customTrigger.setExpirationTime(Instant.now().plusSeconds(waitingFor).plusSeconds(10));
 
         externalEvent.setStatus(EventStatus.POLLING);
-        externalEvent.setType(externalType.getName());
+        externalEvent.setType(externalEventType.getName());
 
 
-
-        TriggerDataEnvelope envelope = trigger.getTriggerEnvelope();
-        envelope.setData(chainEvent.getExternalData());
+        externalEvent.setData(mapper.writeValueAsString(customTrigger.getTriggerExternalData()));
+        externalEvent.setMessage(customTrigger.getMessage());
         externalEvent.setContext(chainEvent.getContext());
-        externalEvent.setMessage(trigger.getTriggerMessage());
-        externalEvent.setData(mapper.writeValueAsString(envelope));
 
+        // пкбликуем ивент - имея контекст и предустановленный процессом тип, он отправится туда же, куда и основные ивенты процесса
         publisher.publishEvent(externalEvent);
 
-        try (ScheduledExecutorService service = Executors.newScheduledThreadPool(2)) {
-            service.schedule(()->{
-                if (trigger.hasApproval()){
+        // запускаем два обработчика, которые составляют собой двойную проверку триггера
 
+        try (ScheduledExecutorService service = Executors.newScheduledThreadPool(2)){
+
+            service.schedule(()->{
+                // запуск стратегии реакции на опрос активности
+                boolean waitingResult = customTrigger.isWaitingPhaseApproved();
+                if (waitingResult){
                     try {
-                        pushProcess(trigger, chainEvent, true);
+                        pushOutbox(chainEvent, customTrigger);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }
-            }, 500, TimeUnit.MILLISECONDS);
+            }, customTrigger.getActivityPhaseWaitingTimeInMs(), TimeUnit.MILLISECONDS);
+
 
             service.schedule(()->{
-                // ПРОВЕРЯЕМ, НЕ БЫЛ ЛИ ТРИГГЕР ОСТАНОВЛЕН РАНЕЕ
-                if (trigger.isActive()){
+                // проверяем, не был ли триггер закрыт в первом таймере
+                if (customTrigger.isWaiting()){
+                    // выполняем стратегию принятия решения после ожидания
+                    customTrigger.isDecisionPhaseApproved();
                     try {
-                        pushProcess(trigger, chainEvent, trigger.hasApproval());
+                        pushOutbox(chainEvent, customTrigger);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
+
                 }
-            }, 5000, TimeUnit.MILLISECONDS);
+
+
+
+
+            }, customTrigger.getDecisionPhaseWaitingTimeInMs(), TimeUnit.MILLISECONDS);
+
+
+
         }
 
 
 
+    }
 
+    private void pushOutbox(DeclarativeChainEvent<?,?,?> chainEvent, CustomTrigger trigger) throws Exception{
+        trigger.stop(); // останавливаем триггер для того, чтобы он больше не принимал ответы и не мог быть вновь рассмотрен обработчиком
 
+        // не забываем, что методы триггера могут вносить изменения в internal data, стратегия прописывается создателем процесса
+        String payload = mapper.writeValueAsString(chainEvent);
+
+        // активируем outbox, вносим (возможно) новые данные через internal event data
+        transaction.execute(status -> {
+
+            Optional<OutboxEvent> outboxEvent = outboxEventRepository
+                    .findByStatusAndCorrelationIdForUpdate(OutboxEvent.OutboxEventStatus.WAITING_FOR_EXTERNAL,
+                            trigger.getCorrelationId()
+                    );
+
+            outboxEvent.ifPresent(event -> {
+                event.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
+                event.setLast_update(Instant.now());
+                event.setPayload(payload);
+
+            });
+
+            return null;
+
+        });
 
 
     }
 
 
 
-    private void pushProcess(Trigger trigger, DeclarativeChainEvent<?,?,?> chainEvent,  boolean pushNext) throws Exception{
-        trigger.stop();
-
-
-
-        // todo в некоторых случаях необходимо активировать дополнительные действия с data
-        if (trigger instanceof YesOrNotTrigger){
-
-            // успешный сценарий для push next
-            if (pushNext){
-                trigger.onApprove(chainEvent.getInternalData()); // todo не меняется. оставляем для демонстрации
-
-                transaction.execute(status -> {
-
-                    Optional<OutboxEvent> outboxEvent = outboxEventRepository
-                            .findByStatusAndCorrelationIdForUpdate(OutboxEvent.OutboxEventStatus.WAITING_FOR_EXTERNAL,
-                                    trigger.getCorrelationId()
-                                    );
-
-                    outboxEvent.ifPresent(event -> {
-                        event.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
-                        event.setLast_update(Instant.now());
-
-                    });
-
-                    return null;
-
-                });
-            }
-            else {
-                // disapprove означает прекращение процесса,
-                // об этом следует помнить при заполнении стратегии по тому как оценивать успешность опроса
-                chainEvent.getInternalData().setCompensationPhase(true);
-                chainEvent.setMessage("не получено одобрение на стадии: "+chainEvent.getMessage());
-                String payload = mapper.writeValueAsString(chainEvent);
-
-                transaction.execute(status -> {
-
-                    Optional<OutboxEvent> outboxEvent = outboxEventRepository
-                            .findByStatusAndCorrelationIdForUpdate(OutboxEvent.OutboxEventStatus.WAITING_FOR_EXTERNAL,
-                                    trigger.getCorrelationId()
-                            );
-
-                    outboxEvent.ifPresent(event -> {
-                        event.setStatus(OutboxEvent.OutboxEventStatus.WAITING);
-                        event.setLast_update(Instant.now());
-                        event.setPayload(payload);
-
-                    });
-
-                    return null;
-
-                });
-            }
-        }
-
-
-    }
-
-
-
-    // вызывается с внешнего сервиса
-    public void provideAnswer(UserTriggerAnswer answer){
-        Trigger trigger = getTrigger(answer.getCorrelationId());
-        if (trigger!=null){
-            trigger.consumeAnswer(answer);
-        }
-    }
-
-    public Trigger getTrigger(UUID correlationId){
-        return triggers.get(correlationId);
-    }
 
 
 
     @Scheduled(fixedRate = 1000*60*60)
     public void clearExpiredTriggers(){
         Instant now = Instant.now();
-        triggers.entrySet().removeIf(entry-> entry.getValue().getExpiredAt().isBefore(now));
+        triggersStore.entrySet().removeIf(entry-> entry.getValue().getExpirationTime().isBefore(now));
     }
 
 

@@ -9,6 +9,8 @@ import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.testing.ControlTestChain;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ChainProcess;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ProcessAggregator;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,14 +29,19 @@ public class ChainStateTests {
     @Autowired
     private ProcessAggregator aggregator;
 
+    @Autowired
+    private TriggersAggregator triggersAggregator;
+
     @Test
     public void testChainState() throws Exception {
 
 
         FileSaveEvent mainEvent = new FileSaveEvent();
 
+        UUID corrId = UUID.randomUUID();
+
         ProjectEventFromUserContext context = ProjectEventFromUserContext.builder()
-                .correlationId(UUID.randomUUID())
+                .correlationId(corrId)
                 .participants(List.of())
                 .projectId(5L)
                 .renderId(UUID.randomUUID())
@@ -59,6 +66,25 @@ public class ChainStateTests {
         mainEvent.setMessage("starting a chain");
 
         controlTestChain.init(mainEvent);
+
+        Thread.ofVirtual().start(()->{
+            try {
+                while (true){
+                    triggersAggregator.notifyTrigger(TriggerAnswer.builder()
+                                    .user(UUID.randomUUID())
+                                    .content("no")
+                                    .decision(true)
+                                    .correlationId(corrId)
+                            .build());
+                    Thread.sleep(10);
+                }
+            }
+            catch (Exception e){
+
+            }
+        });
+
+
 
 
         Thread.sleep(1000000);

@@ -11,10 +11,9 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ChainProcess;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ProcessAggregator;
-import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.Trigger;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.CustomTrigger;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -271,10 +270,12 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         });
     }
 
-    // данный метод вызывается создателем цепочки в методе перед waiting for,
-    // если предполагается, что активация продолжения очереди происходит со стороны ui
-    protected void createUserTrigger(Trigger trigger){
-        triggersAggregator.createTrigger(trigger);
+
+
+
+    // вспомогательный метод для создателя цепочки. позволяющий создать триггер для активации следующего шага
+    protected void createTrigger(CustomTrigger customTrigger){
+        triggersAggregator.registerTrigger(customTrigger);
     }
 
 
@@ -562,7 +563,8 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 // работа с триггером ЮЗЕР ДОЛЖЕН ЯВНО СОЗДАТЬ ТРИГГЕР ВНУТРИ ОЧЕРЕДИ, ЕСЛИ ЕГО НЕТ - НИКАКОГО ДЕЙСТВИЯ С ИВЕНТОМ НЕ ПРОИСХОДИТ
                 try {
 
-                    triggersAggregator.activateTrigger(event, bindResultingEvent(), externalResultType);
+
+                    triggersAggregator.initiateTrigger(event, bindResultingEvent(), externalResultType, waitingFor);
                 }
                 catch (Exception e){
                     System.out.println("trigger system exception");
