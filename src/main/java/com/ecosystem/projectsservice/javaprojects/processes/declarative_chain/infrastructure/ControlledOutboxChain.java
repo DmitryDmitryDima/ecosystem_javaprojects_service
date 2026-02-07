@@ -438,9 +438,6 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
 
-
-
-
     // сценарий успешного выполнения последнего шага
     private void successEndingStepScenario(E event, ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.STOPPED);

@@ -41,19 +41,12 @@ public class ChainProcess {
 
     private ExternalEventType processType;
 
-    // если не null, то шаг выполняется прямо сейчас. если Duration таймер (связан с именем шага) заканчивается,
-    // и видит, что currentStep = duration timer step, то выбрасывается ошибка о превышении времени выполнения шага
-
-    // принцип работы @WaitingFor - в конце метода, выполняемого перед аннотируемым этой аннотацией методом,
-    // мы запускаемым таймер с названием аннотированного метода. Если таймер заканчивается и видит, что current step все еще null и статус running
-    // то выбрасывается исключение
-
-    // если в цепочке несколько waiting for, то должен быть механизм замены таймера, чтобы предыдущий таймер случайно не сработал
 
 
 
 
-    // current step = null & waiting = состояние вне выполнения шага -> смотрим на waiting for
+
+
 
     // если Running, но при
     private AtomicReference<String> currentStep = new AtomicReference<>(null);
@@ -171,13 +164,6 @@ public class ChainProcess {
 
     // пока что не реализуем, в проекте нет примеров таких процессов
     public void pause(){}
-
-
-
-
-
-
-
 
 
 

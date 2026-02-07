@@ -55,7 +55,8 @@ public class CustomTrigger {
     @Builder.Default
     private long decisionPhaseWaitingTimeInMs = 5000;
 
-
+    // false означает ожидание
+    // true означает запуск процесс или компенсации
     public boolean isWaitingPhaseApproved(){
         if (activityPhaseApprovalStrategy == null){
             throw new IllegalStateException("trigger error -> отсутствует стратегия обработки фазы регистрации активности");

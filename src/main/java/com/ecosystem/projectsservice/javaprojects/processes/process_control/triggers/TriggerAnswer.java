@@ -5,7 +5,7 @@ import lombok.Data;
 
 import java.util.UUID;
 
-// универсальный ответ от триггера
+// универсальный ответ для триггера
 @Data
 @Builder
 public class TriggerAnswer {
