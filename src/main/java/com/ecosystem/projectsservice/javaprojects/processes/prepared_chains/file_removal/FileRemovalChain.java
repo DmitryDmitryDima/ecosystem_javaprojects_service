@@ -40,8 +40,9 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
     @OpeningStep(name = "polling")
     @Next(name = "blockFile")
-    @Message
     public void polling(FileRemovalEvent event){
+        System.out.println("polling phase - file removal");
+
         event.setMessage("Запрос на удаление файла от: "+event.getContext().getUsername());
         createTrigger(CustomTrigger.builder()
                 .message(event.getContext().getUsername()+" собирается удалить файл "+event.getExternalData()
@@ -55,7 +56,8 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
                         }
                 )
                 .decisionPhaseApprovalStrategy(answers->{
-                    event.getInternalData().setCompensationPhase(true);
+                    //event.getInternalData().setCompensationPhase(true);
+                    event.setMessage("removal fail");
                     return false;
                 })
 

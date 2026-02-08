@@ -101,7 +101,18 @@ public class ProjectsActionsController {
     }
 
 
-    // удаление файла - операция предполагает инвалидацию кеша
+    // удаление файла - операция предполагает мгновенную инвалидацию некоторых элементов в кеше проекта (предложки)
+    @PostMapping("/removeFile/{file_id}")
+    public ResponseEntity<Void> removeFile(@PathVariable("id") Long projectId,
+                                           @PathVariable("file_id") Long fileId,
+                                           @RequestHeader Map<String, String> headers) throws Exception{
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+        actionsService.removeFile(securityContext, requestContext, projectId, fileId);
+
+        return ResponseEntity.noContent().build();
+    }
 
 
     /*
@@ -123,7 +134,7 @@ public class ProjectsActionsController {
     }
 
     /*
-    автосохранение - происходит в redis
+    автосохранение - будет происходить через редис
      */
 
     @PostMapping ("/autosave/{file_id}")

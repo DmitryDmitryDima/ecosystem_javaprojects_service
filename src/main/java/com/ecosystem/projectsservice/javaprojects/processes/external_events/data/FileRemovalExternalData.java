@@ -14,7 +14,6 @@ public class FileRemovalExternalData implements ExternalEventData {
     private Long fileId;
     private String name;
     private String extension;
-    private String content;
     private String path;
     private UUID fileOwner;
 }

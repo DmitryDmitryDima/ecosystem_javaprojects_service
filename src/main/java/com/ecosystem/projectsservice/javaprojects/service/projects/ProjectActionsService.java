@@ -15,7 +15,11 @@ import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionResult;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileRemovalExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
@@ -80,8 +84,13 @@ public class ProjectActionsService {
     private BroadcastableAction broadcast;
 
 
+    // процессы
     @Autowired
     private FileSaveChain fileSaveChain;
+
+    @Autowired
+    private FileRemovalChain fileRemovalChain;
+
 
 
 
@@ -209,6 +218,50 @@ public class ProjectActionsService {
                 .withEvent(ProjectEventFromUser::new)
                 .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE).withMessage("Файл сохранен")
                 .execute();
+
+
+    }
+
+
+    @Transactional
+    public void removeFile(SecurityContext securityContext,
+                           RequestContext requestContext,
+                           Long projectId,
+                           Long fileId) throws Exception{
+
+        Project project = checks(securityContext, requestContext, projectId);
+
+        FileReadOnly dbFile = checkAndGetFileFromProject(project, fileId);
+
+        FileRemovalEvent mainEvent = new FileRemovalEvent();
+        mainEvent.setMessage("Удаляем файл");
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, projectId, List.of());
+
+        mainEvent.setContext(context);
+
+        FileRemovalInternalData internalData = new FileRemovalInternalData();
+        internalData.setProjectsPath(Path.of(userStoragePath,
+                securityContext.getUuid().toString(),
+                "projects").normalize().toString());
+        mainEvent.setInternalData(internalData);
+
+        FileRemovalExternalData externalData = new FileRemovalExternalData();
+
+
+        externalData.setFileId(fileId);
+        externalData.setExtension(dbFile.getExtension());
+        // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
+        externalData.setFileOwner(project.getUserUUID());
+        externalData.setName(dbFile.getName());
+
+
+
+        mainEvent.setExternalData(externalData);
+
+
+        fileRemovalChain.init(mainEvent);
+
+
 
 
     }
