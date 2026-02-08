@@ -22,10 +22,6 @@ public interface FileContentCache<ContentData, Id> {
 
     void removeAll(List<Id> ids);
 
-
-
-
-
-
-
+    // метод для очистки кеша от записей, не активных в течение данного периода (для listener)
+    void removeExpiredWithPeriodInSec(Long period);
 }

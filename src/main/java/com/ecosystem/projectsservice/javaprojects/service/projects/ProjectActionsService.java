@@ -181,7 +181,9 @@ public class ProjectActionsService {
 
         Project project = checks(securityContext, requestContext, projectId);
 
+        // безопасно читаем файл из бд - при статусе available его можно писать в кеш
         FileReadOnly dbFile = checkAndGetFileFromProject(project, fileId);
+
 
         FileDTO fileDTO = FileDTO.builder()
                 .content(request.getContent())

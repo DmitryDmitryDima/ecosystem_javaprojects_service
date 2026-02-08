@@ -100,6 +100,10 @@ public class ProjectsActionsController {
         return ResponseEntity.ok(actionsService.readFile(securityContext, requestContext, projectId, fileId));
     }
 
+
+    // удаление файла - операция предполагает инвалидацию кеша
+
+
     /*
     сохранение файла через отдельную кнопку - гарантирует сохранение файла в диск (используется наравне с автосохранением в redis)
      */

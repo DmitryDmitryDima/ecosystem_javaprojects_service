@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes.scheduled;
+package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.model.File;
@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 // фоновые процессы, ассоциированные с файлами в проектах
 @Service
@@ -39,6 +40,9 @@ public class FileOperationsListener {
 
     private final long FILE_WRITE_PERIOD_OF_INACTIVITY_IN_SECONDS = 20;
 
+    // время, через которое файловая запись в кеше считается просроченной
+    private final static long FILE_CACHE_EXPIRATION_PERIOD_IN_SEC = 60*60;
+
 
 
     @Autowired
@@ -49,6 +53,8 @@ public class FileOperationsListener {
 
     @Autowired
     private TransactionTemplate transactionTemplate;
+
+
 
     @Autowired
     private BroadcastableAction broadcast;
@@ -86,11 +92,16 @@ public class FileOperationsListener {
         }
     }
 
+    @Scheduled(fixedDelay = 30, timeUnit = TimeUnit.MINUTES)
+    public void clearFileCache(){
+        fileContentCache.removeExpiredWithPeriodInSec(FILE_CACHE_EXPIRATION_PERIOD_IN_SEC);
+    }
+
 
 
 
     /*
-    периодически записываем в диск
+    периодически записываем в диск данные кеша, при этом определяя, нужно ли это делать
      */
     @Scheduled(fixedDelay = 30000)
     public void fileDiskWriteOperations(){

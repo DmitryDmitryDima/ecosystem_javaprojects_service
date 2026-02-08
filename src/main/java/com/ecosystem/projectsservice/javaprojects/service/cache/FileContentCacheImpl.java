@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.TemporalField;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,6 +15,11 @@ public class FileContentCacheImpl implements FileContentCache<FileDTO, Long>{
 
 
     private final Map<Long, CacheValueWrapper<FileDTO>> cache = new ConcurrentHashMap<>();
+
+
+
+
+
 
     @Override
     public void save(Long id, FileDTO dto) {
@@ -81,6 +85,14 @@ public class FileContentCacheImpl implements FileContentCache<FileDTO, Long>{
     @Override
     public void removeAll(List<Long> ids) {
 
+    }
+
+    @Override
+    public void removeExpiredWithPeriodInSec(Long period){
+        cache.entrySet().removeIf(entry->entry.getValue()
+                .getLastUpdate()
+                .plusSeconds(period)
+                .isBefore(Instant.now()));
     }
 
 
