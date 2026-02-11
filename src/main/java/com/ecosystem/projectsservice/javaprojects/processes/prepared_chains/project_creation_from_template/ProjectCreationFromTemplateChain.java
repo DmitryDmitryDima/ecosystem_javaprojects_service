@@ -7,7 +7,6 @@ import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
@@ -149,7 +148,7 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
 
 
     @EndingStep(name="prepareStructure")
-    @MaxDuration(timeInSec = 10)
+    @MaxDuration(time = 10)
     public ProjectCreationFromTemplateEvent prepareStructure(ProjectCreationFromTemplateEvent event) throws Exception{
         event.setMessage("Готовим первоначальную структуру проекта");
 

@@ -19,6 +19,13 @@ public class TriggerAnswer {
     private UUID correlationId;
     private UUID renderId;
 
+    // если общение происходит с какой-либо системой, то она может использовать это поле вместо uuid
+    private String pseudonym;
 
-
+    @Override
+    public String toString() {
+        return "TriggerAnswer{" +
+                "content='" + content + '\'' +
+                '}';
+    }
 }

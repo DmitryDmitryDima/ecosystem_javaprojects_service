@@ -60,7 +60,7 @@ public class OutboxEvent {
     // время, до которого ивент должен быть прочитан (комбинация с waiting for или waiting)
     private Instant readExpiration;
 
-    // время, за которое ивент должен получить состояние processed
+    // время, за которое ивент должен получить состояние processed - милисекунды
     private Long performanceExpirationPeriod;
 
 

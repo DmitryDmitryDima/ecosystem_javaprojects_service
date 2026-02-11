@@ -1,13 +1,20 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations;
 
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.enums.StepTimeUnit;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.concurrent.TimeUnit;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface WaitingFor {
 
-    long timeInSec();
+    long time();
+
+    StepTimeUnit timeUnit() default StepTimeUnit.SEC;
+
+
 }

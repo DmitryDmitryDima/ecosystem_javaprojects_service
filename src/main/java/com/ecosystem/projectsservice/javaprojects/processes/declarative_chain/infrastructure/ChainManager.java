@@ -119,7 +119,7 @@ public class ChainManager {
 
                 deserializedEvent.getInternalData().setOutboxParent(outboxEvent.getId()); // для callback
                 deserializedEvent.getInternalData().setCompensationPhase(true);
-                deserializedEvent.setMessage("Ошибка системы - просрочено время чтения waiting ивента");
+                deserializedEvent.setMessage("Ошибка системы - просрочено время чтения waiting ивента. Стадия:"+deserializedEvent.getMessage());
                 publisher.publishEvent(deserializedEvent);
 
             }

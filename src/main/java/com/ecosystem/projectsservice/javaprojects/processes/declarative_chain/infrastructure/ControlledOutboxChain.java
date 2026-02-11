@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.i
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.enums.StepTimeUnit;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.exceptions.ChainInitiationException;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.exceptions.StepInterruptedException;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
@@ -11,7 +12,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ChainProcess;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.ProcessAggregator;
-import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.CustomTrigger;
+import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.Trigger;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -181,7 +182,8 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 openingStep.next = nextAnnotation.name();
                 openingStep.method = method;
                 openingStep.name = openingStepAnnotation.name();
-                openingStep.maxDuration = maxDuration==null?null:maxDuration.timeInSec();
+                openingStep.maxDuration = maxDuration==null?null:maxDuration.time();
+                openingStep.maxDurationUnit = maxDuration==null?null:maxDuration.timeUnit();
 
             }
 
@@ -191,8 +193,10 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 endingStep.maxRetry = maxRetry==null?0:maxRetry.maxCount();
                 endingStep.method = method;
                 endingStep.name = endingAnnotation.name();
-                endingStep.maxDuration = maxDuration==null?null:maxDuration.timeInSec();
-                endingStep.waitingFor = waitingFor ==null?null: waitingFor.timeInSec();
+                endingStep.maxDuration = maxDuration==null?null:maxDuration.time();
+                endingStep.maxDurationUnit = maxDuration==null?null:maxDuration.timeUnit();
+                endingStep.waitingFor = waitingFor ==null?null: waitingFor.time();
+                endingStep.waitingForUnit = waitingFor == null?null: waitingFor.timeUnit();
             }
 
             if (stepAnnotation!=null){
@@ -203,8 +207,10 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 cachedMethod.message = message!=null;
                 cachedMethod.name = stepAnnotation.name();
 
-                cachedMethod.maxDuration = maxDuration==null?null:maxDuration.timeInSec();
-                cachedMethod.waitingFor = waitingFor == null?null: waitingFor.timeInSec();
+                cachedMethod.maxDuration = maxDuration==null?null:maxDuration.time();
+                cachedMethod.maxDurationUnit =  maxDuration==null?null:maxDuration.timeUnit();
+                cachedMethod.waitingFor = waitingFor == null?null: waitingFor.time();
+                cachedMethod.waitingForUnit =  waitingFor == null?null: waitingFor.timeUnit();
 
                 steps.put(stepAnnotation.name(), cachedMethod);
             }
@@ -217,6 +223,17 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         System.out.println(endingStep);
 
 
+    }
+
+    private Long convertToMillis(Long value, StepTimeUnit unit){
+        if (value == null) return null;
+        return switch (unit){
+            case MS->value;
+            case SEC -> value*1000;
+            case MIN -> value*1000*60;
+            case HOURS -> value*1000*60*60;
+            case DAYS -> value*1000*60*60*24;
+        };
     }
 
     public void init(E event) throws Exception{
@@ -233,16 +250,17 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
         // Duration параметры для opening step.
         // Opening step не может иметь аннотации waiting for, поэтому время просрочки на чтение тут равно performance expiration
 
-        Long maxDuration = openingStep.maxDuration;
+        Long maxDuration = convertToMillis(openingStep.maxDuration, openingStep.maxDurationUnit);
+
         // проставляем время на чтение (дефолт, так как в первом шаге мы не учитываем waiting for)
         outboxEvent.setReadExpiration(Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS));
         // период выполнения шага после чтения - ивент считается просроченным,
-        // если разница между last_update и временем прочтения processing больше этого периода
-        outboxEvent.setPerformanceExpirationPeriod(Objects.requireNonNullElse(maxDuration, DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS));
+        // если разница между last_update и временем прочтения processing больше этого периода - шаг просрочен
+        outboxEvent.setPerformanceExpirationPeriod(Objects.requireNonNullElse(maxDuration,
+                DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS*1000));
 
 
-        outboxEvent.setExpiredAt(Instant.now()
-                .plusSeconds(Objects.requireNonNullElse(openingStep.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
+
 
 
 
@@ -273,9 +291,10 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
 
-    // вспомогательный метод для создателя цепочки. позволяющий создать триггер для активации следующего шага
-    protected void createTrigger(CustomTrigger customTrigger){
-        triggersAggregator.registerTrigger(customTrigger);
+
+
+    protected void createTrigger(Trigger trigger){
+        triggersAggregator.registerTrigger(trigger);
     }
 
 
@@ -416,8 +435,9 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             next.setCorrelationId(event.getContext().getCorrelationId());
 
             // Duration параметры
+            Long executedMaxDuration = convertToMillis(executed.maxDuration, executed.maxDurationUnit);
             next.setExpiredAt(Instant.now()
-                    .plusSeconds(Objects.requireNonNullElse(executed.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
+                    .plusMillis(Objects.requireNonNullElse(executedMaxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS*1000)));
 
             // проставляем параметр времени на чтение waiting ивента / игнорируем waiting for
             next.setReadExpiration(Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS));
@@ -520,22 +540,24 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
             next.setCorrelationId(event.getContext().getCorrelationId());
 
             // Duration параметры
-            Long maxDuration = nextMethod.maxDuration;
-            Long waitingFor = nextMethod.waitingFor;
+            Long maxDuration = convertToMillis(nextMethod.maxDuration, nextMethod.maxDurationUnit);
+            Long waitingFor = convertToMillis(nextMethod.waitingFor, nextMethod.waitingForUnit);
 
-
+            /* todo не актуально. убрать в дальнейшем
             next.setExpiredAt(Instant.now()
                     .plusSeconds(Objects.requireNonNullElse(nextMethod.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
 
+             */
+
             // записываем максимальный период выполнения
             next.setPerformanceExpirationPeriod(
-                    Objects.requireNonNullElse(maxDuration, DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                    Objects.requireNonNullElse(maxDuration, DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS*1000)
             );
             // не забываем изменить статус. Задача внешней системы - изменить статус на waiting (таким образом,
             // решение принимает waiting чтец
             // если записи в outbox нет, то ивент точно не актуален
             if (waitingFor!=null){
-                next.setReadExpiration(Instant.now().plusSeconds(waitingFor));
+                next.setReadExpiration(Instant.now().plusMillis(waitingFor));
                 System.out.println("status");
                 next.setStatus(OutboxEvent.OutboxEventStatus.WAITING_FOR_EXTERNAL);
 
@@ -564,7 +586,8 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
                 try {
 
 
-                    triggersAggregator.initiateTrigger(event, bindResultingEvent(), externalResultType, waitingFor);
+
+                    triggersAggregator.initiateTriggerIfExists(event, bindResultingEvent(), externalResultType, waitingFor);
                 }
                 catch (Exception e){
                     System.out.println("trigger system exception");
@@ -725,7 +748,9 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
         // optional параметры контроля времени
         Long maxDuration = null;
+        StepTimeUnit maxDurationUnit;
         Long waitingFor = null;
+        StepTimeUnit waitingForUnit;
 
 
         @Override

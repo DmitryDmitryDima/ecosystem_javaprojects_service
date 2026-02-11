@@ -6,7 +6,6 @@ import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.OutboxDeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
@@ -89,7 +88,7 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
     @OpeningStep(name = "lockFile")
     @Message
     @Next(name="writeFileToDisk")
-    @MaxDuration(timeInSec = 5)
+    @MaxDuration(time = 5)
     public FileSaveEvent lockFile(FileSaveEvent fileSaveEvent){
 
         System.out.println("perform - lock file");

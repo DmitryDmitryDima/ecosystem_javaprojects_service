@@ -45,7 +45,7 @@ public class OutboxListener {
                 Instant now = Instant.now();
                 Instant readExpiration = outboxEvent.getReadExpiration();
                 outboxEvent.setStatus(OutboxEvent.OutboxEventStatus.PROCESSING);
-                outboxEvent.setLast_update(Instant.now());
+                outboxEvent.setLast_update(Instant.now()); // важно - каждая смена статуса фиксируется. Это - точка отсчета длительности выполнения
 
                 if (readExpiration==null || readExpiration.isAfter(now)){
 
@@ -87,7 +87,7 @@ public class OutboxListener {
                         }
 
 
-                        Instant expirationTime = event.getLast_update().plusSeconds(event.getPerformanceExpirationPeriod());
+                        Instant expirationTime = event.getLast_update().plusMillis(event.getPerformanceExpirationPeriod());
                         boolean isExpired = Instant.now().isAfter(expirationTime);
 
                         // если просрочено, то меняем last update во избежание повторного прочитывания
