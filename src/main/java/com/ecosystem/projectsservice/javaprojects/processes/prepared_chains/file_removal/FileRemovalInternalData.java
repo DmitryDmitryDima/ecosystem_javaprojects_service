@@ -10,5 +10,5 @@ import lombok.Setter;
 public class FileRemovalInternalData extends InternalEventData {
 
     private String filePath;
-    private String projectsPath;
+
 }

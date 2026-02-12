@@ -56,6 +56,7 @@ public class Project {
     private File entryPoint;
 
     // корневая папа проекта - не имеет родителей
+    // orphan removal означает удаление детей вместе с родителем
     @OneToOne(orphanRemoval = true)
     @JoinColumn(name = "root_id", referencedColumnName = "id")
     private Directory root;

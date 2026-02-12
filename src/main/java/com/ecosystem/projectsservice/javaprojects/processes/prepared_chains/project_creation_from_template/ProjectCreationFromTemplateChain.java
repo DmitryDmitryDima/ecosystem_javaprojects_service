@@ -15,11 +15,13 @@ import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectConstructor;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectLifecycleUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileSystemUtils;
 
 import java.nio.file.Path;
 import java.time.Instant;
@@ -59,7 +61,20 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
     public void compensationStrategy(ProjectCreationFromTemplateEvent event) {
         String step = event.getInternalData().getCurrentStep();
         if (!step.equals("projectEntityCreation")){
+            // очистка сущности
+            transaction().execute(status -> {
 
+                projectRepository.deleteById(event.getExternalData().getProjectId());
+
+                return null;
+            });
+            // очистка директории
+            try {
+                FileSystemUtils.deleteRecursively(Path.of(event.getInternalData().getProjectsPath(),  event.getExternalData().getName()));
+            }
+            catch (Exception e){
+
+            }
         }
     }
 
@@ -76,7 +91,6 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
     @OpeningStep(name = "projectEntityCreation")
     @Message
     @Next(name = "directoryCreation")
-
     public ProjectCreationFromTemplateEvent projectEntityCreation(ProjectCreationFromTemplateEvent event){
 
         event.setMessage("Создаем сущность проекта");
@@ -170,7 +184,7 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
             try {
                 projectConstructor.buildProjectFromSystemTemplate(settings);
             } catch (Exception e) {
-                throw new RuntimeException("Ошибка создания проекта: "+e.getCause().getMessage());
+                throw new RuntimeException("Ошибка создания проекта: "+e.getMessage());
             }
 
 

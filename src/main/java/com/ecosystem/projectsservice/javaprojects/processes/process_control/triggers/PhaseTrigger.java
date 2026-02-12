@@ -18,16 +18,6 @@ public class PhaseTrigger extends Trigger{
 
 
 
-    public PhaseTrigger(PhaseStrategy strategy){
-        this.phaseStrategy = strategy;
-    }
-
-
-
-
-
-
-
 
 
 

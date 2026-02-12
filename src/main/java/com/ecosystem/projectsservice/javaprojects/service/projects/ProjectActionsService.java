@@ -12,7 +12,6 @@ import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionResult;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileRemovalExternalData;
@@ -24,7 +23,6 @@ import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveInternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.testing.ControlTestChain;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
@@ -32,24 +30,22 @@ import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
-import com.ecosystem.projectsservice.javaprojects.service.cache.LockedValueException;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 
 // todo методы проверки могут быть оптимизированы кастомный join requests
 
 // ответственность внешнего сервиса - проверка прав. ответственность асинхронных внутренних цепочек - внутренние операции с бд, диском и кешем
+// те данные, что могут быть сконструированы исходя из проверки, вставляем сразу
 
 @Service
 public class ProjectActionsService {
@@ -129,7 +125,7 @@ public class ProjectActionsService {
 
 
     // метод проверки принадлежности файла к проекту и прав на взаимодействие с ним
-    private FileReadOnly checkAndGetFileFromProject(Project project, Long fileId){
+    private FileReadOnly checkFileRightsAndGetItFromProject(Project project, Long fileId){
         ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());
 
         FileReadOnly dbFile =null;
@@ -139,7 +135,7 @@ public class ProjectActionsService {
             if (fileReadOnly.getId().equals(fileId)){
                 if (fileReadOnly.isHidden() || !fileReadOnly.getStatus().equals(FileStatus.AVAILABLE)){
 
-                    throw new IllegalStateException("Файл не доступен для записи");
+                    throw new IllegalStateException("Файл не доступен");
                 }
                 dbFile = fileReadOnly;
                 return dbFile;
@@ -192,7 +188,9 @@ public class ProjectActionsService {
         Project project = checks(securityContext, requestContext, projectId);
 
         // безопасно читаем файл из бд - при статусе available его можно писать в кеш
-        FileReadOnly dbFile = checkAndGetFileFromProject(project, fileId);
+        FileReadOnly dbFile = checkFileRightsAndGetItFromProject(project, fileId);
+
+
 
 
         FileDTO fileDTO = FileDTO.builder()
@@ -230,9 +228,20 @@ public class ProjectActionsService {
                            Long projectId,
                            Long fileId) throws Exception{
 
+        System.out.println(requestContext.getCorrelationId());
+
         Project project = checks(securityContext, requestContext, projectId);
 
-        FileReadOnly dbFile = checkAndGetFileFromProject(project, fileId);
+        if (project.getEntryPoint().getId().equals(fileId)){
+            throw new IllegalStateException("файл входит в выбранный конфиг запуска");
+        }
+
+        FileReadOnly dbFile = checkFileRightsAndGetItFromProject(project, fileId);
+
+        if (dbFile.isImmutable()){
+            throw new IllegalStateException("файл нельзя удалить");
+        }
+
 
         FileRemovalEvent mainEvent = new FileRemovalEvent();
         mainEvent.setMessage("Удаляем файл");
@@ -241,9 +250,11 @@ public class ProjectActionsService {
         mainEvent.setContext(context);
 
         FileRemovalInternalData internalData = new FileRemovalInternalData();
-        internalData.setProjectsPath(Path.of(userStoragePath,
+        internalData.setFilePath(Path.of(userStoragePath,
                 securityContext.getUuid().toString(),
-                "projects").normalize().toString());
+                "projects", dbFile.getConstructed_path()).normalize().toString());
+
+
         mainEvent.setInternalData(internalData);
 
         FileRemovalExternalData externalData = new FileRemovalExternalData();
@@ -313,7 +324,7 @@ public class ProjectActionsService {
 
         Project project = checks(securityContext, requestContext, projectId);
 
-        FileReadOnly dbFile = checkAndGetFileFromProject(project, fileId);
+        FileReadOnly dbFile = checkFileRightsAndGetItFromProject(project, fileId);
 
 
         FileSaveEvent mainEvent = new FileSaveEvent();
@@ -323,9 +334,9 @@ public class ProjectActionsService {
         mainEvent.setContext(context);
 
         FileSaveInternalData internalData = new FileSaveInternalData();
-        internalData.setProjectsPath(Path.of(userStoragePath,
+        internalData.setFilePath(Path.of(userStoragePath,
                 securityContext.getUuid().toString(),
-                "projects").normalize().toString());
+                "projects", dbFile.getConstructed_path()).normalize().toString());
         mainEvent.setInternalData(internalData);
 
         FileSaveExternalData externalData = new FileSaveExternalData();
@@ -334,8 +345,8 @@ public class ProjectActionsService {
         externalData.setExtension(dbFile.getExtension());
         // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
         externalData.setFileOwner(project.getUserUUID());
-
-
+        externalData.setName(dbFile.getName());
+        externalData.setExtension(dbFile.getExtension());
 
         mainEvent.setExternalData(externalData);
 
@@ -390,7 +401,7 @@ public class ProjectActionsService {
 
         if (fileDTOFromCache.isEmpty()){
 
-            FileReadOnly dbFile = checkAndGetFileFromProject(project, fileId);
+            FileReadOnly dbFile = checkFileRightsAndGetItFromProject(project, fileId);
 
             FileDTO fileDTO = FileDTO.builder()
                     .name(dbFile.getName())

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -16,7 +17,7 @@ public class SimpleTriggerData implements ExternalEventData {
     private TriggerType type;
 
     // дабы не плодить кучу наследников, инфу можно хранить тут, тем самым давая ui свободу интерпретировать все самостоятельно
-    private HashMap<String, String> triggerInfo;
+    private Map<String, String> triggerInfo;
 
 
 }

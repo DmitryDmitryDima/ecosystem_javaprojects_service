@@ -17,7 +17,7 @@ public class RequestContext {
     private UUID renderId;
 
     public static RequestContext generateRequestContext(Map<String, String> headers){
-        System.out.println(headers);
+        System.out.println("headers " +headers);
         UUID correlationId;
         String corrIdHeader = headers.get("x-correlation-id");
         correlationId = corrIdHeader==null?UUID.randomUUID():UUID.fromString(corrIdHeader);

@@ -22,9 +22,7 @@ public class ReactiveTrigger extends Trigger {
     private Function<Map<String, TriggerAnswer>, Boolean> approvalStrategy;
     private DeclarativeChainEvent<?,?,?> chainEvent;
 
-    public ReactiveTrigger(Function<Map<String, TriggerAnswer>, Boolean> approvalStrategy){
-        this.approvalStrategy = approvalStrategy;
-    }
+
 
     public boolean isApproved(){
         if (!isWaiting()) return false;

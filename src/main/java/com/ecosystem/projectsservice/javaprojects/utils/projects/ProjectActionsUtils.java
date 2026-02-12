@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.S
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureMember;
 import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import org.springframework.stereotype.Component;
 
@@ -54,7 +55,7 @@ public class ProjectActionsUtils {
     public List<SimpleFileInfo> getRecentFiles(ProjectSnapshot snapshot){
         return snapshot.getFiles().stream()
                 .sorted(Comparator.comparing(FileReadOnly::getUpdated_at).reversed())
-                .filter(file->!file.isHidden())
+                .filter(file->!file.isHidden()&&file.getStatus()!=FileStatus.REMOVING)
                 .limit(5)
                 .map(file-> SimpleFileInfo
                         .builder()
@@ -114,7 +115,7 @@ public class ProjectActionsUtils {
         // для файлов можем начать вставлять зависимости, так как директории готовы
         for (FileReadOnly fileReadOnly: snapshot.getFiles()){
 
-            if (fileReadOnly.isHidden()) continue;
+            if (fileReadOnly.isHidden() || fileReadOnly.getStatus()== FileStatus.REMOVING) continue;
 
             StructureMember structureMember = new StructureMember();
             structureMember.setOriginalId(fileReadOnly.getId());

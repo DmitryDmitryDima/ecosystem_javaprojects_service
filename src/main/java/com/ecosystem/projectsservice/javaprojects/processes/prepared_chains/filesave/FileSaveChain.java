@@ -118,17 +118,10 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
             return fileEntity;
         }));
 
-        // обновляем tranfer объекты цепи для следующих шагов
-        fileSaveEvent.getExternalData().setName(file.getName());
-        fileSaveEvent.getExternalData().setPath(file.getConstructedPath());
 
 
-        // конструируем полный путь
-        fileSaveEvent.getInternalData()
-                .setFilePath(
-                        Path.of(fileSaveEvent.getInternalData().getProjectsPath(),
-                file.getConstructedPath()).normalize().toString()
-                );
+
+
 
 
 
