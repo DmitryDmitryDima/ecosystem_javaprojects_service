@@ -16,6 +16,13 @@ public class PhaseTrigger extends Trigger{
 
     private PhaseStrategy phaseStrategy;
 
+    // если onFeedStrategy возвращает true, то это можно считать сигналом к остановке триггера, если false - просто выполнение и игнор
+    // onFeedStrategy может отсутствовать, оставляя триггер полностью фазовым
+    private Function<Map<String, TriggerAnswer>, Boolean> onFeedStrategy;
+
+
+    public boolean hasOnFeedStrategy(){return onFeedStrategy!=null;}
+
 
 
 

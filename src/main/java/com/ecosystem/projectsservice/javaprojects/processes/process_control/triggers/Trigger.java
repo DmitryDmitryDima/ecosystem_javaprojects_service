@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers;
 
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.DeclarativeChainEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.triggers.SimpleTriggerData;
 import lombok.Builder;
 import lombok.Data;
@@ -47,6 +48,8 @@ public abstract class Trigger {
     // data для polling ивента
     // триггер может нести, к примеру, набор вариантов на выбор пользователю, или часть контекста
     private SimpleTriggerData triggerExternalData;
+
+    private DeclarativeChainEvent<?,?,?> chainEvent;
 
 
     // регистрация ответа по юзеру или по псевдониму системы

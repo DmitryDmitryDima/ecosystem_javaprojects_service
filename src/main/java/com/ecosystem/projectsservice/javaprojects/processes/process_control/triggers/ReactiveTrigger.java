@@ -20,7 +20,7 @@ import java.util.function.Function;
 public class ReactiveTrigger extends Trigger {
 
     private Function<Map<String, TriggerAnswer>, Boolean> approvalStrategy;
-    private DeclarativeChainEvent<?,?,?> chainEvent;
+
 
 
 

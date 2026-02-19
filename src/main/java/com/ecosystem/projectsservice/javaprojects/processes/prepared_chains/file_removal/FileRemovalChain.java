@@ -69,6 +69,21 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
         event.setMessage("Запрос на удаление файла от: "+event.getContext().getUsername());
 
+
+        Function<Map<String, TriggerAnswer>, Boolean> onFeedStrategy = (answers)->{
+            System.out.println("зарегистрирован ответ для фазового триггера. Текущие ответы "+answers);
+
+            for (TriggerAnswer answer:answers.values()){
+                // демонстрация мгновенного отказа
+                if (answer.isDecision()&& answer.getContent().equals("No")){
+                    event.setMessage("отказ в удалении файла. Не получено одобрение других участников");
+                    event.getInternalData().setCompensationPhase(true);
+                    return true;
+                }
+            }
+            return false;
+        };
+
         Function<Map<String, TriggerAnswer>, Boolean> activityPollingPhaseStrategy = (answers)->{
 
             System.out.println("activity check phase");
@@ -108,6 +123,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
         PhaseTrigger phaseTrigger = PhaseTrigger.builder()
                 .phaseStrategy(strategy)
+                .onFeedStrategy(onFeedStrategy)
                 .needPollingMessage(true)
                 .correlationId(event.getContext().getCorrelationId())
                 .message(event.getContext().getUsername()+" собирается удалить файл "+event.getExternalData()

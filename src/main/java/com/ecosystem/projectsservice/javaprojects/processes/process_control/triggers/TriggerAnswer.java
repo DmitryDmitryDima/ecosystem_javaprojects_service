@@ -25,7 +25,9 @@ public class TriggerAnswer {
     @Override
     public String toString() {
         return "TriggerAnswer{" +
-                "content='" + content + '\'' +
+                "decision=" + decision +
+                ", content='" + content + '\'' +
+                ", user=" + user +
                 '}';
     }
 }

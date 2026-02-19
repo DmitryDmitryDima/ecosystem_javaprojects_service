@@ -68,13 +68,26 @@ public class TriggersAggregator {
                     boolean isApproved = reactiveTrigger.isApproved();
                     if (isApproved){
                         System.out.println("ответ принят и триггер закрыт - цепочка движется дальше");
-                        pushProcess(reactiveTrigger.getChainEvent(), reactiveTrigger);
+                        pushProcess(reactiveTrigger);
                     }
                 }
             }
-            else {
-                trigger.registerAnswer(answer);
+
+            else if (trigger instanceof PhaseTrigger phaseTrigger){
+                synchronized (trigger){
+                    phaseTrigger.registerAnswer(answer);
+                    // если поддерживается реактивность
+                    if (phaseTrigger.hasOnFeedStrategy()){
+                        boolean result = phaseTrigger.getOnFeedStrategy().apply(trigger.getAnswers());
+                        if (result){
+                            pushProcess(phaseTrigger);
+                        }
+                    }
+
+
+                }
             }
+
 
 
         }
@@ -104,57 +117,59 @@ public class TriggersAggregator {
             // пкбликуем ивент - имея контекст и предустановленный процессом тип, он отправится туда же, куда и основные ивенты процесса
             publisher.publishEvent(externalEvent);
         }
-        // реактивный триггер должен хранить данные ивента,
+        // реактивный триггер (или фазовый с поддержкой реактивности) должен хранить данные ивента,
         // так как его обработка происходит при каждом внешнем ответе и не привязана к текущему потоку
-        if (trigger instanceof ReactiveTrigger reactiveTrigger){
-            reactiveTrigger.setChainEvent(chainEvent);
+        trigger.setChainEvent(chainEvent);
+        if (trigger instanceof PhaseTrigger phaseTrigger){
+            initiatePhases(phaseTrigger);
         }
 
-        else if (trigger instanceof PhaseTrigger phaseTrigger){
-            try (ScheduledExecutorService service = Executors.newScheduledThreadPool(2)){
-                PhaseStrategy strategy = phaseTrigger.getPhaseStrategy();
-                if (strategy == null){
-                    throw new IllegalStateException("отсутствуют фазы. Исправьте логику создания триггера");
-                }
 
-                List<ScheduledFuture<?>> tasks = new CopyOnWriteArrayList<>();
-                long time = 0;
+    }
 
-                for (int i = 0; i<strategy.getActions().size(); i++){
-                    PhaseStrategy.Phase phase = strategy.getActions().get(i);
-                    time+=phase.getPeriod(); // аккумулируем время
-                    int stepNum = i; // effectively final
+    // запуск фаз для фазового триггера
+    private void initiatePhases(PhaseTrigger phaseTrigger){
+        try (ScheduledExecutorService service = Executors.newScheduledThreadPool(2)){
+            PhaseStrategy strategy = phaseTrigger.getPhaseStrategy();
+            if (strategy == null){
+                throw new IllegalStateException("отсутствуют фазы. Исправьте логику создания триггера");
+            }
 
-                    tasks.add(
-                      service.schedule(()->{
+            List<ScheduledFuture<?>> tasks = new CopyOnWriteArrayList<>();
+            long time = 0;
 
+            for (int i = 0; i<strategy.getActions().size(); i++){
+                PhaseStrategy.Phase phase = strategy.getActions().get(i);
+                time+=phase.getPeriod(); // аккумулируем время
+                int stepNum = i; // effectively final
 
-                          if (!phaseTrigger.isWaiting()){
-                              tasks.forEach(task->{
-                                  task.cancel(false);
-                              });
-                              return;
-                          }
-                          // выполняем фазу
-                          boolean result = phase.getAction().apply(trigger.getAnswers());
-                          // если последний шаг или true на фазе - пушим. Изменения в data вносятся внутри очереди
-                          if (strategy.isLast(stepNum) || result){
-                              try {
-                                  pushProcess(chainEvent, trigger);
-                              } catch (Exception e) {
-                                  throw new RuntimeException(e);
-                              }
-                          }
+                tasks.add(
+                        service.schedule(()->{
 
 
-                      }, time, TimeUnit.MILLISECONDS)
+                            if (!phaseTrigger.isWaiting()){
+                                tasks.forEach(task->{
+                                    task.cancel(false);
+                                });
+                                return;
+                            }
+                            // выполняем фазу
+                            boolean result = phase.getAction().apply(phaseTrigger.getAnswers());
+                            // если последний шаг или true на фазе - пушим. Изменения в data вносятся внутри очереди
+                            if (strategy.isLast(stepNum) || result){
+                                try {
+                                    pushProcess(phaseTrigger);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
 
-                    );
-                }
+
+                        }, time, TimeUnit.MILLISECONDS)
+
+                );
             }
         }
-
-
     }
 
 
@@ -165,10 +180,10 @@ public class TriggersAggregator {
 
 
 
-    private void pushProcess(DeclarativeChainEvent<?,?,?> chainEvent, Trigger trigger) throws Exception {
+    private void pushProcess(Trigger trigger) throws Exception {
         trigger.stop(); // останавливаем триггер для того, чтобы он больше не принимал ответы и не мог быть вновь рассмотрен обработчиком
         // не забываем, что методы триггера могут вносить изменения в internal data, стратегия прописывается создателем процесса
-        String payload = mapper.writeValueAsString(chainEvent);
+        String payload = mapper.writeValueAsString(trigger.getChainEvent());
 
         // активируем outbox, вносим (возможно) новые данные через internal event data
         transaction.execute(status -> {
