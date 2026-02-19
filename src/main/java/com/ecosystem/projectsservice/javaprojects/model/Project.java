@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -32,6 +34,8 @@ public class Project {
 
     @Column
     private Instant createdAt;
+
+
 
 
 
@@ -60,6 +64,11 @@ public class Project {
     @OneToOne(orphanRemoval = true)
     @JoinColumn(name = "root_id", referencedColumnName = "id")
     private Directory root;
+
+
+
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectParticipant> participants = new ArrayList<>();
 
 
 }

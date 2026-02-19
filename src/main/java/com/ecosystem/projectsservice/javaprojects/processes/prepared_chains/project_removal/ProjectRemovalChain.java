@@ -85,7 +85,7 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
             if (!project.getUserUUID().equals(event.getContext().getUserUUID())){
 
-                throw new IllegalStateException("ошибка доступа");
+                throw new IllegalStateException("ошибка доступа. Вы не можете удалить этот проект");
             }
 
             if (project.getStatus()!= ProjectStatus.AVAILABLE){

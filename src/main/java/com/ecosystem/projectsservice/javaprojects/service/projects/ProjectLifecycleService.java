@@ -20,6 +20,7 @@ import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -69,10 +70,15 @@ public class ProjectLifecycleService {
 
 
     // todo приватность
+    @Transactional
     public List<ProjectLightweightDTO> getAllProjects(SecurityContext securityContext, String targetUsername){
 
 
         List<Project> projects = projectRepository.findByUserUUID(securityContext.getTargetUUID());
+
+        projects.forEach(p->{
+            System.out.println(p.getParticipants());
+        });
 
 
         return projects.stream().map(p-> ProjectLightweightDTO.builder()

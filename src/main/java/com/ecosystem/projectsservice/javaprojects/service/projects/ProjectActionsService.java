@@ -273,40 +273,7 @@ public class ProjectActionsService {
 
         fileRemovalChain.init(mainEvent);
 
-        // todo testing
-        /*
-        Thread.ofVirtual().start(()->{
 
-            int x = 0;
-            while (x<5){
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-                TriggerAnswer answer = TriggerAnswer
-                        .builder()
-                        .decision(false)
-                        .content("Привет "+x)
-                        .build();
-
-                answer.setUser(UUID.randomUUID());
-                answer.setCorrelationId(requestContext.getCorrelationId());
-                answer.setRenderId(requestContext.getRenderId());
-                try {
-                    triggersAggregator.feedTrigger(answer);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                x++;
-            }
-
-
-
-        });
-
-         */
 
 
 
@@ -447,6 +414,7 @@ public class ProjectActionsService {
         Optional<Project> projectCheck = projectRepository.findById(projectId);
 
         if (projectCheck.isEmpty()) throw new IllegalStateException("Проекта не существует");
+
 
 
 

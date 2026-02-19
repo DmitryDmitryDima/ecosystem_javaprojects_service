@@ -34,7 +34,6 @@ public class Directory {
     private Directory parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-
     private List<File> files = new ArrayList<>();
 
 
