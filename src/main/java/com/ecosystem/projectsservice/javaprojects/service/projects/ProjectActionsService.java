@@ -10,7 +10,9 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.F
 import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
@@ -251,7 +253,7 @@ public class ProjectActionsService {
 
         FileRemovalInternalData internalData = new FileRemovalInternalData();
         internalData.setFilePath(Path.of(userStoragePath,
-                securityContext.getUuid().toString(),
+                project.getUserUUID().toString(),
                 "projects", dbFile.getConstructed_path()).normalize().toString());
 
 
@@ -415,12 +417,30 @@ public class ProjectActionsService {
 
         if (projectCheck.isEmpty()) throw new IllegalStateException("Проекта не существует");
 
+        Project project = projectCheck.get();
+
+        // действие выполняется хозяином проекта
+        if (project.getUserUUID().equals(securityContext.getUuid())) return project;
+
+
+        boolean existed = false;
+        List<ProjectParticipant> participants = project.getParticipants(); // извлекаем один раз для lazy транзакции
+        for (ProjectParticipant participant:participants){
+            if (participant.getUserUUID().equals(securityContext.getUuid())){
+                existed = true;
+                break;
+            }
+        }
+        if (!existed){
+            throw new IllegalStateException("Пользователь не является участником проекта");
+
+        }
 
 
 
         // todo проверка доступа к проекту
 
-        return projectCheck.get();
+        return project;
     }
 
 

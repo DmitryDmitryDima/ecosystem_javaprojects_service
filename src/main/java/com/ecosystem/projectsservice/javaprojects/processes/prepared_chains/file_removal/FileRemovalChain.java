@@ -205,6 +205,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
         try {
             Files.delete(Path.of(event.getInternalData().getFilePath()));
         } catch (IOException e) {
+            e.printStackTrace();
             throw new IllegalStateException("ошибка удаления файла с диска");
         }
 

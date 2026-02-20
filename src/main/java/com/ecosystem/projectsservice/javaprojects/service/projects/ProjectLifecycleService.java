@@ -7,6 +7,8 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.Project
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 
+import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.UserPersonalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateEvent;
@@ -18,6 +20,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.data
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+import com.ecosystem.projectsservice.javaprojects.repository.ProjectParticipantRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import jakarta.transaction.Transactional;
@@ -27,7 +30,9 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ProjectLifecycleService {
@@ -50,6 +55,9 @@ public class ProjectLifecycleService {
     private ProjectRepository projectRepository;
 
     @Autowired
+    private ProjectParticipantRepository projectParticipantRepository;
+
+    @Autowired
     private DirectoryRepository directoryRepository;
 
     @Autowired
@@ -69,27 +77,102 @@ public class ProjectLifecycleService {
 
 
 
-    // todo приватность
+    /*
+    Если target uuid = caller uuid - читаем все проекты, открытые/приватные, плюс те, где target является участником
+    Если нет, то caller видит все открытые проекты target, а также те, где он сам является участником
+    можно пойти дальше, сделав разделение на авторские проекты и те, в которых юзер участвует
+     */
     @Transactional
+    // todo n+1 problem - делегируй фильтрацию для базы данных
     public List<ProjectLightweightDTO> getAllProjects(SecurityContext securityContext, String targetUsername){
 
+        if (securityContext.getTargetUUID()==null){
+            throw new IllegalStateException("missing target uuid. Check request details");
+        }
 
-        List<Project> projects = projectRepository.findByUserUUID(securityContext.getTargetUUID());
+        UUID targetUUID = securityContext.getTargetUUID();
+        UUID callerUUID = securityContext.getUuid();
+        // извлекаем проекты, где target uuid является автором
+        List<Project> authorProjects = projectRepository.findByUserUUID(securityContext.getTargetUUID()).stream()
 
-        projects.forEach(p->{
-            System.out.println(p.getParticipants());
+                .filter(authorProject->{
+
+                    if (authorProject.getPrivacyLevel()== ProjectPrivacyLevel.OPEN) return true;
+
+                    // если отличается тот. кто смотрит, и тот, кого смотрят
+                    if (!targetUUID.equals(callerUUID)){
+
+                        List<UUID> participants = authorProject.getParticipants()
+                                .stream()
+                                .map(ProjectParticipant::getUserUUID).toList();
+                        // приватные проекты видны только тогда, когда запрашивающий является его участником
+                        return participants.contains(callerUUID);
+                    }
+
+                    return true;
+                })
+
+                .toList();
+
+        // извлекаем проекты, где target uuid является участником. Если это приватный проект,
+        // то он отображает только в том случае, если caller тоже участник
+        List<Project> targetAsParticipantProjects = new ArrayList<>();
+
+        projectParticipantRepository.findByUserUUID(targetUUID).forEach(projectParticipant -> {
+            Project thirdPartyProject = projectParticipant.getProject();
+
+
+            if (thirdPartyProject.getPrivacyLevel()==ProjectPrivacyLevel.OPEN){
+                targetAsParticipantProjects.add(thirdPartyProject);
+            }
+            else {
+                if (callerUUID.equals(targetUUID)){
+                    targetAsParticipantProjects.add(thirdPartyProject);
+                }
+                else {
+                    // если пользователи (как вызывающий, так и просматриваемый) являются участниками одного проекта
+                    if (thirdPartyProject.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList().contains(callerUUID)){
+                        targetAsParticipantProjects.add(thirdPartyProject);
+                    }
+                }
+
+            }
         });
 
+        List<ProjectLightweightDTO> output = new ArrayList<>();
 
-        return projects.stream().map(p-> ProjectLightweightDTO.builder()
-                .id(p.getId())
-                .name(p.getName())
-                .status(p.getStatus())
-                .build()).toList();
+        output.addAll(targetAsParticipantProjects.stream()
+                .map(thirdParty->ProjectLightweightDTO.builder()
+                        .id(thirdParty.getId())
+                        .name(thirdParty.getName())
+                        .author(thirdParty.getUserUUID())
+                        .privacyLevel(thirdParty.getPrivacyLevel())
+                        .status(thirdParty.getStatus())
+                        .build()).toList());
+
+        output.addAll(authorProjects.stream()
+                .map(thirdParty->ProjectLightweightDTO.builder()
+                        .id(thirdParty.getId())
+                        .name(thirdParty.getName())
+                        .author(thirdParty.getUserUUID())
+                        .privacyLevel(thirdParty.getPrivacyLevel())
+                        .status(thirdParty.getStatus())
+                        .build()).toList());
+
+
+
+
+
+
+
+
+
+        return output;
     }
 
     /*
     пока что удаление происходит безвозвратно, возможно на более поздних этапах разработки добавлю что-то вроде корзины
+    удалить проект может только тот, кто его создал
      */
 
     public void deleteProject(SecurityContext securityContext, RequestContext requestContext, ProjectRemovalRequest request)

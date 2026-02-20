@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle;
 
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,8 @@ public class ProjectCreationRequest {
 
     // галочка "сгенерировать главный класс"
     private boolean needEntryPoint;
+
+    private ProjectPrivacyLevel privacyLevel;
 
     private String projectType; // в будущем можно будет выбрать шаблон проекта
 

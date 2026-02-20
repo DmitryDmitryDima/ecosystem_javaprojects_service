@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.model;
 
 
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import jakarta.persistence.*;
@@ -45,6 +46,13 @@ public class Project {
     @Column
     @Enumerated(EnumType.STRING)
     private ProjectStatus status = ProjectStatus.AVAILABLE;
+
+    /*
+    уровень приватности
+     */
+    @Column
+    @Enumerated(EnumType.STRING)
+    private ProjectPrivacyLevel privacyLevel = ProjectPrivacyLevel.OPEN;
 
     /*
     от типа проекта может зависеть алгоритм запуска, а также алгоритм формирования dto, поэтому его стоит вынести в модель
