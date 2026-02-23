@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.controller;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.AllTargetRelatedProjects;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectCreationRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectLightweightDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
@@ -53,12 +54,12 @@ public class ProjectsLifecycleController {
     Возвращаем проекты пользователя. Тут в будущем нужно проверять права доступа - кому этот проект будет виден
      */
     @GetMapping("/getProjects")
-    public ResponseEntity<List<ProjectLightweightDTO>> getAllProjects(@RequestHeader Map<String, String> headers,
-                                                                      @RequestParam("targetUsername") String targetUsername){
+    public ResponseEntity<AllTargetRelatedProjects> getAllProjects(@RequestHeader Map<String, String> headers,
+                                                                         @RequestParam("targetUsername") String targetUsername){
         SecurityContext context = SecurityContext.generateContext(headers);
 
-        List<ProjectLightweightDTO> projects = projectLifecycleService.getAllProjects(context, targetUsername);
-        return ResponseEntity.ok(projects);
+
+        return ResponseEntity.ok(projectLifecycleService.getAllProjects(context, targetUsername));
 
 
     }

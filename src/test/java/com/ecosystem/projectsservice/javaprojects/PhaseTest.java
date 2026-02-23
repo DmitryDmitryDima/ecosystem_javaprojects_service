@@ -14,6 +14,13 @@ import java.util.function.Function;
 public class PhaseTest {
 
     @Test
+    public void env(){
+        String value = System.getenv("VSELLM_KEY");
+        System.out.println(value);
+
+    }
+
+    @Test
     public void phase(){
 
 

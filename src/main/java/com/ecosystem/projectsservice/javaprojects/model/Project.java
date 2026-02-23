@@ -74,8 +74,8 @@ public class Project {
     private Directory root;
 
 
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    // загружается жадно
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ProjectParticipant> participants = new ArrayList<>();
 
 

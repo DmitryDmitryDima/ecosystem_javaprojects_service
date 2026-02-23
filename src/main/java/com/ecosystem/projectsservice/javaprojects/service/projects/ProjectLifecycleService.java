@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.service.projects;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.AllTargetRelatedProjects;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectCreationRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectLightweightDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
@@ -84,7 +85,11 @@ public class ProjectLifecycleService {
      */
     @Transactional
     // todo n+1 problem - делегируй фильтрацию для базы данных
-    public List<ProjectLightweightDTO> getAllProjects(SecurityContext securityContext, String targetUsername){
+    public AllTargetRelatedProjects getAllProjects(SecurityContext securityContext, String targetUsername){
+
+
+
+
 
         if (securityContext.getTargetUUID()==null){
             throw new IllegalStateException("missing target uuid. Check request details");
@@ -114,8 +119,20 @@ public class ProjectLifecycleService {
 
                 .toList();
 
+
+
         // извлекаем проекты, где target uuid является участником. Если это приватный проект,
         // то он отображает только в том случае, если caller тоже участник
+        List<Project> targetAsParticipantProjects = callerUUID.equals(targetUUID)?projectRepository.readAllProjectsByParticipant(targetUUID)
+                :
+                projectRepository.readAllParticipantProjectsByDifferentTargetAndCaller(targetUUID,securityContext.getUuid());
+
+       // System.out.println(targetUUID+" "+callerUUID);
+
+
+
+        /*
+
         List<Project> targetAsParticipantProjects = new ArrayList<>();
 
         projectParticipantRepository.findByUserUUID(targetUUID).forEach(projectParticipant -> {
@@ -139,25 +156,7 @@ public class ProjectLifecycleService {
             }
         });
 
-        List<ProjectLightweightDTO> output = new ArrayList<>();
-
-        output.addAll(targetAsParticipantProjects.stream()
-                .map(thirdParty->ProjectLightweightDTO.builder()
-                        .id(thirdParty.getId())
-                        .name(thirdParty.getName())
-                        .author(thirdParty.getUserUUID())
-                        .privacyLevel(thirdParty.getPrivacyLevel())
-                        .status(thirdParty.getStatus())
-                        .build()).toList());
-
-        output.addAll(authorProjects.stream()
-                .map(thirdParty->ProjectLightweightDTO.builder()
-                        .id(thirdParty.getId())
-                        .name(thirdParty.getName())
-                        .author(thirdParty.getUserUUID())
-                        .privacyLevel(thirdParty.getPrivacyLevel())
-                        .status(thirdParty.getStatus())
-                        .build()).toList());
+         */
 
 
 
@@ -165,9 +164,30 @@ public class ProjectLifecycleService {
 
 
 
+        AllTargetRelatedProjects projects = new AllTargetRelatedProjects();
+        projects.setAuthorProjects(
+                authorProjects.stream()
+                        .map(thirdParty->ProjectLightweightDTO.builder()
+                                .id(thirdParty.getId())
+                                .name(thirdParty.getName())
+                                .author(thirdParty.getUserUUID())
+                                .privacyLevel(thirdParty.getPrivacyLevel())
+                                .status(thirdParty.getStatus())
+                                .build()).toList());
+
+        projects.setParticipantProjects(
+                targetAsParticipantProjects.stream()
+                        .map(thirdParty->ProjectLightweightDTO.builder()
+                                .id(thirdParty.getId())
+                                .name(thirdParty.getName())
+                                .author(thirdParty.getUserUUID())
+                                .privacyLevel(thirdParty.getPrivacyLevel())
+                                .status(thirdParty.getStatus())
+                                .build()).toList());
 
 
-        return output;
+
+        return projects;
     }
 
     /*
