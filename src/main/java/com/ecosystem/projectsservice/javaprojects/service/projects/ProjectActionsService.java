@@ -42,6 +42,7 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 // todo методы проверки могут быть оптимизированы кастомный join requests
@@ -106,7 +107,7 @@ public class ProjectActionsService {
 
 
     public void triggerPollingProcess(SecurityContext securityContext,
-                                      RequestContext requestContext, Long projectId, TriggerAnswer answer) throws Exception {
+                                      RequestContext requestContext, UUID projectId, TriggerAnswer answer) throws Exception {
 
         // проверяем, имеет ли право отвечающий на то, чтобы взаимодействовать с процессом, связанным с проектом
         // пример кейса - участника выкинули, но у него еще есть process uuid
@@ -155,7 +156,7 @@ public class ProjectActionsService {
 
     // данный метод ориентируется на выброс исключений, перехватываемых в advice
     @Transactional
-    public ProjectDTO readProject(SecurityContext securityContext, RequestContext requestContext, Long projectId) throws Exception{
+    public ProjectDTO readProject(SecurityContext securityContext, RequestContext requestContext, UUID projectId) throws Exception{
 
 
 
@@ -181,7 +182,7 @@ public class ProjectActionsService {
     @Transactional
     public void autosave(SecurityContext securityContext,
                          RequestContext requestContext,
-                         Long projectId,
+                         UUID projectId,
                          Long fileId,
                          FileSaveRequest request) throws Exception{
 
@@ -227,7 +228,7 @@ public class ProjectActionsService {
     @Transactional
     public void removeFile(SecurityContext securityContext,
                            RequestContext requestContext,
-                           Long projectId,
+                           UUID projectId,
                            Long fileId) throws Exception{
 
         System.out.println(requestContext.getCorrelationId());
@@ -287,7 +288,7 @@ public class ProjectActionsService {
     @Transactional
     public void saveFile(SecurityContext securityContext,
                          RequestContext requestContext,
-                         Long projectId,
+                         UUID projectId,
                          Long fileId,
                          FileSaveRequest request) throws Exception {
 
@@ -348,7 +349,7 @@ public class ProjectActionsService {
     }
 
     @Transactional
-    public List<SimpleFileInfo> getRecentFiles(SecurityContext securityContext, RequestContext requestContext, Long projectId) throws Exception {
+    public List<SimpleFileInfo> getRecentFiles(SecurityContext securityContext, RequestContext requestContext, UUID projectId) throws Exception {
         Project project = checks(securityContext, requestContext, projectId);
 
         ProjectSnapshot snapshot = getProjectSnapshot(project.getRoot().getId());
@@ -363,7 +364,7 @@ public class ProjectActionsService {
     todo - вопрос - создает ли чтение с диска запись в кеш?
      */
     @Transactional
-    public FileDTO readFile(SecurityContext securityContext, RequestContext requestContext, Long projectId, Long fileId) throws Exception{
+    public FileDTO readFile(SecurityContext securityContext, RequestContext requestContext, UUID projectId, Long fileId) throws Exception{
         Project project = checks(securityContext, requestContext, projectId);
 
         Optional<FileDTO> fileDTOFromCache = fileContentCache.read(fileId);
@@ -412,7 +413,7 @@ public class ProjectActionsService {
 
     // todo это можно кешировать с помощью ограниченного токена
     // todo тут же извлекается лист участников проекта
-    private Project checks(SecurityContext securityContext, RequestContext requestContext, Long projectId) throws Exception{
+    private Project checks(SecurityContext securityContext, RequestContext requestContext, UUID projectId) throws Exception{
         Optional<Project> projectCheck = projectRepository.findById(projectId);
 
         if (projectCheck.isEmpty()) throw new IllegalStateException("Проекта не существует");

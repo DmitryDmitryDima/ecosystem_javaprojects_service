@@ -23,7 +23,7 @@ public class ProjectEventFromUserContext extends ExternalEventContext {
 
     // todo participant role - роль участника - к примеру author, project admin (not always author only)
 
-    private Long projectId;
+    private UUID projectId;
 
 
 
@@ -35,7 +35,7 @@ public class ProjectEventFromUserContext extends ExternalEventContext {
 
     public static ProjectEventFromUserContext from(SecurityContext securityContext,
                                                    RequestContext requestContext,
-                                                   Long projectId,
+                                                   UUID projectId,
                                                    List<UUID> participants){
 
         return ProjectEventFromUserContext.builder()
@@ -43,6 +43,7 @@ public class ProjectEventFromUserContext extends ExternalEventContext {
 
                 .correlationId(requestContext.getCorrelationId())
                 .participants(participants)
+
                 .projectId(projectId)
                 .renderId(requestContext.getRenderId())
                 .timestamp(Instant.now())

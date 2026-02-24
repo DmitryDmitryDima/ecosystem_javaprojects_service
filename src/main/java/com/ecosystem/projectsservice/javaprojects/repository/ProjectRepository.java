@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ProjectRepository extends JpaRepository<Project, Long> {
+public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
 
     Optional<Project> findByNameAndUserUUID(String name, UUID userUUID);
@@ -22,7 +22,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     // пессимистичная блокировка - запись в бд блокируется на момент транзакции
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p from Project p where p.id=?1")
-    Optional<Project> findByIdForUpdate(Long id);
+    Optional<Project> findByIdForUpdate(UUID id);
 
     /*суть данного запроса (важно - target!=caller) в том, что он позволяет извлечь:
 

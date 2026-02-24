@@ -30,16 +30,7 @@ public class TestProjectActions {
 
 
 
-    @Test
-    public void testReading(){
-        long id = 83;
-        try {
-            ProjectDTO dto = service.readProject(null,null,id);
-            System.out.println(dto.getStructure());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+
 
 
     @Test
@@ -60,18 +51,4 @@ public class TestProjectActions {
 
     }
 
-    @Test
-    public void fileRead(){
-        Long projectId = 94L;
-        Long fileId = 192L;
-
-        try {
-            FileDTO dto = service.readFile(SecurityContext.builder().uuid(UUID.fromString("c39d7136-bb65-4cc6-9902-ecf131c630fa")).build(), null,
-                    projectId, fileId);
-
-            System.out.println(dto);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

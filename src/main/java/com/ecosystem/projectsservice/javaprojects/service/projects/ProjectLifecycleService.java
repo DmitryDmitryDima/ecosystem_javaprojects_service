@@ -206,6 +206,7 @@ public class ProjectLifecycleService {
         context.setTimestamp(Instant.now());
         context.setUserUUID(securityContext.getUuid());
         context.setCorrelationId(requestContext.getCorrelationId());
+        context.setPublic(true); // ивент виден всем
 
         ProjectRemovalExternalData externalData = new ProjectRemovalExternalData();
         externalData.setProjectId(request.getProjectId());
@@ -253,6 +254,7 @@ public class ProjectLifecycleService {
         context.setUserUUID(securityContext.getUuid());
         context.setCorrelationId(requestContext.getCorrelationId());
         context.setRenderId(requestContext.getRenderId());
+        context.setPublic(true);
 
         mainEvent.setContext(context);
         mainEvent.setExternalData(externalData);

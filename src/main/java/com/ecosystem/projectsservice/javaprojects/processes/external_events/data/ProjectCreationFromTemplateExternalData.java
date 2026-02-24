@@ -6,11 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProjectCreationFromTemplateExternalData implements ExternalEventData {
-    private Long projectId;
+    private UUID projectId;
     private String name;
     private String projectLanguage = "java";
 }

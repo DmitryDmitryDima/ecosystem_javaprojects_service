@@ -22,7 +22,7 @@ public class FileDTO {
     // кешируем uuid владельца файла
     private UUID ownerUUID;
 
-    private Long projectId;
+    private UUID projectId;
 
 
 }

@@ -16,7 +16,7 @@ import java.util.UUID;
 @Builder
 public class ProjectLightweightDTO {
 
-    private Long id;
+    private UUID id;
     private ProjectStatus status;
     private String name;
     private UUID author;

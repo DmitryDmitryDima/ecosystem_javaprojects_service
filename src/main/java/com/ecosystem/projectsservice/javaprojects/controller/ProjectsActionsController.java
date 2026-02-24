@@ -51,7 +51,7 @@ public class ProjectsActionsController {
     // эндпоинт для воздействия на триггер процесса внутри проекта
     // используется для ответов ui на polling ивенты
     @PostMapping("/trigger/{uuid}")
-    public ResponseEntity<Void> triggerProcess(@PathVariable("uuid") UUID processId, @PathVariable("id") Long projectId,
+    public ResponseEntity<Void> triggerProcess(@PathVariable("uuid") UUID processId, @PathVariable("id") UUID projectId,
                                                @RequestHeader Map<String, String> headers, @RequestBody TriggerAnswer answer)
             throws Exception {
 
@@ -67,7 +67,7 @@ public class ProjectsActionsController {
 
     // читаем проект, получаем всю необходимую информацию
     @GetMapping("/read")
-    public ResponseEntity<ProjectDTO> read(@PathVariable("id") Long id, @RequestHeader Map<String, String> headers) throws Exception{
+    public ResponseEntity<ProjectDTO> read(@PathVariable("id") UUID id, @RequestHeader Map<String, String> headers) throws Exception{
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
@@ -80,7 +80,7 @@ public class ProjectsActionsController {
 
     // обновляем отдельно список последних редактируемых файлов (файлы должны иметь статус visible)
     @GetMapping("/readRecentFiles")
-    public ResponseEntity<List<SimpleFileInfo>> readRecentFiles(@PathVariable("id") Long id, @RequestHeader Map<String, String> headers) throws Exception{
+    public ResponseEntity<List<SimpleFileInfo>> readRecentFiles(@PathVariable("id") UUID id, @RequestHeader Map<String, String> headers) throws Exception{
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
@@ -91,7 +91,7 @@ public class ProjectsActionsController {
     // чтение файла - viewer id, project id, project author id, file id - все данные для конструирования пути
 
     @GetMapping("/readFile/{file_id}")
-    public ResponseEntity<FileDTO> readFile(@PathVariable("id") Long projectId, @PathVariable("file_id") Long fileId,
+    public ResponseEntity<FileDTO> readFile(@PathVariable("id") UUID projectId, @PathVariable("file_id") Long fileId,
                                             @RequestHeader Map<String, String> headers) throws Exception{
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
@@ -103,7 +103,7 @@ public class ProjectsActionsController {
 
     // удаление файла - операция предполагает мгновенную инвалидацию некоторых элементов в кеше проекта (предложки)
     @PostMapping("/removeFile/{file_id}")
-    public ResponseEntity<Void> removeFile(@PathVariable("id") Long projectId,
+    public ResponseEntity<Void> removeFile(@PathVariable("id") UUID projectId,
                                            @PathVariable("file_id") Long fileId,
                                            @RequestHeader Map<String, String> headers) throws Exception{
 
@@ -119,7 +119,7 @@ public class ProjectsActionsController {
     сохранение файла через отдельную кнопку - гарантирует сохранение файла в диск (используется наравне с автосохранением в redis)
      */
     @PostMapping("/saveFile/{file_id}")
-    public ResponseEntity<Void> saveFile(@PathVariable("id") Long projectId, @PathVariable("file_id") Long fileId,
+    public ResponseEntity<Void> saveFile(@PathVariable("id") UUID projectId, @PathVariable("file_id") Long fileId,
                                          @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request) throws Exception{
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
@@ -138,7 +138,7 @@ public class ProjectsActionsController {
      */
 
     @PostMapping ("/autosave/{file_id}")
-    public ResponseEntity<Void> autosave(@PathVariable("id") Long projectId, @PathVariable("file_id") Long fileId,
+    public ResponseEntity<Void> autosave(@PathVariable("id") UUID projectId, @PathVariable("file_id") Long fileId,
                                          @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request) throws Exception{
 
 

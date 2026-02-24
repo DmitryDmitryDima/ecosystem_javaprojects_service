@@ -16,7 +16,7 @@ public class ProjectEventFromSystemContext extends ExternalEventContext{
 
 
 
-    private Long projectId;
+    private UUID projectId;
 
 
 

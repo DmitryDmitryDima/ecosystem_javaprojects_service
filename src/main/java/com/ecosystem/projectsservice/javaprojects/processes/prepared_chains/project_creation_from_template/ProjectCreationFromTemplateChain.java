@@ -26,6 +26,7 @@ import org.springframework.util.FileSystemUtils;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_CREATION_FROM_TEMPLATE)
@@ -106,7 +107,7 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
         project.setStatus(ProjectStatus.CREATING); // статус creating защищает сущность от параллельных изменений
         project.setType(event.getInternalData().getProjectType());
 
-        Long id = transaction().execute(status -> projectRepository.saveAndFlush(project).getId());
+        UUID id = transaction().execute(status -> projectRepository.saveAndFlush(project).getId());
 
         event.getExternalData().setProjectId(id);
 
