@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading;
 
-import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

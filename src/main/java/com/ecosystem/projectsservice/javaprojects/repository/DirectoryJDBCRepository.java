@@ -1,8 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.repository;
 
 
-import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;

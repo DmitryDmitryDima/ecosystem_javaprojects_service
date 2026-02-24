@@ -2,12 +2,10 @@ package com.ecosystem.projectsservice.javaprojects.service.projects;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.AllTargetRelatedProjects;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectCreationRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectLightweightDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.*;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 
+import com.ecosystem.projectsservice.javaprojects.model.ProjectInviteToken;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.UserPersonalEventContext;
@@ -19,19 +17,18 @@ import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.proj
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ProjectRemovalExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalInternalData;
-import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
-import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.repository.ProjectParticipantRepository;
-import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
+import com.ecosystem.projectsservice.javaprojects.repository.*;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -71,6 +68,11 @@ public class ProjectLifecycleService {
 
     @Autowired
     private ProjectCreationFromTemplateChain projectCreationFromTemplateChain;
+
+    @Autowired
+    private ProjectInviteTokenRepository projectInviteTokenRepository;
+
+
 
 
 
@@ -126,36 +128,7 @@ public class ProjectLifecycleService {
                 :
                 projectRepository.readAllParticipantProjectsByDifferentTargetAndCaller(targetUUID,securityContext.getUuid());
 
-       // System.out.println(targetUUID+" "+callerUUID);
 
-
-
-        /*
-
-        List<Project> targetAsParticipantProjects = new ArrayList<>();
-
-        projectParticipantRepository.findByUserUUID(targetUUID).forEach(projectParticipant -> {
-            Project thirdPartyProject = projectParticipant.getProject();
-
-
-            if (thirdPartyProject.getPrivacyLevel()==ProjectPrivacyLevel.OPEN){
-                targetAsParticipantProjects.add(thirdPartyProject);
-            }
-            else {
-                if (callerUUID.equals(targetUUID)){
-                    targetAsParticipantProjects.add(thirdPartyProject);
-                }
-                else {
-                    // если пользователи (как вызывающий, так и просматриваемый) являются участниками одного проекта
-                    if (thirdPartyProject.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList().contains(callerUUID)){
-                        targetAsParticipantProjects.add(thirdPartyProject);
-                    }
-                }
-
-            }
-        });
-
-         */
 
 
 
@@ -191,6 +164,71 @@ public class ProjectLifecycleService {
 
         return projects;
     }
+
+
+
+    /*
+    создаем инвайт токен для приглашения в проект
+     */
+    @Transactional
+    public UUID createInviteToken(SecurityContext securityContext,
+                                  RequestContext requestContext,
+                                  ProjectInviteCreationRequest request) throws Exception{
+
+        // для начала проверяем, является ли создатель токена хозяином проекта
+
+        Optional<Project> projectCheck = projectRepository.findById(request.getProjectId());
+
+        if (projectCheck.isEmpty()) throw new IllegalStateException("проекта не существует");
+
+        Project project = projectCheck.get();
+        if (!project.getUserUUID().equals(securityContext.getUuid()))
+            throw new IllegalStateException("вы не можете пригласить в проект, это может сделать только автор");
+
+        ProjectInviteToken projectInviteToken = new ProjectInviteToken();
+        projectInviteToken.setProject(project);
+        projectInviteToken.setUserUUID(request.getUserUUID());
+
+        projectInviteToken = projectInviteTokenRepository.saveAndFlush(projectInviteToken);
+
+        // id токена и есть токен
+        return projectInviteToken.getId();
+
+
+
+
+    }
+
+    @Transactional
+    public void validateInviteToken(SecurityContext securityContext,
+                                    RequestContext requestContext,
+                                    ProjectInviteTokenValidationRequest request) throws Exception{
+
+
+
+        Optional<ProjectInviteToken> tokenCheck = projectInviteTokenRepository.findByIdForUpdate(request.getToken());
+        if (tokenCheck.isEmpty()){
+            throw new IllegalStateException("токена не существует");
+        }
+        ProjectInviteToken token = tokenCheck.get();
+
+        if (token.isUsed() || token.getExpiredAt().isBefore(Instant.now())) {
+            throw new IllegalStateException("токен просрочен");
+        }
+
+        // todo
+
+
+
+
+
+
+
+
+
+
+    }
+
 
     /*
     пока что удаление происходит безвозвратно, возможно на более поздних этапах разработки добавлю что-то вроде корзины

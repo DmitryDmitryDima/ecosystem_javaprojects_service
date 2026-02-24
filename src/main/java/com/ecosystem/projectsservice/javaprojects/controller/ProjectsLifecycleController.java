@@ -3,10 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.controller;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.AllTargetRelatedProjects;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectCreationRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectLightweightDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemovalRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.*;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectLifecycleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 // создание и уничтожение java проекта
 @RestController
@@ -41,13 +39,24 @@ public class ProjectsLifecycleController {
 
     }
 
-
+    // удаление проекта
     @PostMapping("/deleteProject")
     public ResponseEntity<Void> deleteProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectRemovalRequest request) throws Exception {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
         projectLifecycleService.deleteProject(securityContext, requestContext, request);
         return ResponseEntity.noContent().build();
+    }
+
+    // создание пригласительного токена - его может создать только автор проекта
+    @PostMapping("/createInviteToken")
+    public ResponseEntity<UUID> createInviteToken(@RequestHeader Map<String, String> headers,
+                                                  @RequestBody ProjectInviteCreationRequest request) throws Exception{
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        return ResponseEntity.ok(projectLifecycleService.createInviteToken(securityContext, requestContext, request));
     }
 
     /*

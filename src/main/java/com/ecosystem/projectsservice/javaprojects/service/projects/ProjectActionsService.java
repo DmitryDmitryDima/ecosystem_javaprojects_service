@@ -7,12 +7,11 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.P
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectSnapshot;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
-import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;

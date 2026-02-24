@@ -1,11 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects;
 
 
-import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
-import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
@@ -14,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
-import java.util.UUID;
 
 @SpringBootTest
 public class TestProjectActions {

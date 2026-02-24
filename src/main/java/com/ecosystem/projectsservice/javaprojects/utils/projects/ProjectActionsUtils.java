@@ -4,8 +4,8 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.P
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectSnapshot;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureMember;
-import com.ecosystem.projectsservice.javaprojects.model.DirectoryReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import org.springframework.stereotype.Component;

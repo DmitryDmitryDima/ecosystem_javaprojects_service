@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.model;
+package com.ecosystem.projectsservice.javaprojects.model.read_only;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
