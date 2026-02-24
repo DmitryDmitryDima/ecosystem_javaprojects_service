@@ -3,7 +3,6 @@ package com.ecosystem.projectsservice.javaprojects.processes.external_events.con
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.util.UUID;
 
 
@@ -28,5 +27,5 @@ public class UserPersonalEventContext extends ExternalEventContext {
     private UUID renderId;
 
     // если ивент публичный, то сторонний наблюдатель тоже о нем узнает
-    private boolean isPublic;
+    private boolean opened;
 }

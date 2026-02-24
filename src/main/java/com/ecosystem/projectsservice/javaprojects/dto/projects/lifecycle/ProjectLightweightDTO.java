@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @AllArgsConstructor
@@ -21,6 +22,8 @@ public class ProjectLightweightDTO {
     private String name;
     private UUID author;
     private ProjectPrivacyLevel privacyLevel;
+
+    private List<UUID> participants;
 
 
 }

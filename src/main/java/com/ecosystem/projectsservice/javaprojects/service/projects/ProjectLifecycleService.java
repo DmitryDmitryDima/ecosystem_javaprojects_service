@@ -31,7 +31,6 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -165,6 +164,7 @@ public class ProjectLifecycleService {
 
 
         AllTargetRelatedProjects projects = new AllTargetRelatedProjects();
+
         projects.setAuthorProjects(
                 authorProjects.stream()
                         .map(thirdParty->ProjectLightweightDTO.builder()
@@ -173,6 +173,7 @@ public class ProjectLifecycleService {
                                 .author(thirdParty.getUserUUID())
                                 .privacyLevel(thirdParty.getPrivacyLevel())
                                 .status(thirdParty.getStatus())
+                                .participants(thirdParty.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList())
                                 .build()).toList());
 
         projects.setParticipantProjects(
@@ -183,6 +184,7 @@ public class ProjectLifecycleService {
                                 .author(thirdParty.getUserUUID())
                                 .privacyLevel(thirdParty.getPrivacyLevel())
                                 .status(thirdParty.getStatus())
+                                .participants(thirdParty.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList())
                                 .build()).toList());
 
 
@@ -206,7 +208,7 @@ public class ProjectLifecycleService {
         context.setTimestamp(Instant.now());
         context.setUserUUID(securityContext.getUuid());
         context.setCorrelationId(requestContext.getCorrelationId());
-        context.setPublic(true); // ивент виден всем
+        context.setOpened(true); // ивент виден всем
 
         ProjectRemovalExternalData externalData = new ProjectRemovalExternalData();
         externalData.setProjectId(request.getProjectId());
@@ -254,7 +256,7 @@ public class ProjectLifecycleService {
         context.setUserUUID(securityContext.getUuid());
         context.setCorrelationId(requestContext.getCorrelationId());
         context.setRenderId(requestContext.getRenderId());
-        context.setPublic(true);
+        context.setOpened(true);
 
         mainEvent.setContext(context);
         mainEvent.setExternalData(externalData);
