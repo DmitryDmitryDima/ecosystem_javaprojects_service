@@ -29,7 +29,7 @@ public class ProjectInviteToken {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private Instant expiredAt = Instant.now().plusSeconds(60*60*24);
+    private Instant expiredAt = Instant.now().plusSeconds(2*60);
 
     private boolean used;
 

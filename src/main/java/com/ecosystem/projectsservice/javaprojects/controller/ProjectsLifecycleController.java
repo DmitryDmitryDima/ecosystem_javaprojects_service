@@ -59,6 +59,18 @@ public class ProjectsLifecycleController {
         return ResponseEntity.ok(projectLifecycleService.createInviteToken(securityContext, requestContext, request));
     }
 
+    @PostMapping("/validateInviteToken/{token}")
+    public ResponseEntity<InviteTokenValidationResponse> validateInviteToken(@RequestHeader Map<String, String> headers,
+                                                                             @PathVariable("token") UUID token) throws Exception {
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        return ResponseEntity.ok(projectLifecycleService
+                .validateInviteToken(securityContext, requestContext, token));
+
+    }
+
     /*
     Возвращаем проекты пользователя. Тут в будущем нужно проверять права доступа - кому этот проект будет виден
      */
