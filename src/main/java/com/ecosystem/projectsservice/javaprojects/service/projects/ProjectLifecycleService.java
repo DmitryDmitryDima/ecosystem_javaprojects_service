@@ -241,6 +241,36 @@ public class ProjectLifecycleService {
 
 
     /*
+    добавить участника в проект
+
+     */
+
+    @Transactional
+    public void addParticipantToProject(SecurityContext context, RequestContext requestContext, ProjectAddParticipantRequest request){
+        Optional<Project> projectCheck = projectRepository.findById(request.getProjectId());
+
+        if (projectCheck.isEmpty()) throw new IllegalStateException("проекта не существует");
+
+        Project project = projectCheck.get();
+        if (!project.getUserUUID().equals(context.getUuid())) throw new IllegalStateException("Только автор может добавлять в проект");
+
+        if (project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList()
+                .contains(request.getUserId())) throw new IllegalStateException("пользователь уже участвует в проекте");
+        if (project.getUserUUID().equals(request.getProjectId())) throw new IllegalStateException("автор не может добавить сам себя");
+
+        ProjectParticipant participant = new ProjectParticipant();
+        participant.setProject(project);
+        project.getParticipants().add(participant);
+        participant.setRole(ParticipantRole.WRITER);
+        participant.setUserUUID(request.getUserId());
+
+
+
+
+    }
+
+
+    /*
     пока что удаление происходит безвозвратно, возможно на более поздних этапах разработки добавлю что-то вроде корзины
     удалить проект может только тот, кто его создал
      */
