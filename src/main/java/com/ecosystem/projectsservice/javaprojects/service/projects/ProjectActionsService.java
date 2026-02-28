@@ -210,7 +210,7 @@ public class ProjectActionsService {
 
         broadcast.statelessAction(
                 ()-> fileContentCache.save(fileId, fileDTO))
-                .withContext(()->ProjectEventFromUserContext.from(securityContext, requestContext, projectId, List.of()))
+                .withContext(()->ProjectEventFromUserContext.from(securityContext, requestContext, project, false, false))
                 .withData(()->{
                     FileSaveExternalData externalData = new FileSaveExternalData();
                     externalData.setContent(request.getContent());
@@ -247,7 +247,11 @@ public class ProjectActionsService {
 
         FileRemovalEvent mainEvent = new FileRemovalEvent();
         mainEvent.setMessage("Удаляем файл");
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, projectId, List.of());
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext,
+                requestContext,
+                project,
+                false, false);
+
 
         mainEvent.setContext(context);
 
@@ -298,7 +302,7 @@ public class ProjectActionsService {
 
         FileSaveEvent mainEvent = new FileSaveEvent();
         mainEvent.setMessage("Сохраняем файл...");
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, projectId, List.of());
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, project, false, false);
 
         mainEvent.setContext(context);
 

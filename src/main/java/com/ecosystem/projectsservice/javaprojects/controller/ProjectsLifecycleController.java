@@ -74,6 +74,14 @@ public class ProjectsLifecycleController {
 
     // точечное добавление пользователя к проекту
     @PostMapping("/addParticipant")
+    public ResponseEntity<Void> addParticipant(@RequestHeader Map<String, String> headers, @RequestBody ProjectAddParticipantRequest request)
+    throws Exception
+    {
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+        projectLifecycleService.addParticipantToProject(securityContext, requestContext, request);
+        return ResponseEntity.noContent().build();
+    }
 
 
 

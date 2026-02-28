@@ -2,6 +2,8 @@ package com.ecosystem.projectsservice.javaprojects.processes.external_events.con
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -25,6 +27,13 @@ public class ProjectEventFromUserContext extends ExternalEventContext {
 
     private UUID projectId;
 
+    // добавляем это поле для более умного routing'а
+    private UUID projectAuthor;
+
+    // если opened, то ивент пересылается в том числе подписчикам user public канала (пример - добавление/удаление участника в открытый проект)
+    // для этого имеем поле автор
+    private boolean opened;
+
 
 
     // все остальные, кроме автора ивента. Автор при этом тоже получает событие
@@ -35,16 +44,17 @@ public class ProjectEventFromUserContext extends ExternalEventContext {
 
     public static ProjectEventFromUserContext from(SecurityContext securityContext,
                                                    RequestContext requestContext,
-                                                   UUID projectId,
-                                                   List<UUID> participants){
+                                                   Project project, boolean needParticipants,  boolean isOpened){
 
         return ProjectEventFromUserContext.builder()
 
 
                 .correlationId(requestContext.getCorrelationId())
-                .participants(participants)
-
-                .projectId(projectId)
+                .participants(needParticipants?project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList()
+                        :List.of())
+                .opened(isOpened)
+                .projectId(project.getId())
+                .projectAuthor(project.getUserUUID())
                 .renderId(requestContext.getRenderId())
                 .timestamp(Instant.now())
                 .username(securityContext.getUsername())
