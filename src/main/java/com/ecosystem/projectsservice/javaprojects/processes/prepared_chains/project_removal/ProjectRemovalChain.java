@@ -9,6 +9,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.UserPersonalEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
@@ -54,7 +55,7 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
-        return new UserPersonalEvent();
+        return new ProjectEventFromUser();
     }
 
     @Override

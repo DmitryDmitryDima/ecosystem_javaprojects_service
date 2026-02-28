@@ -198,6 +198,13 @@ public class ProjectLifecycleService {
         context.setCorrelationId(requestContext.getCorrelationId());
         context.setOpened(true); // ивент виден всем
 
+
+
+
+
+
+
+
         ProjectRemovalExternalData externalData = new ProjectRemovalExternalData();
         externalData.setProjectId(request.getProjectId());
 
