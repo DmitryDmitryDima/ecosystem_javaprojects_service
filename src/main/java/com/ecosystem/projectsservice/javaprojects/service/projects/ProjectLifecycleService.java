@@ -9,7 +9,13 @@ import com.ecosystem.projectsservice.javaprojects.model.ProjectInviteToken;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ParticipantRole;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
+import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionExecutionException;
+import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.UserPersonalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ProjectCreationFromTemplateExternalData;
@@ -72,6 +78,9 @@ public class ProjectLifecycleService {
 
     @Autowired
     private ProjectInviteTokenRepository projectInviteTokenRepository;
+
+    @Autowired
+    private BroadcastableAction broadcast;
 
 
 
@@ -168,106 +177,7 @@ public class ProjectLifecycleService {
 
 
 
-    /*
-    создаем инвайт токен для приглашения в проект
-     */
-    @Transactional
-    public UUID createInviteToken(SecurityContext securityContext,
-                                  RequestContext requestContext,
-                                  ProjectInviteCreationRequest request) throws Exception{
 
-        // для начала проверяем, является ли создатель токена хозяином проекта
-
-        Optional<Project> projectCheck = projectRepository.findById(request.getProjectId());
-
-        if (projectCheck.isEmpty()) throw new IllegalStateException("проекта не существует");
-
-        Project project = projectCheck.get();
-        if (!project.getUserUUID().equals(securityContext.getUuid()))
-            throw new IllegalStateException("вы не можете пригласить в проект, это может сделать только автор");
-
-        ProjectInviteToken projectInviteToken = new ProjectInviteToken();
-        projectInviteToken.setProject(project);
-        projectInviteToken.setUserUUID(request.getUserUUID());
-
-        projectInviteToken = projectInviteTokenRepository.saveAndFlush(projectInviteToken);
-
-        // id токена и есть токен
-        return projectInviteToken.getId();
-
-
-
-
-    }
-
-    @Transactional
-    public InviteTokenValidationResponse validateInviteToken(SecurityContext securityContext,
-                                    RequestContext requestContext,
-                                    UUID proposedToken) throws Exception{
-
-
-
-        Optional<ProjectInviteToken> tokenCheck = projectInviteTokenRepository.findByIdForUpdate(proposedToken);
-        if (tokenCheck.isEmpty()){
-            throw new IllegalStateException("токена не существует");
-        }
-        ProjectInviteToken token = tokenCheck.get();
-
-        if (token.isUsed() || token.getExpiredAt().isBefore(Instant.now())) {
-            throw new IllegalStateException("токен просрочен");
-        }
-
-        if (token.getUserUUID()!=null && !securityContext.getUuid().equals(token.getUserUUID())){
-            throw new IllegalStateException("Приглашение не для вас");
-        }
-        if (securityContext.getUuid().equals(token.getProject().getUserUUID())){
-            throw new IllegalStateException("вы - автор");
-        }
-
-        // создаем сущность участника
-
-        ProjectParticipant participant = new ProjectParticipant();
-        participant.setProject(token.getProject());
-        token.getProject().getParticipants().add(participant);
-        participant.setUserUUID(securityContext.getUuid());
-        participant.setRole(ParticipantRole.WRITER); // todo - размышление - нужен ли reader?
-
-        // используем токен
-        token.setUsed(true);
-
-        return new InviteTokenValidationResponse(token.getProject().getId());
-
-    }
-
-
-    /*
-    добавить участника в проект
-
-     */
-
-    @Transactional
-    public void addParticipantToProject(SecurityContext context, RequestContext requestContext, ProjectAddParticipantRequest request){
-        Optional<Project> projectCheck = projectRepository.findById(request.getProjectId());
-
-        if (projectCheck.isEmpty()) throw new IllegalStateException("проекта не существует");
-
-        Project project = projectCheck.get();
-        if (!project.getUserUUID().equals(context.getUuid())) throw new IllegalStateException("Только автор может добавлять в проект");
-
-        if (project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList()
-                .contains(request.getUserId())) throw new IllegalStateException("пользователь уже участвует в проекте");
-        if (project.getUserUUID().equals(request.getProjectId())) throw new IllegalStateException("автор не может добавить сам себя");
-
-        ProjectParticipant participant = new ProjectParticipant();
-        participant.setProject(project);
-        project.getParticipants().add(participant);
-        participant.setRole(ParticipantRole.WRITER);
-        participant.setUserUUID(request.getUserId());
-
-
-
-
-    }
 
 
     /*

@@ -5,6 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.*;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectLifecycleService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectParticipantsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,9 @@ public class ProjectsLifecycleController {
 
     @Autowired
     private ProjectLifecycleService projectLifecycleService;
+
+    @Autowired
+    private ProjectParticipantsService participantsService;
 
     @PostMapping("/createProject")
     public ResponseEntity<Void> createProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectCreationRequest request) throws Exception {
@@ -56,7 +60,7 @@ public class ProjectsLifecycleController {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
-        return ResponseEntity.ok(projectLifecycleService.createInviteToken(securityContext, requestContext, request));
+        return ResponseEntity.ok(participantsService.createInviteToken(securityContext, requestContext, request));
     }
 
     // валидация токена приглашения
@@ -67,7 +71,7 @@ public class ProjectsLifecycleController {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
-        return ResponseEntity.ok(projectLifecycleService
+        return ResponseEntity.ok(participantsService
                 .validateInviteToken(securityContext, requestContext, token));
 
     }
@@ -79,7 +83,7 @@ public class ProjectsLifecycleController {
     {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
-        projectLifecycleService.addParticipantToProject(securityContext, requestContext, request);
+        participantsService.addParticipantToProject(securityContext, requestContext, request);
         return ResponseEntity.noContent().build();
     }
 

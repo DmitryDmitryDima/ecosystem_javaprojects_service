@@ -13,4 +13,5 @@ import java.util.UUID;
 public class ProjectAddParticipantRequest {
     private UUID projectId;
     private UUID userId;
+    private String username;
 }
