@@ -308,7 +308,7 @@ public class ProjectActionsService {
 
         FileSaveInternalData internalData = new FileSaveInternalData();
         internalData.setFilePath(Path.of(userStoragePath,
-                securityContext.getUuid().toString(),
+                project.getUserUUID().toString(),
                 "projects", dbFile.getConstructed_path()).normalize().toString());
         mainEvent.setInternalData(internalData);
 
