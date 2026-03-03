@@ -190,6 +190,16 @@ public class ProjectLifecycleService {
 
         ProjectRemovalEvent mainEvent = new ProjectRemovalEvent();
 
+        ProjectEventFromUserContext projectContext = new ProjectEventFromUserContext();
+        projectContext.setRenderId(requestContext.getRenderId());
+        projectContext.setUsername(securityContext.getUsername());
+        projectContext.setTimestamp(Instant.now());
+        projectContext.setUserUUID(securityContext.getUuid());
+        projectContext.setCorrelationId(requestContext.getCorrelationId());
+        projectContext.setProjectId(request.getProjectId());
+
+
+        /*
         UserPersonalEventContext context = new UserPersonalEventContext();
         context.setRenderId(requestContext.getRenderId());
         context.setUsername(securityContext.getUsername());
@@ -197,6 +207,8 @@ public class ProjectLifecycleService {
         context.setUserUUID(securityContext.getUuid());
         context.setCorrelationId(requestContext.getCorrelationId());
         context.setOpened(true); // ивент виден всем
+
+         */
 
 
 
@@ -215,9 +227,10 @@ public class ProjectLifecycleService {
 
 
 
-        mainEvent.setContext(context);
+        mainEvent.setContext(projectContext);
         mainEvent.setExternalData(externalData);
         mainEvent.setInternalData(internalData);
+
 
         removalChain.init(mainEvent);
 

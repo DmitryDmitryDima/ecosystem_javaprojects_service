@@ -2,6 +2,8 @@ package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.pro
 
 
 import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -98,6 +100,12 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
             // блокировка специальным статусом
             project.setStatus(ProjectStatus.REMOVING);
 
+            // вставляем необходимые дополнения в контекст
+            event.getContext().setOpened(project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN);
+            event.getContext().setProjectAuthor(project.getUserUUID());
+            event.getContext().setParticipants(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
+
+
             // формируем полный путь до проекта
 
             return Path.of(event.getInternalData().getProjectPath(), project.getName()).toString();
@@ -105,6 +113,8 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
         });
 
         event.getInternalData().setProjectPath(fullPath);
+
+
 
 
 
