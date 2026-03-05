@@ -87,6 +87,15 @@ public class ProjectsLifecycleController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/removeParticipant")
+    public ResponseEntity<Void> removeParticipant(@RequestHeader Map<String, String> headers, @RequestBody ProjectRemoveParticipantRequest request)
+    throws Exception
+    {
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+        participantsService.removeParticipantFromProject(securityContext, requestContext, request);
+        return ResponseEntity.noContent().build();
+    }
 
 
     /*

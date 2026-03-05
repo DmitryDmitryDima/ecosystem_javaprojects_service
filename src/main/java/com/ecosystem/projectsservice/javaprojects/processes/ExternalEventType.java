@@ -10,7 +10,8 @@ public enum ExternalEventType {
     JAVA_PROJECT_REMOVAL("java_project_removal"),
 
     JAVA_PROJECT_FILE_REMOVAL("java_project_file_removal"),
-    JAVA_PROJECT_ADD_PARTICIPANT("java_project_participant_add");
+    JAVA_PROJECT_ADD_PARTICIPANT("java_project_participant_add"),
+    JAVA_PROJECT_REMOVE_PARTICIPANT("java_project_participant_remove");
 
     private final String name;
 

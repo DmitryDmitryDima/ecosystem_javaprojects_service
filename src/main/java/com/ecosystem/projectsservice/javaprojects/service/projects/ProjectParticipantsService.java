@@ -4,6 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.InviteTokenValidationResponse;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectAddParticipantRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectRemoveParticipantRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ProjectInviteCreationRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectInviteToken;
@@ -13,7 +14,6 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLeve
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionExecutionException;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ExternalEmptyData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -125,6 +126,8 @@ public class ProjectParticipantsService {
         participant.setUserUUID(user);
     }
 
+
+
     private void participantAddDecorator(SecurityContext context,
                                          RequestContext requestContext,
                                          UUID toAddUUID,
@@ -163,9 +166,61 @@ public class ProjectParticipantsService {
 
         if (project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList()
                 .contains(request.getUserId())) throw new IllegalStateException("пользователь уже участвует в проекте");
-        if (project.getUserUUID().equals(request.getProjectId())) throw new IllegalStateException("автор не может добавить сам себя");
+        if (project.getUserUUID().equals(request.getUserId())) throw new IllegalStateException("автор не может добавить сам себя");
 
         participantAddDecorator(securityContext, requestContext, request.getUserId(), request.getUsername(),  project);
+
+
+
+    }
+
+    private void removeParticipant(UUID toRemove, Project from){
+        from.getParticipants().removeIf(projectParticipant -> projectParticipant.getUserUUID().equals(toRemove));
+    }
+
+
+
+    // политика - если пользователь - участник проекта. то он может удалить только сам себя. В противном случае это право принадлежит автору проекта
+    @Transactional
+    public void removeParticipantFromProject(SecurityContext securityContext,
+                                             RequestContext requestContext, ProjectRemoveParticipantRequest request) throws ActionExecutionException {
+
+
+        Optional<Project> projectCheck = projectRepository.findById(request.getProjectId());
+
+        if (projectCheck.isEmpty()) throw new IllegalStateException("проекта не существует");
+
+        Project project = projectCheck.get();
+
+        if (project.getUserUUID().equals(request.getUserId())) throw new IllegalStateException("автор не может удалить сам себя. Для этого нужно удалить проект");
+
+        List<UUID> participants = project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList();
+
+        if (!participants.contains(securityContext.getUuid())){
+            throw new IllegalStateException("Вы не являетесь участником проекта");
+        }
+        if (!participants.contains(request.getUserId())) {
+            throw new IllegalStateException("Тот, кого пытаются удалить, не является участником проекта");
+        }
+        // todo тут все может измениться при усложнении политики полномочий
+        if (participants.contains(securityContext.getUuid()) && !request.getUserId().equals(securityContext.getUuid())){
+            throw new IllegalStateException("Будучи участником, вы не можете удалить другого участника");
+        }
+
+        broadcast.statelessAction(()->removeParticipant(request.getUserId(), project))
+                .withContext(()-> ProjectEventFromUserContext.from(securityContext, requestContext,project,true,
+                        project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN))
+                .withData(ExternalEmptyData::new
+                )
+                .withEvent(ProjectEventFromUser::new)
+                .withType(ExternalEventType.JAVA_PROJECT_REMOVE_PARTICIPANT)
+                .withMessage("Из проекта "+project.getName()+" удален пользователь "+request.getUsername())
+                .execute();
+
+
+
+
+
 
 
 

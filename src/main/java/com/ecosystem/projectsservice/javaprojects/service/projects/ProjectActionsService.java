@@ -166,6 +166,7 @@ public class ProjectActionsService {
         projectDTO.setStatus(project.getStatus());
         projectDTO.setName(project.getName());
         projectDTO.setAuthor(project.getUserUUID());
+        projectDTO.setParticipants(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
 
         utils.generateStructureForDTO(project.getRoot().getId(), projectDTO, getProjectSnapshot(project.getRoot().getId()));
 

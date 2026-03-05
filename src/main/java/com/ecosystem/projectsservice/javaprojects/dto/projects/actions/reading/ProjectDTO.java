@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +24,8 @@ public class ProjectDTO {
 
     // подготовленная структура для фронтенд tree библиотеки (nested вариант)
     private List<StructureMember> structure;
+
+    private List<UUID> participants = new ArrayList<>();
 
 
 
