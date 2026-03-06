@@ -20,6 +20,8 @@ public abstract class ExternalEventContext {
 
     private Instant timestamp;
 
+    private AlarmStrategy alarmStrategy;
+
 
 
 

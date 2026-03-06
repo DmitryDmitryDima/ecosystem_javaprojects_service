@@ -198,7 +198,7 @@ public class BroadcastableAction {
 
 
             // todo onError
-            throw new ActionExecutionException("ошибка выполнения действия. Причина "+e.getMessage());
+            throw new ActionExecutionException("ошибка выполнения действия. Причина "+e);
         }
     }
 

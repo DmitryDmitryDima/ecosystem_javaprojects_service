@@ -14,8 +14,11 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLeve
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionExecutionException;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.AlarmAction;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.AlarmStrategy;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ExternalEmptyData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ParticipantActionData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectInviteTokenRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectParticipantRepository;
@@ -25,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -137,7 +141,7 @@ public class ProjectParticipantsService {
         broadcast.statelessAction(()->createParticipant(toAddUUID, project))
                 .withContext(()-> ProjectEventFromUserContext.from(context, requestContext,project,true,
                         project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN))
-                .withData(ExternalEmptyData::new
+                .withData(()->new ParticipantActionData(toAddUUID)
                 )
                 .withEvent(ProjectEventFromUser::new)
                 .withType(ExternalEventType.JAVA_PROJECT_ADD_PARTICIPANT)
@@ -196,7 +200,7 @@ public class ProjectParticipantsService {
 
         List<UUID> participants = project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList();
 
-        if (!participants.contains(securityContext.getUuid())){
+        if (!participants.contains(securityContext.getUuid())&& !securityContext.getUuid().equals(project.getUserUUID())){
             throw new IllegalStateException("Вы не являетесь участником проекта");
         }
         if (!participants.contains(request.getUserId())) {
@@ -208,9 +212,28 @@ public class ProjectParticipantsService {
         }
 
         broadcast.statelessAction(()->removeParticipant(request.getUserId(), project))
-                .withContext(()-> ProjectEventFromUserContext.from(securityContext, requestContext,project,true,
-                        project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN))
-                .withData(ExternalEmptyData::new
+                .withContext(()-> {
+
+                        var context = ProjectEventFromUserContext.from(securityContext, requestContext,project,true,
+                                project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN);
+
+                        // ВАЖНО - мы добавляем uuid удаленного участника в контекст так, словно он все еще участник - таким образом мы гарантируем,
+                        // что все подписчики его контента увидят ивент, как и он сам, находясь вне проекта
+
+                        // аккуратно - общий метод содержит в себе unmodifiable list
+                        context.setParticipants(new ArrayList<>(context.getParticipants()));
+                        context.getParticipants().add(request.getUserId());
+
+                        // добавляем alarm стратегию - событие требует действий в слое уведомлений
+                        AlarmStrategy alarmStrategy = new AlarmStrategy(List.of(request.getUserId()), AlarmAction.SESSION_CLOSE);
+                        context.setAlarmStrategy(alarmStrategy);
+
+
+
+                        return context;
+
+                })
+                .withData(()->new ParticipantActionData(request.getUserId())
                 )
                 .withEvent(ProjectEventFromUser::new)
                 .withType(ExternalEventType.JAVA_PROJECT_REMOVE_PARTICIPANT)
