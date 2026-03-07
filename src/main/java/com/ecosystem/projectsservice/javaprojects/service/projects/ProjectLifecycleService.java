@@ -244,7 +244,7 @@ public class ProjectLifecycleService {
 
     public void createProject(SecurityContext securityContext, RequestContext requestContext, ProjectCreationRequest projectCreationRequest) throws Exception {
 
-
+        System.out.println(projectCreationRequest);
 
         ProjectCreationFromTemplateEvent mainEvent = new ProjectCreationFromTemplateEvent();
 
@@ -253,7 +253,9 @@ public class ProjectLifecycleService {
         internalData.setProjectsPath(Path.of(userStoragePath, securityContext.getUuid().toString(), "projects").normalize().toString());
         internalData.setInstructionsPath(Path.of(systemStoragePath, INSTRUCTIONS_FOLDER).normalize().toString());
         internalData.setNeedEntryPoint(projectCreationRequest.isNeedEntryPoint());
+        internalData.setPrivacyLevel(projectCreationRequest.getPrivacyLevel());
         internalData.setFileTemplatesPath(Path.of(systemStoragePath, TEMPLATES_FOLDER).normalize().toString());
+
 
         ProjectCreationFromTemplateExternalData externalData = new ProjectCreationFromTemplateExternalData();
         externalData.setName(projectCreationRequest.getName());
@@ -265,6 +267,7 @@ public class ProjectLifecycleService {
         context.setCorrelationId(requestContext.getCorrelationId());
         context.setRenderId(requestContext.getRenderId());
         context.setOpened(true);
+
 
         mainEvent.setContext(context);
         mainEvent.setExternalData(externalData);

@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template;
 
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.InternalEventData;
 import lombok.Getter;
@@ -25,4 +26,5 @@ public class ProjectCreationFromTemplateInternalData extends InternalEventData {
 
 
     private boolean needEntryPoint;
+    private ProjectPrivacyLevel privacyLevel;
 }

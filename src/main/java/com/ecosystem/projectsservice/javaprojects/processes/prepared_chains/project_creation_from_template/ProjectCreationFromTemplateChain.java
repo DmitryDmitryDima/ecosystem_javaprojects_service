@@ -4,6 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.pro
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ConstructorSettingsForSystemTemplateBuild;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -106,6 +107,7 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
         project.setName(event.getExternalData().getName());
         project.setStatus(ProjectStatus.CREATING); // статус creating защищает сущность от параллельных изменений
         project.setType(event.getInternalData().getProjectType());
+        project.setPrivacyLevel(event.getInternalData().getPrivacyLevel());
 
         UUID id = transaction().execute(status -> projectRepository.saveAndFlush(project).getId());
 

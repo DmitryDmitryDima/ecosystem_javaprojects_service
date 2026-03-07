@@ -17,6 +17,8 @@ public class ProjectCreationRequest {
     private String name;
 
 
+
+
     // галочка "сгенерировать главный класс"
     private boolean needEntryPoint;
 
