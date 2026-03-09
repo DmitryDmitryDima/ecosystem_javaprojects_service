@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
@@ -147,6 +148,17 @@ public class ProjectsActionsController {
 
         actionsService.autosave(securityContext, requestContext, projectId, fileId, request);
 
+
+        return ResponseEntity.noContent().build();
+    }
+
+
+    @PostMapping("/addFile")
+    public ResponseEntity<Void> addFile(@PathVariable("id") UUID projectId,
+                                        @RequestHeader Map<String, String> headers, @RequestBody FileAddRequest request) throws Exception{
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
         return ResponseEntity.noContent().build();
     }
