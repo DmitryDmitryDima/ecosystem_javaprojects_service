@@ -16,6 +16,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.AlarmAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.AlarmStrategy;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.NotificationStrategy;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ExternalEmptyData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ParticipantActionData;
@@ -139,8 +140,21 @@ public class ProjectParticipantsService {
                                          Project project) throws ActionExecutionException {
 
         broadcast.statelessAction(()->createParticipant(toAddUUID, project))
-                .withContext(()-> ProjectEventFromUserContext.from(context, requestContext,project,true,
-                        project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN))
+                .withContext(()-> {
+                    NotificationStrategy notificationStrategy = new NotificationStrategy();
+                    // вставляем необходимые дополнения в контекст
+                    // событие удаления проекта рассылается персонально участникам проекта и его автору, либо открытый, либо закрытый канал
+                    List<UUID> toNotify = new ArrayList<>();
+                    toNotify.add(project.getUserUUID());
+                    toNotify.addAll(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
+
+                    if (project.getPrivacyLevel() == ProjectPrivacyLevel.OPEN) {
+                        notificationStrategy.setPublicChannel(toNotify);
+                    } else {
+                        notificationStrategy.setPrivateChannel(toNotify);
+                    }
+                    return ProjectEventFromUserContext.from(context, requestContext, project, notificationStrategy, null);})
+
                 .withData(()->new ParticipantActionData(toAddUUID)
                 )
                 .withEvent(ProjectEventFromUser::new)
@@ -214,23 +228,27 @@ public class ProjectParticipantsService {
         broadcast.statelessAction(()->removeParticipant(request.getUserId(), project))
                 .withContext(()-> {
 
-                        var context = ProjectEventFromUserContext.from(securityContext, requestContext,project,true,
-                                project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN);
+                        // вставляем необходимые дополнения в контекст
+                        // событие удаления участника рассылается персонально участникам проекта и его автору, либо открытый, либо закрытый канал
+                        NotificationStrategy notificationStrategy = new NotificationStrategy();
+                        List<UUID> toNotify = new ArrayList<>();
+                        toNotify.add(project.getUserUUID()); // автор проекта
+                        toNotify.addAll(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList()); // участники проекта
+                        toNotify.add(request.getUserId()); // тот, кого удаляют
 
-                        // ВАЖНО - мы добавляем uuid удаленного участника в контекст так, словно он все еще участник - таким образом мы гарантируем,
-                        // что все подписчики его контента увидят ивент, как и он сам, находясь вне проекта
-
-                        // аккуратно - общий метод содержит в себе unmodifiable list
-                        context.setParticipants(new ArrayList<>(context.getParticipants()));
-                        context.getParticipants().add(request.getUserId());
+                        if (project.getPrivacyLevel() == ProjectPrivacyLevel.OPEN) {
+                            notificationStrategy.setPublicChannel(toNotify);
+                        } else {
+                            notificationStrategy.setPrivateChannel(toNotify);
+                        }
 
                         // добавляем alarm стратегию - событие требует действий в слое уведомлений
                         AlarmStrategy alarmStrategy = new AlarmStrategy(List.of(request.getUserId()), AlarmAction.SESSION_CLOSE);
-                        context.setAlarmStrategy(alarmStrategy);
 
 
 
-                        return context;
+
+                        return ProjectEventFromUserContext.from(securityContext, requestContext, project, notificationStrategy, alarmStrategy);
 
                 })
                 .withData(()->new ParticipantActionData(request.getUserId())

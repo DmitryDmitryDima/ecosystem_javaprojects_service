@@ -129,11 +129,8 @@ public class FileOperationsListener {
                             // не нужны, адресат - комната
                             return ProjectEventFromSystemContext.builder()
                                             .correlationId(UUID.randomUUID())
-                                            .opened(false)
                                             .origin("background disk writer process")
-                                            .projectAuthor(file.getValue().getOwnerUUID())
                                             .timestamp(Instant.now())
-                                            .participants(List.of()) // не нужны, адресат - комната
                                             .projectId(file.getValue().getProjectId())
                                             .build();
                         })

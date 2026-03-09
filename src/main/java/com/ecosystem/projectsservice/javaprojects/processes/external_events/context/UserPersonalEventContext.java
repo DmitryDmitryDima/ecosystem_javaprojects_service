@@ -26,6 +26,5 @@ public class UserPersonalEventContext extends ExternalEventContext {
 
     private UUID renderId;
 
-    // если ивент публичный, то сторонний наблюдатель тоже о нем узнает
-    private boolean opened;
+
 }

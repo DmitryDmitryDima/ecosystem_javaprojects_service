@@ -18,12 +18,9 @@ public class ProjectEventFromSystemContext extends ExternalEventContext{
 
     private UUID projectId;
 
-    // добавляем это поле для более умного routing'а
-    private UUID projectAuthor;
 
-    // если opened, то ивент пересылается в том числе подписчикам user public канала (пример - добавление/удаление участника в открытый проект)
-    // для этого имеем поле автор
-    private boolean opened;
+
+
 
 
 
@@ -32,6 +29,5 @@ public class ProjectEventFromSystemContext extends ExternalEventContext{
 
 
 
-    // участники проекта - опционально для случаев, где требуется персональная рассылка участникам проекта
-    private List<UUID> participants;
+
 }

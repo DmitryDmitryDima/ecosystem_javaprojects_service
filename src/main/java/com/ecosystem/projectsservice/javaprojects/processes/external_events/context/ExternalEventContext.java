@@ -20,7 +20,13 @@ public abstract class ExternalEventContext {
 
     private Instant timestamp;
 
+    // alarm стратегия - стратегия для notification слоя
     private AlarmStrategy alarmStrategy;
+
+    // инструкция, согласно которой notification service производит рассылку. Сделана максимально гибкой из за разности сценариев
+    private NotificationStrategy notificationStrategy;
+
+    // ПРИМЕЧАНИЕ - ALARM STRATEGY И NOTIFICATION STRATEGY ЯВЛЯЮТСЯ ДОПОЛНЕНИЕМ К ДЕФОЛТНОМУ ПОВЕДЕНИЮ КАЖДОЙ ИЗ КАТЕГОРИЙ.
 
 
 

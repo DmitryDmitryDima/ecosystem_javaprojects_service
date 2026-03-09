@@ -13,6 +13,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionExecutionException;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.NotificationStrategy;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.UserPersonalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
@@ -34,6 +35,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -242,7 +244,8 @@ public class ProjectLifecycleService {
 
 
 
-    public void createProject(SecurityContext securityContext, RequestContext requestContext, ProjectCreationRequest projectCreationRequest) throws Exception {
+    public void createProject(SecurityContext securityContext, RequestContext requestContext,
+                              ProjectCreationRequest projectCreationRequest) throws Exception {
 
         System.out.println(projectCreationRequest);
 
@@ -266,7 +269,14 @@ public class ProjectLifecycleService {
         context.setUserUUID(securityContext.getUuid());
         context.setCorrelationId(requestContext.getCorrelationId());
         context.setRenderId(requestContext.getRenderId());
-        context.setOpened(true);
+
+        // если проект публичный, о его появлении узнает в том числе внешний наблюдатель страницы пользователя (списка его проектов)
+        NotificationStrategy notificationStrategy = new NotificationStrategy();
+        if (projectCreationRequest.getPrivacyLevel()==ProjectPrivacyLevel.OPEN){
+            notificationStrategy.setPublicChannel(List.of(securityContext.getUuid()));
+        }
+
+        context.setNotificationStrategy(notificationStrategy);
 
 
         mainEvent.setContext(context);

@@ -11,6 +11,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.NotificationStrategy;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.UserPersonalEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
@@ -23,7 +24,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 // todo добавить инвалидацию кеша
 @Service
@@ -101,9 +105,25 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
             project.setStatus(ProjectStatus.REMOVING);
 
             // вставляем необходимые дополнения в контекст
-            event.getContext().setOpened(project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN);
-            event.getContext().setProjectAuthor(project.getUserUUID());
-            event.getContext().setParticipants(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
+            // событие удаления проекта рассылается персонально участникам проекта и его автору, либо открытый, либо закрытый канал
+            NotificationStrategy notificationStrategy = new NotificationStrategy();
+            List<UUID> toNotify = new ArrayList<>();
+            toNotify.add(project.getUserUUID());
+            toNotify.addAll(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
+
+            if (project.getPrivacyLevel() == ProjectPrivacyLevel.OPEN) {
+                notificationStrategy.setPublicChannel(toNotify);
+            } else {
+                notificationStrategy.setPrivateChannel(toNotify);
+            }
+
+
+            //event.getContext().setOpened(project.getPrivacyLevel()== ProjectPrivacyLevel.OPEN);
+            //event.getContext().setProjectAuthor(project.getUserUUID());
+            //event.getContext().setParticipants(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
+
+            event.getContext().setNotificationStrategy(notificationStrategy);
+
 
 
             // формируем полный путь до проекта

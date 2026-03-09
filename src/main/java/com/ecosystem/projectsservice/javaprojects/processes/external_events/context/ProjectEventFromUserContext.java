@@ -28,39 +28,31 @@ public class ProjectEventFromUserContext extends ExternalEventContext {
 
     private UUID projectId;
 
-    // добавляем это поле для более умного routing'а
-    private UUID projectAuthor;
-
-    // если opened, то ивент пересылается в том числе подписчикам user public канала (пример - добавление/удаление участника в открытый проект)
-    // для этого имеем поле автор
-    private boolean opened;
 
 
 
-    // все остальные, кроме автора ивента. Автор при этом тоже получает событие
-    // при этом важно отметить, что данное поле не всегда используется
-    // - к примеру ивент сохранения файла достаточно отправить только через project_id. т.е. по адресу комнаты
-    private List<UUID> participants;
 
 
-    public static ProjectEventFromUserContext from(SecurityContext securityContext,
-                                                   RequestContext requestContext,
-                                                   Project project, boolean needParticipants,  boolean isOpened){
+    public static ProjectEventFromUserContext from (SecurityContext securityContext,
+                                                    RequestContext requestContext,
+                                                    Project project, NotificationStrategy notificationStrategy,
+                                                    AlarmStrategy alarmStrategy){
 
         return ProjectEventFromUserContext.builder()
 
 
                 .correlationId(requestContext.getCorrelationId())
-                .participants(needParticipants?project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList()
-                        :List.of())
-                .opened(isOpened)
+                .notificationStrategy(notificationStrategy)
+                .alarmStrategy(alarmStrategy)
+
                 .projectId(project.getId())
-                .projectAuthor(project.getUserUUID())
+
                 .renderId(requestContext.getRenderId())
                 .timestamp(Instant.now())
                 .username(securityContext.getUsername())
                 .userUUID(securityContext.getUuid())
                 .build();
+
 
     }
 
