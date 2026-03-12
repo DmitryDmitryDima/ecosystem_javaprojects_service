@@ -108,7 +108,7 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
     @Next(name = "write_file_to_disk")
     @Message
     public void createDbEntity(FileAddEvent event){
-        event.setMessage("Создаем директорию");
+        event.setMessage("Создаем файл");
         File created = transaction().execute(status -> {
 
             Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
@@ -137,6 +137,7 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
         event.getInternalData()
                 .setFilepath(Path.of(event.getInternalData().getProjectsPath(),
                         created.getConstructedPath()).normalize().toString());
+        event.getExternalData().setId(created.getId());
     }
 
     @Step(name = "write_file_to_disk")

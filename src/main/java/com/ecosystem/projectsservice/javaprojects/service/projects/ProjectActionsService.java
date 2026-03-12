@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.service.projects;
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.*;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.DirectoryAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
@@ -13,9 +14,13 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.DirectoryAddExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileAddExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileRemovalExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddInternalData;
@@ -95,6 +100,9 @@ public class ProjectActionsService {
 
     @Autowired
     private FileAddChain fileAddChain;
+
+    @Autowired
+    private DirectoryAddChain directoryAddChain;
 
 
 
@@ -220,6 +228,37 @@ public class ProjectActionsService {
     }
 
     @Transactional
+    public void addDirectory(SecurityContext securityContext,
+                             RequestContext requestContext,
+                             UUID projectId,
+                             DirectoryAddRequest directoryAddRequest) throws Exception{
+
+        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+
+        DirectoryAddEvent event = new DirectoryAddEvent();
+
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, project,
+                null,
+                null);
+
+        DirectoryAddExternalData externalData = new DirectoryAddExternalData();
+        externalData.setParentId(directoryAddRequest.getParentId());
+        externalData.setName(directoryAddRequest.getName());
+
+        DirectoryAddInternalData internalData = new DirectoryAddInternalData();
+        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectsPath(Path.of(userStoragePath,
+                project.getUserUUID().toString(),
+                "projects").normalize().toString());
+
+        event.setContext(context);
+        event.setInternalData(internalData);
+        event.setExternalData(externalData);
+        event.setMessage("создаем директорию");
+
+    }
+
+    @Transactional
     public void addFile(SecurityContext securityContext,
                         RequestContext requestContext,
                         UUID projectId,
@@ -254,11 +293,6 @@ public class ProjectActionsService {
         fileAddEvent.setMessage("Создание файла "+fileAddRequest.getFilename()+"."+fileAddRequest.getExtension());
 
         fileAddChain.init(fileAddEvent);
-
-
-
-
-
 
     }
 
