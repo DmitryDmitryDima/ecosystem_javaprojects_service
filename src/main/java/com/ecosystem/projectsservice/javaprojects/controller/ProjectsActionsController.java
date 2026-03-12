@@ -160,6 +160,8 @@ public class ProjectsActionsController {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
+        actionsService.addFile(securityContext, requestContext, projectId, request);
+
         return ResponseEntity.noContent().build();
     }
 

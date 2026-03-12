@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.model.read_only;
 
+import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,4 +19,5 @@ public class DirectoryReadOnly {
     private Instant created_at;
     private boolean hidden;
     private boolean immutable;
+    private DirectoryStatus status;
 }

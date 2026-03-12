@@ -43,44 +43,6 @@ public class OutboxDeclarativeChainTest {
     }
 
 
-    @Test
-    public void test(){
 
-
-        FileSaveEvent mainEvent = new FileSaveEvent();
-
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.builder()
-                .correlationId(UUID.randomUUID())
-                .participants(List.of())
-                .projectId(5L)
-                .renderId(UUID.randomUUID())
-                .timestamp(Instant.now())
-                .username("dima")
-                .userUUID(UUID.randomUUID())
-                .build();
-
-        mainEvent.setContext(context);
-
-        FileSaveInternalData internalData = new FileSaveInternalData();
-        mainEvent.setInternalData(internalData);
-
-        FileSaveExternalData externalData = new FileSaveExternalData();
-        externalData.setContent("blah blah");
-        externalData.setName("lol");
-        externalData.setPath("/hello");
-        externalData.setFileId(100L);
-
-        mainEvent.setExternalData(externalData);
-
-        mainEvent.setMessage("starting a chain");
-
-        try {
-            fileSaveChain.init(mainEvent);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-
-    }
 
 }

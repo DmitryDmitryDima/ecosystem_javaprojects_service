@@ -1,9 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.utils.projects;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectSnapshot;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureMember;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.*;
+import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
@@ -20,9 +18,31 @@ public class ProjectActionsUtils {
 
 
 
+
+    public Optional<FileReadOnly> findAvailableFile(StructureSnapshot snapshot, Long toCheck){
+        return snapshot.getFiles()
+                .stream()
+                .filter(fileReadOnly -> fileReadOnly.getId().equals(toCheck)
+                        && !fileReadOnly.isHidden()
+                        && fileReadOnly.getStatus().equals(FileStatus.AVAILABLE)).findFirst();
+    }
+
+    public Optional<DirectoryReadOnly> findAvailableDirectory(StructureSnapshot snapshot, Long toCheck){
+
+        return snapshot.getDirectories()
+                .stream()
+                .filter(directoryReadOnly -> directoryReadOnly.getId().equals(toCheck)
+                        && !directoryReadOnly.isHidden()
+                        && directoryReadOnly.getStatus().equals(DirectoryStatus.AVAILABLE)).findFirst();
+    }
+
+
+
+
+
     // метод вызывается из контекста @Transactional
     public void generateStructureForDTO(Long rootId, ProjectDTO projectDTO,
-                                              ProjectSnapshot snapshot){
+                                              StructureSnapshot snapshot){
 
 
 
@@ -52,7 +72,7 @@ public class ProjectActionsUtils {
 
     }
 
-    public List<SimpleFileInfo> getRecentFiles(ProjectSnapshot snapshot){
+    public List<SimpleFileInfo> getRecentFiles(StructureSnapshot snapshot){
         return snapshot.getFiles().stream()
                 .sorted(Comparator.comparing(FileReadOnly::getUpdated_at).reversed())
                 .filter(file->!file.isHidden()&&file.getStatus()!=FileStatus.REMOVING)
@@ -95,7 +115,7 @@ public class ProjectActionsUtils {
     }
 
     // готовим таблицу
-    private Map<String, StructureMember> prepareMembersTable(ProjectSnapshot snapshot ){
+    private Map<String, StructureMember> prepareMembersTable(StructureSnapshot snapshot ){
 
         Map<String, StructureMember> table = new HashMap<>();
 

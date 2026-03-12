@@ -28,9 +28,9 @@ public class DirectoryJDBCRepository {
         String query = """
                 
                 with recursive children as (
-                select id, parent_id, name, constructed_path, created_at, hidden, immutable from directories where id = ?
+                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status from directories where id = ?
                 union
-                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable from directories d join children c on d.parent_id = c.id
+                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status from directories d join children c on d.parent_id = c.id
                 )
                 select * from children;
                 

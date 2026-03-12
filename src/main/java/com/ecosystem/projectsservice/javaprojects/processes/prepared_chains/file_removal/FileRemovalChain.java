@@ -1,7 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.enums.StepTimeUnit;
@@ -12,6 +14,8 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.data
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -40,6 +44,12 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
     @Autowired
     private FileRepository fileRepository;
 
+    @Autowired
+    private SnapshotService snapshotService;
+
+    @Autowired
+    private ProjectActionsUtils actionsUtils;
+
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
         return new ProjectEventFromUser();
@@ -61,7 +71,16 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
     @OpeningStep(name = "polling")
     @Next(name = "blockFile")
-    public void polling(FileRemovalEvent event){
+    public void checkAndPolling(FileRemovalEvent event){
+
+        // данный запрос не блокирует файл, так как фаза опроса - долгая? либо же можно ввести статус polling для файла, но это кажется избыточным
+        transaction().execute(status -> {
+            Optional<File> initialCheck = fileRepository.findById(event.getExternalData().getFileId());
+            if (initialCheck.isEmpty() || initialCheck.get().isHidden()) throw new IllegalStateException("файла не существует");
+            event.getExternalData().setName(initialCheck.get().getName());
+            event.getExternalData().setExtension(initialCheck.get().getExtension());
+            return null;
+        });
 
 
 
@@ -152,16 +171,28 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
     public void blockFile(FileRemovalEvent event){
 
        transaction().execute(status -> {
-            Optional<File> fileCheck = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
-            if (fileCheck.isEmpty()){
+            Optional<File> fileBlock = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
+            if (fileBlock.isEmpty()){
                 throw new IllegalStateException("файла не существует");
             }
-            File file = fileCheck.get();
-            if (file.getStatus()!= FileStatus.AVAILABLE){
-                throw new IllegalStateException("файл не доступен для удаления - занят другим процессом");
-            }
+            File file = fileBlock.get();
 
-            file.setStatus(FileStatus.REMOVING);
+           StructureSnapshot snapshot = snapshotService.getSnapshot(event.getInternalData().getProjectRoot());
+           Optional<FileReadOnly> presence = actionsUtils.findAvailableFile(snapshot, file.getId());
+
+           if (presence.isEmpty()) throw new IllegalStateException("файл недоступен или больше не является частью проекта");
+
+           // конструируем путь для записи в диск
+           event.getInternalData().setFilePath(Path.of(event.getInternalData().getProjectsPath(),
+                   file.getConstructedPath()).normalize().toString());
+
+           // дополняем необходимые поля
+
+           event.getExternalData().setPath(file.getConstructedPath());
+
+
+
+           file.setStatus(FileStatus.REMOVING);
 
 
 

@@ -13,7 +13,8 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 @Builder
-public class ProjectSnapshot {
+public class StructureSnapshot {
+
     private List<DirectoryReadOnly> directories;
     private List<FileReadOnly> files;
 

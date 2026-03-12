@@ -2,8 +2,10 @@ package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.fil
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
@@ -12,6 +14,8 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.cont
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
+import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -34,6 +38,14 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
     // обновляем кеш в конце цепочки
     @Autowired
     private FileContentCache<FileDTO, Long> fileContentCache;
+
+    @Autowired
+    private SnapshotService snapshotService;
+
+    @Autowired
+    private ProjectActionsUtils actionsUtils;
+
+
 
 
     @Override
@@ -85,6 +97,9 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
     }
 
 
+
+
+
     @OpeningStep(name = "lockFile")
     @Message
     @Next(name="writeFileToDisk")
@@ -95,24 +110,40 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
 
 
-        fileSaveEvent.setMessage("готовим файл к записи");
+        fileSaveEvent.setMessage("готовим файл к записи - проверяем зависимости");
 
+        // транзакция осуществляет пессимистичную блокировку
         File file = transaction().execute((status -> {
 
 
-
+            // проверка существования в базе
             Optional<File> fileCheck = fileRepository.findByIdForUpdate(fileSaveEvent.getExternalData().getFileId());
 
             if (fileCheck.isEmpty()) throw new IllegalArgumentException("файл отсутствует");
 
+
+
+
+
             File fileEntity = fileCheck.get();
 
-            if (fileEntity.getStatus()== FileStatus.WRITING || fileEntity.getStatus() == FileStatus.REMOVING){
-                throw new IllegalStateException("файл занят другим процессом");
+            StructureSnapshot snapshot = snapshotService.getSnapshot(fileSaveEvent.getInternalData().getProjectRoot());
+            Optional<FileReadOnly> presence = actionsUtils.findAvailableFile(snapshot, fileEntity.getId());
 
-            }
+            if (presence.isEmpty()) throw new IllegalStateException("файл недоступен или не является частью проекта");
 
-            fileEntity.setStatus(FileStatus.WRITING); // пока статус writing - никто не может писать в файл
+            // конструируем путь для записи в диск
+            fileSaveEvent.getInternalData().setFilePath(Path.of(fileSaveEvent.getInternalData().getProjectsPath(),
+                    fileEntity.getConstructedPath()).normalize().toString());
+
+            // дополняем необходимые поля
+            fileSaveEvent.getExternalData().setExtension(fileEntity.getExtension());
+            fileSaveEvent.getExternalData().setName(fileEntity.getName());
+            fileSaveEvent.getExternalData().setPath(fileEntity.getConstructedPath());
+
+            // на выходе из пессимистично заблокированной транзакции файл будет иметь статус writing -
+            // это автоматически защитит его от параллельного удаления или от удаления директории, в которой он находится
+            fileEntity.setStatus(FileStatus.WRITING);
 
 
             return fileEntity;

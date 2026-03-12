@@ -1,11 +1,15 @@
 package com.ecosystem.projectsservice.javaprojects.repository;
 
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.NativeQuery;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DirectoryRepository extends JpaRepository<Directory, Long> {
@@ -21,6 +25,10 @@ public interface DirectoryRepository extends JpaRepository<Directory, Long> {
                             " select * from children;"
             )
 
-    public List<Directory> readTreeStructure(Long id);
+    List<Directory> readTreeStructure(Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT directory FROM Directory directory WHERE directory.id = :id")
+    Optional<Directory> findByIdForUpdate(Long id);
 
 }

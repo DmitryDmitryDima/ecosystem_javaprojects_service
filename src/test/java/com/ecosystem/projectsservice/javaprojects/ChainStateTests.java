@@ -32,75 +32,7 @@ public class ChainStateTests {
     @Autowired
     private TriggersAggregator triggersAggregator;
 
-    @Test
-    public void testChainState() throws Exception {
 
-
-        Thread.sleep(30000);
-
-        FileSaveEvent mainEvent = new FileSaveEvent();
-
-        UUID corrId = UUID.randomUUID();
-
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.builder()
-                .correlationId(corrId)
-                .participants(List.of())
-                .projectId(120L)
-                .renderId(UUID.randomUUID())
-                .timestamp(Instant.now())
-                .username("dima3")
-                .userUUID(UUID.randomUUID())
-                .build();
-
-        mainEvent.setContext(context);
-
-        FileSaveInternalData internalData = new FileSaveInternalData();
-        mainEvent.setInternalData(internalData);
-
-        FileSaveExternalData externalData = new FileSaveExternalData();
-        externalData.setContent("blah blah");
-        externalData.setName("lol");
-        externalData.setPath("/hello");
-        externalData.setFileId(100L);
-
-        mainEvent.setExternalData(externalData);
-
-        mainEvent.setMessage("starting a chain");
-
-        controlTestChain.init(mainEvent);
-        /*
-        Thread.ofVirtual().start(()->{
-            try {
-                while (true){
-                    triggersAggregator.notifyTrigger(TriggerAnswer.builder()
-                                    .user(UUID.randomUUID())
-                                    .content("no")
-                                    .decision(true)
-                                    .correlationId(corrId)
-                            .build());
-                    Thread.sleep(10);
-                }
-            }
-            catch (Exception e){
-
-            }
-        });
-
-         */
-
-
-
-
-        Thread.sleep(3000000);
-
-
-        //aggregator.getChainProcessByCorrelationId(context.getCorrelationId()).stop();
-
-        //Thread.sleep(20000);
-        System.out.println(aggregator.getChainProcessByCorrelationId(context.getCorrelationId()).getStatus().get());
-
-
-    }
 
 
 

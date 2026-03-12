@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,6 +25,9 @@ public class TestProjectActions {
     @Autowired
     private DirectoryJDBCRepository directoryJDBCRepository;
 
+
+    @Autowired
+    private SnapshotService snapshotService;
 
 
 
@@ -45,6 +49,11 @@ public class TestProjectActions {
 
 
 
+    }
+
+    @Test
+    public void snapshotService(){
+        System.out.println(snapshotService.getSnapshot(475L));
     }
 
 }

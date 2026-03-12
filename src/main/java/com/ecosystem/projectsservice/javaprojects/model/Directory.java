@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.model;
 
 
+import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -39,6 +40,9 @@ public class Directory {
 
     @Column
     private Instant createdAt;
+
+    @Enumerated(EnumType.STRING)
+    private DirectoryStatus status = DirectoryStatus.AVAILABLE;
 
     // иммутабельность директории - соблюдение сохранения шаблона
     private boolean immutable;
