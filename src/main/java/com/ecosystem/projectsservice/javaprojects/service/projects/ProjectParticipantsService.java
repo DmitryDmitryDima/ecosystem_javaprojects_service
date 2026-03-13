@@ -14,12 +14,11 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLeve
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionExecutionException;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.AlarmAction;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.AlarmStrategy;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.NotificationStrategy;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ExternalEmptyData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ParticipantActionData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.routing_strategies.AlarmAction;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.routing_strategies.AlarmStrategy;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.routing_strategies.NotificationStrategy;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromUserContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.broadcastable.ParticipantActionData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectInviteTokenRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectParticipantRepository;

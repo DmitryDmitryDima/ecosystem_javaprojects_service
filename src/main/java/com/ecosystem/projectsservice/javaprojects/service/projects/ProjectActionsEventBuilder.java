@@ -7,11 +7,11 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.D
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.DirectoryAddExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileAddExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileRemovalExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromUserContext;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddEvent;

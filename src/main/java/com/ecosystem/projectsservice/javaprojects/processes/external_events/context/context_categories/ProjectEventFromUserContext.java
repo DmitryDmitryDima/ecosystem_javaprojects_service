@@ -1,15 +1,15 @@
-package com.ecosystem.projectsservice.javaprojects.processes.external_events.context;
+package com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
-import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.routing_strategies.AlarmStrategy;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.routing_strategies.NotificationStrategy;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @EqualsAndHashCode(callSuper = true)

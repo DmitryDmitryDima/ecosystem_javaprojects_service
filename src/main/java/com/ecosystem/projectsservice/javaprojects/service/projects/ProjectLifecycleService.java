@@ -5,25 +5,19 @@ import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.*;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 
-import com.ecosystem.projectsservice.javaprojects.model.ProjectInviteToken;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
-import com.ecosystem.projectsservice.javaprojects.model.enums.ParticipantRole;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionExecutionException;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.NotificationStrategy;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.UserPersonalEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.routing_strategies.NotificationStrategy;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromUserContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.UserPersonalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ProjectCreationFromTemplateExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_creation_from_template.ProjectCreationFromTemplateInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ProjectRemovalExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.project_removal.ProjectRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.repository.*;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
@@ -31,13 +25,10 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service

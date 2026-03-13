@@ -1,10 +1,9 @@
-package com.ecosystem.projectsservice.javaprojects.processes.external_events.context;
+package com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories;
 
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @EqualsAndHashCode(callSuper = true)
@@ -12,7 +11,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-public class ProjectEventFromSystemContext extends ExternalEventContext{
+public class ProjectEventFromSystemContext extends ExternalEventContext {
 
 
 

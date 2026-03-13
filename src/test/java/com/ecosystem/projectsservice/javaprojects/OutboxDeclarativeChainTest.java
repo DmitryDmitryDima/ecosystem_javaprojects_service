@@ -3,19 +3,12 @@ package com.ecosystem.projectsservice.javaprojects;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
 
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveInternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 @SpringBootTest
 public class OutboxDeclarativeChainTest {

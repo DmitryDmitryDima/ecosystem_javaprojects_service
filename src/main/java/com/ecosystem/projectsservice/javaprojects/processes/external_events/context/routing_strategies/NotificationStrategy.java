@@ -1,10 +1,9 @@
-package com.ecosystem.projectsservice.javaprojects.processes.external_events.context;
+package com.ecosystem.projectsservice.javaprojects.processes.external_events.context.routing_strategies;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action;
 
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ExternalEventData;
 import lombok.Getter;
 import lombok.Setter;
 

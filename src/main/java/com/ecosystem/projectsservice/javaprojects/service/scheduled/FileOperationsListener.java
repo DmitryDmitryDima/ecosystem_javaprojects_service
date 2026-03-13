@@ -4,10 +4,9 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.F
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionResult;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromSystemContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromSystemContext;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromSystem;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.cache.CacheValueWrapper;

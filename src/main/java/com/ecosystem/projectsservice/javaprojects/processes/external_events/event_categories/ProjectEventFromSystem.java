@@ -2,7 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.external_events.eve
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.EventQualifier;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromSystemContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromSystemContext;
 
 // автор ивента - система (к примеру - запущенный проект), попадает в комнату проекта
 @EventQualifier("project_event_from_system")

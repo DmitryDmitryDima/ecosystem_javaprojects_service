@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.processes.external_events.eve
 
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.EventQualifier;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromUserContext;
 
 
 // ивент, автором которого является пользователь, предназначен для всех участников проекта (слушается комнатой проекта)

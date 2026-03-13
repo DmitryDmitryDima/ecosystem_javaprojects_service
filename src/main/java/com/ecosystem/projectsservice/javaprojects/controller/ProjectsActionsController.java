@@ -13,6 +13,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.process_control.trig
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -120,14 +121,19 @@ public class ProjectsActionsController {
 
     /*
     сохранение файла через отдельную кнопку - гарантирует сохранение файла в диск (используется наравне с автосохранением в redis)
+
+    todo для демонстрации оставляю метод извлечения cookie - пригодится при введении токена
      */
     @PostMapping("/saveFile/{file_id}")
     public ResponseEntity<Void> saveFile(@PathVariable("id") UUID projectId, @PathVariable("file_id") Long fileId,
                                          @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request,
-                                         HttpServletRequest servletRequest) throws Exception{
 
-        System.out.println(Arrays.toString(servletRequest.getCookies()));
+                                         @CookieValue(required = false, name = "accessToken") String accessToken
 
+                                         ) throws Exception{
+
+
+        System.out.println(accessToken);
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 

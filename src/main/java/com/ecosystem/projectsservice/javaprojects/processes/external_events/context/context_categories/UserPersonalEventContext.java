@@ -1,5 +1,6 @@
-package com.ecosystem.projectsservice.javaprojects.processes.external_events.context;
+package com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories;
 
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 

@@ -11,24 +11,13 @@ import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.DirectoryAddExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileAddExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileRemovalExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.FileSaveExternalData;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveInternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
@@ -37,7 +26,6 @@ import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsU
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -46,10 +34,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 
-// todo методы проверки могут быть оптимизированы кастомный join requests
+
 
 // ответственность внешнего сервиса - проверка прав. ответственность асинхронных внутренних цепочек - внутренние операции с бд, диском и кешем
 // те данные, что могут быть сконструированы исходя из проверки, вставляем сразу
+
+
+// todo данный слой может быть оптимизирован на этапе валидации - для этого можно ввести access token,
+//  который будет жить мало и инвалидироваться при удалении пользователя из проекта
+//  token будет работать с redis, передаваться через http only cookie
 
 @Service
 public class ProjectActionsService {
@@ -378,22 +371,10 @@ public class ProjectActionsService {
             return fileDTO;
 
 
-
-
-
-
         }
 
         else return fileDTOFromCache.get();
 
-
     }
-
-
-
-
-
-
-
 
 }

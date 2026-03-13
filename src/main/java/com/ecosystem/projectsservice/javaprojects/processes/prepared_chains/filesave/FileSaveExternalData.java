@@ -1,6 +1,6 @@
-package com.ecosystem.projectsservice.javaprojects.processes.external_events.data;
+package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave;
 
-import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventData;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.data.ExternalEventData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
