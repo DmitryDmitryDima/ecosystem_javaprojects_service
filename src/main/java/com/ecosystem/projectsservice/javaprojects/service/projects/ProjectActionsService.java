@@ -256,6 +256,9 @@ public class ProjectActionsService {
         event.setExternalData(externalData);
         event.setMessage("создаем директорию");
 
+        directoryAddChain.init(event);
+
+
     }
 
     @Transactional

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -91,7 +92,9 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
             if (snapshot.getFiles().stream().anyMatch(fileReadOnly ->
                     fileReadOnly.getName().equals(fileAddEvent.getExternalData().getFilename())
-                            && fileReadOnly.getExtension().equals(fileAddEvent.getExternalData().getExtension()))){
+                            && fileReadOnly.getExtension().equals(fileAddEvent.getExternalData().getExtension())
+            && Objects.equals(fileReadOnly.getParent_id(), directory.getId())
+            )){
 
                 throw new IllegalStateException("файл с таким именем уже существует в этой директории");
 
@@ -133,6 +136,8 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
             return file;
         }
         );
+
+        System.out.println(created.getId()+" created");
 
         event.getInternalData()
                 .setFilepath(Path.of(event.getInternalData().getProjectsPath(),

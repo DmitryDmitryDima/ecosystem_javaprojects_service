@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.DirectoryAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
@@ -163,6 +164,20 @@ public class ProjectsActionsController {
         actionsService.addFile(securityContext, requestContext, projectId, request);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/addDirectory")
+    public ResponseEntity<Void> addDirectory(@PathVariable("id") UUID projectId,
+                                             @RequestHeader Map<String, String> headers, @RequestBody DirectoryAddRequest request) throws Exception{
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        actionsService.addDirectory(securityContext, requestContext, projectId, request);
+
+        return ResponseEntity.noContent().build();
+
+
+
     }
 
 

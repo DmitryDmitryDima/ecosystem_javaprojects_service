@@ -2,13 +2,12 @@ package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.dir
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
+import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
+import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.ExternalResultType;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.Message;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.Next;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.OpeningStep;
+import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
@@ -18,8 +17,13 @@ import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Optional;
 
 @Service
@@ -46,13 +50,20 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
     }
 
     @Override
+    @Async("taskExecutor")
+    @EventListener
     public void catchEvent(DirectoryAddEvent event) {
-
+        super.processEvent(event);
     }
 
     @Override
     public void compensationStrategy(DirectoryAddEvent event) {
-
+        transaction().execute(status -> {
+            Optional<Directory> parent = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
+            if (parent.isEmpty()) throw new IllegalStateException("missing parent");
+            parent.get().setStatus(DirectoryStatus.AVAILABLE);
+            return null;
+        });
     }
 
     // директория блокируется на операции удаления и перемещения - статус generating
@@ -82,4 +93,61 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
             return null;
         });
     }
+
+    @Step(name = "create_db_entity")
+    @Next(name = "write_to_disk")
+    public void createDbEntity(DirectoryAddEvent event){
+        Directory created = transaction().execute(status -> {
+
+                    Optional<Directory> parentCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
+
+                    if (parentCheck.isEmpty()) throw new IllegalStateException("директории не существует");
+                    Directory parent = parentCheck.get();
+
+                    Directory newDirectory = new Directory();
+                    newDirectory.setStatus(DirectoryStatus.AVAILABLE);
+                    newDirectory.setName(event.getExternalData().getName());
+                    newDirectory.setCreatedAt(Instant.now());
+                    newDirectory.setConstructedPath(Path.of(parent.getConstructedPath(), newDirectory.getName()).normalize().toString());
+                    parent.getChildren().add(newDirectory);
+                    newDirectory.setParent(parent);
+
+                    return newDirectory;
+
+
+                }
+
+
+        );
+
+
+        event.getInternalData().setFullPath(Path.of(event.getInternalData().getProjectsPath(),
+                created.getConstructedPath()).normalize().toString());
+
+        event.getExternalData().setId(created.getId());
+    }
+
+    @Step(name = "write_to_disk")
+    @Next(name = "release_parent")
+    public void writeToDisk(DirectoryAddEvent event){
+        try {
+            Files.createDirectory(Path.of(event.getInternalData().getFullPath()));
+        }
+        catch (Exception e){
+            throw new IllegalStateException("Ошибка записи в диск "+e.getMessage());
+        }
+    }
+
+    @EndingStep(name = "release_parent")
+    @MaxRetry(maxCount = 3)
+    public void releaseParent(DirectoryAddEvent event){
+        transaction().execute(status -> {
+            Optional<Directory> parent = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
+            if (parent.isEmpty()) throw new IllegalStateException("missing parent");
+            parent.get().setStatus(DirectoryStatus.AVAILABLE);
+           return null;
+        });
+    }
+
+
 }

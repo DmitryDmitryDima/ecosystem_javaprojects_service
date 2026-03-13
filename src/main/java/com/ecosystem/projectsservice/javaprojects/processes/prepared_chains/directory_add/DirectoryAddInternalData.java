@@ -10,6 +10,8 @@ public class DirectoryAddInternalData extends InternalEventData {
 
     private String projectsPath;
 
+    private String fullPath;
+
 
     private long projectRoot;
 }
