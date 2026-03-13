@@ -6,14 +6,13 @@ import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.DirectoryAddRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileAddRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -106,14 +105,15 @@ public class ProjectsActionsController {
 
 
     // удаление файла - операция предполагает мгновенную инвалидацию некоторых элементов в кеше проекта (предложки)
-    @PostMapping("/removeFile/{file_id}")
+    @PostMapping("/removeFile")
     public ResponseEntity<Void> removeFile(@PathVariable("id") UUID projectId,
-                                           @PathVariable("file_id") Long fileId,
+                                           @RequestBody FileRemovalRequest request,
+
                                            @RequestHeader Map<String, String> headers) throws Exception{
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
-        actionsService.removeFile(securityContext, requestContext, projectId, fileId);
+        actionsService.removeFile(securityContext, requestContext, projectId, request);
 
         return ResponseEntity.noContent().build();
     }
@@ -124,8 +124,8 @@ public class ProjectsActionsController {
 
     todo для демонстрации оставляю метод извлечения cookie - пригодится при введении токена
      */
-    @PostMapping("/saveFile/{file_id}")
-    public ResponseEntity<Void> saveFile(@PathVariable("id") UUID projectId, @PathVariable("file_id") Long fileId,
+    @PostMapping("/saveFile")
+    public ResponseEntity<Void> saveFile(@PathVariable("id") UUID projectId,
                                          @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request,
 
                                          @CookieValue(required = false, name = "accessToken") String accessToken
@@ -139,7 +139,7 @@ public class ProjectsActionsController {
 
         System.out.println(Arrays.toString(request.getContent().split("\\n")));
 
-        actionsService.saveFile(securityContext, requestContext, projectId, fileId, request);
+        actionsService.saveFile(securityContext, requestContext, projectId, request);
 
         return ResponseEntity.noContent().build();
 
@@ -149,15 +149,15 @@ public class ProjectsActionsController {
     автосохранение - будет происходить через редис
      */
 
-    @PostMapping ("/autosave/{file_id}")
-    public ResponseEntity<Void> autosave(@PathVariable("id") UUID projectId, @PathVariable("file_id") Long fileId,
+    @PostMapping ("/autosave")
+    public ResponseEntity<Void> autosave(@PathVariable("id") UUID projectId,
                                          @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request) throws Exception{
 
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
-        actionsService.autosave(securityContext, requestContext, projectId, fileId, request);
+        actionsService.autosave(securityContext, requestContext, projectId, request);
 
 
         return ResponseEntity.noContent().build();

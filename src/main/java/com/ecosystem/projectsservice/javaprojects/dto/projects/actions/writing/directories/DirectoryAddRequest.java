@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

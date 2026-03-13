@@ -3,9 +3,10 @@ package com.ecosystem.projectsservice.javaprojects.service.projects;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.DirectoryAddRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileAddRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddExternalData;
@@ -34,7 +35,8 @@ public class ProjectActionsEventBuilder {
     private ExternalValues externalValues;
 
 
-    public FileRemovalEvent buildFileRemovalEvent(SecurityContext securityContext, RequestContext requestContext, Project project, Long fileId){
+    public FileRemovalEvent buildFileRemovalEvent(SecurityContext securityContext, RequestContext requestContext, Project project,
+                                                  FileRemovalRequest request){
         FileRemovalEvent mainEvent = new FileRemovalEvent();
         mainEvent.setMessage("Удаляем файл");
 
@@ -63,7 +65,7 @@ public class ProjectActionsEventBuilder {
         FileRemovalExternalData externalData = new FileRemovalExternalData();
 
 
-        externalData.setFileId(fileId);
+        externalData.setFileId(request.getFileId());
 
         // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
         externalData.setFileOwner(project.getUserUUID());
@@ -138,7 +140,7 @@ public class ProjectActionsEventBuilder {
 
 
     public FileSaveEvent buildFileSaveEvent(SecurityContext securityContext, RequestContext requestContext, Project project,
-                                            FileSaveRequest request, long fileId){
+                                            FileSaveRequest request){
         FileSaveEvent mainEvent = new FileSaveEvent();
         mainEvent.setMessage("Сохраняем файл...");
 
@@ -165,7 +167,7 @@ public class ProjectActionsEventBuilder {
         // внешние данные
         FileSaveExternalData externalData = new FileSaveExternalData();
         externalData.setContent(request.getContent());
-        externalData.setFileId(fileId);
+        externalData.setFileId(request.getFileId());
 
         // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
         externalData.setFileOwner(project.getUserUUID());

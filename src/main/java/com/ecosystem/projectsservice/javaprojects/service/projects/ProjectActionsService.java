@@ -3,9 +3,10 @@ package com.ecosystem.projectsservice.javaprojects.service.projects;
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.*;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.DirectoryAddRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileAddRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
@@ -166,7 +167,6 @@ public class ProjectActionsService {
     public void autosave(SecurityContext securityContext,
                          RequestContext requestContext,
                          UUID projectId,
-                         Long fileId,
                          FileSaveRequest request) throws Exception{
 
 
@@ -179,7 +179,7 @@ public class ProjectActionsService {
         StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot().getId());
 
         // извлекаем файл из снимка, если он есть
-        Optional<FileReadOnly> check = utils.findAvailableFile(snapshot, fileId);
+        Optional<FileReadOnly> check = utils.findAvailableFile(snapshot, request.getFileId());
 
 
 
@@ -204,12 +204,12 @@ public class ProjectActionsService {
 
         // ивент пересылается только подписчикам проекта
         broadcast.statelessAction(
-                ()-> fileContentCache.save(fileId, fileDTO))
+                ()-> fileContentCache.save(request.getFileId(), fileDTO))
                 .withContext(()->ProjectEventFromUserContext.from(securityContext, requestContext, project, null, null))
                 .withData(()->{
                     FileSaveExternalData externalData = new FileSaveExternalData();
                     externalData.setContent(request.getContent());
-                    externalData.setFileId(fileId);
+                    externalData.setFileId(request.getFileId());
                     return externalData;})
                 .withEvent(ProjectEventFromUser::new)
                 .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE).withMessage("Файл сохранен")
@@ -252,14 +252,14 @@ public class ProjectActionsService {
     public void removeFile(SecurityContext securityContext,
                            RequestContext requestContext,
                            UUID projectId,
-                           Long fileId) throws Exception{
+                           FileRemovalRequest request) throws Exception{
 
         System.out.println(requestContext.getCorrelationId());
 
         Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
 
         // быстрая проверка - если файл - часть конфигурации, нужно попросить пользователя его изменить
-        if (project.getEntryPoint().getId().equals(fileId)){
+        if (project.getEntryPoint().getId().equals(request.getFileId())){
             throw new IllegalStateException("файл входит в выбранный конфиг запуска");
         }
 
@@ -268,7 +268,7 @@ public class ProjectActionsService {
 
 
 
-        fileRemovalChain.init(eventBuilder.buildFileRemovalEvent(securityContext, requestContext, project, fileId));
+        fileRemovalChain.init(eventBuilder.buildFileRemovalEvent(securityContext, requestContext, project, request));
 
 
 
@@ -283,7 +283,6 @@ public class ProjectActionsService {
     public void saveFile(SecurityContext securityContext,
                          RequestContext requestContext,
                          UUID projectId,
-                         Long fileId,
                          FileSaveRequest request) throws Exception {
 
         Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
@@ -293,7 +292,7 @@ public class ProjectActionsService {
 
 
 
-        fileSaveChain.init(eventBuilder.buildFileSaveEvent(securityContext, requestContext, project, request, fileId));
+        fileSaveChain.init(eventBuilder.buildFileSaveEvent(securityContext, requestContext, project, request));
 
 
 

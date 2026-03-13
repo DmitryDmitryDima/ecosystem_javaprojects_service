@@ -1,6 +1,7 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files;
 
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,7 +10,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FileSaveRequest {
+
+
     private String content;
+    @NotNull
+    private Long fileId;
 
 
 }
