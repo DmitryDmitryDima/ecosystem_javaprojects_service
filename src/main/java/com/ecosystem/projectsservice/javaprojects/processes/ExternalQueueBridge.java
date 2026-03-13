@@ -7,6 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.even
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.UserPersonalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ChainManager;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
+import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -48,15 +49,11 @@ public class ExternalQueueBridge {
 
 
 
-    @Value("${users.activity_events.exchange.name}")
-    private String USERS_ACTIVITY_EXCHANGE_NAME;
-
-    @Value("${users.projects_events.exchange.name}")
-    private String USERS_PROJECT_EVENTS_EXCHANGE_NAME;
 
 
-    @Value("${system.projects_events.exchange.name}")
-    private String SYSTEM_PROJECTS_EVENTS_EXCHANGE_NAME;
+
+    @Autowired
+    private ExternalValues externalValues;
 
 
     // точка регистрации категорий
@@ -81,7 +78,7 @@ public class ExternalQueueBridge {
 
             String payload = mapper.writeValueAsString(projectEventFromSystem);
 
-            rabbitTemplate.convertAndSend(SYSTEM_PROJECTS_EVENTS_EXCHANGE_NAME, "", payload, postProcessor);
+            rabbitTemplate.convertAndSend(externalValues.getSystemProjectsEventsExchangeName(), "", payload, postProcessor);
 
 
         }
@@ -106,7 +103,7 @@ public class ExternalQueueBridge {
 
             String payload = mapper.writeValueAsString(event);
 
-            rabbitTemplate.convertAndSend(USERS_ACTIVITY_EXCHANGE_NAME, "", payload, postProcessor);
+            rabbitTemplate.convertAndSend(externalValues.getUsersActivityExchangeName(), "", payload, postProcessor);
 
 
         }
@@ -133,7 +130,7 @@ public class ExternalQueueBridge {
 
             String payload = mapper.writeValueAsString(event);
 
-            rabbitTemplate.convertAndSend(USERS_PROJECT_EVENTS_EXCHANGE_NAME, "", payload, postProcessor);
+            rabbitTemplate.convertAndSend(externalValues.getUsersProjectsEventsExchangeName(), "", payload, postProcessor);
 
 
         }

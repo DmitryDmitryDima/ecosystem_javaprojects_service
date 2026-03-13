@@ -11,6 +11,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.F
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -122,7 +123,10 @@ public class ProjectsActionsController {
      */
     @PostMapping("/saveFile/{file_id}")
     public ResponseEntity<Void> saveFile(@PathVariable("id") UUID projectId, @PathVariable("file_id") Long fileId,
-                                         @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request) throws Exception{
+                                         @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request,
+                                         HttpServletRequest servletRequest) throws Exception{
+
+        System.out.println(Arrays.toString(servletRequest.getCookies()));
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);

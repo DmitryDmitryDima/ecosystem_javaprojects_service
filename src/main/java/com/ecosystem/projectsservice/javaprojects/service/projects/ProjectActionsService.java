@@ -31,6 +31,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.data
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
+import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
@@ -69,6 +70,9 @@ public class ProjectActionsService {
     private ProjectAccessValidator accessValidator;
 
     @Autowired
+    private ProjectActionsEventBuilder eventBuilder;
+
+    @Autowired
     private TriggersAggregator triggersAggregator;
 
 
@@ -105,11 +109,11 @@ public class ProjectActionsService {
 
 
 
-    @Value("${storage.system}")
-    private String systemStoragePath;
 
-    @Value("${storage.user}")
-    private String userStoragePath;
+
+
+    @Autowired
+    private ExternalValues externalValues;
 
 
 
@@ -229,28 +233,9 @@ public class ProjectActionsService {
 
         Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
 
-        DirectoryAddEvent event = new DirectoryAddEvent();
 
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, project,
-                null,
-                null);
 
-        DirectoryAddExternalData externalData = new DirectoryAddExternalData();
-        externalData.setParentId(directoryAddRequest.getParentId());
-        externalData.setName(directoryAddRequest.getName());
-
-        DirectoryAddInternalData internalData = new DirectoryAddInternalData();
-        internalData.setProjectRoot(project.getRoot().getId());
-        internalData.setProjectsPath(Path.of(userStoragePath,
-                project.getUserUUID().toString(),
-                "projects").normalize().toString());
-
-        event.setContext(context);
-        event.setInternalData(internalData);
-        event.setExternalData(externalData);
-        event.setMessage("создаем директорию");
-
-        directoryAddChain.init(event);
+        directoryAddChain.init(eventBuilder.buildDirectoryAddEvent(securityContext, requestContext, project, directoryAddRequest));
 
 
     }
@@ -264,32 +249,8 @@ public class ProjectActionsService {
 
         Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
 
-        FileAddEvent fileAddEvent = new FileAddEvent();
 
-
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, project,
-                null,
-                null);
-
-
-        FileAddExternalData externalData = new FileAddExternalData();
-        externalData.setFilename(fileAddRequest.getFilename());
-        externalData.setExtension(fileAddRequest.getExtension());
-        externalData.setParentId(fileAddRequest.getParentId());
-
-        FileAddInternalData internalData = new FileAddInternalData();
-        internalData.setProjectsPath(Path.of(userStoragePath,
-                project.getUserUUID().toString(),
-                "projects").normalize().toString());
-
-        internalData.setProjectRoot(project.getRoot().getId());
-
-        fileAddEvent.setContext(context);
-        fileAddEvent.setExternalData(externalData);
-        fileAddEvent.setInternalData(internalData);
-        fileAddEvent.setMessage("Создание файла "+fileAddRequest.getFilename()+"."+fileAddRequest.getExtension());
-
-        fileAddChain.init(fileAddEvent);
+        fileAddChain.init(eventBuilder.buildFileAddEvent(securityContext, requestContext, project, fileAddRequest));
 
     }
 
@@ -312,42 +273,9 @@ public class ProjectActionsService {
 
 
 
-        FileRemovalEvent mainEvent = new FileRemovalEvent();
-        mainEvent.setMessage("Удаляем файл");
-
-        // ивент пересылается только подписчикам комнаты
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext,
-                requestContext,
-                project,
-                null, null);
 
 
-        mainEvent.setContext(context);
-
-        FileRemovalInternalData internalData = new FileRemovalInternalData();
-
-
-        internalData.setProjectRoot(project.getRoot().getId());
-        internalData.setProjectsPath(Path.of(userStoragePath,
-                project.getUserUUID().toString(),
-                "projects").normalize().toString());
-
-
-
-
-        mainEvent.setInternalData(internalData);
-
-        FileRemovalExternalData externalData = new FileRemovalExternalData();
-
-
-        externalData.setFileId(fileId);
-
-        // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
-        externalData.setFileOwner(project.getUserUUID());
-
-        mainEvent.setExternalData(externalData);
-
-        fileRemovalChain.init(mainEvent);
+        fileRemovalChain.init(eventBuilder.buildFileRemovalEvent(securityContext, requestContext, project, fileId));
 
 
 
@@ -370,41 +298,9 @@ public class ProjectActionsService {
 
 
 
-        FileSaveEvent mainEvent = new FileSaveEvent();
-        mainEvent.setMessage("Сохраняем файл...");
-
-        // конструируем контект - комната проекта, ивент не требует дополнительных стратегий рассылки
-        ProjectEventFromUserContext context = ProjectEventFromUserContext
-                .from(securityContext, requestContext, project, null, null);
-
-        mainEvent.setContext(context);
-
-        // внутренние данные - необходима начальная папка проекта (для проверки принадлежности) и путь до проектов
-        FileSaveInternalData internalData = new FileSaveInternalData();
 
 
-        internalData.setProjectRoot(project.getRoot().getId());
-        internalData.setProjectsPath(Path.of(userStoragePath,
-                project.getUserUUID().toString(),
-                "projects").normalize().toString());
-
-
-
-        mainEvent.setInternalData(internalData);
-
-
-        // внешние данные
-        FileSaveExternalData externalData = new FileSaveExternalData();
-        externalData.setContent(request.getContent());
-        externalData.setFileId(fileId);
-
-        // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
-        externalData.setFileOwner(project.getUserUUID());
-
-
-        mainEvent.setExternalData(externalData);
-
-        fileSaveChain.init(mainEvent);
+        fileSaveChain.init(eventBuilder.buildFileSaveEvent(securityContext, requestContext, project, request, fileId));
 
 
 
@@ -471,7 +367,7 @@ public class ProjectActionsService {
                     .build();
 
             try {
-                Path path = ProjectUtils.constructPathToFile(userStoragePath, project, dbFile.getConstructed_path());
+                Path path = ProjectUtils.constructPathToFile(externalValues.getUserStoragePath(), project, dbFile.getConstructed_path());
                 fileDTO.setContent(ProjectUtils.readFile(path));
 
             }
