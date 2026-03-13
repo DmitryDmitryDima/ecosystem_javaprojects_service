@@ -6,7 +6,6 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
-import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.enums.StepTimeUnit;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
@@ -24,11 +23,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.Temporal;
-import java.time.temporal.TemporalUnit;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -177,7 +171,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
             }
             File file = fileBlock.get();
 
-           StructureSnapshot snapshot = snapshotService.getSnapshot(event.getInternalData().getProjectRoot());
+           StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(event.getInternalData().getProjectRoot());
            Optional<FileReadOnly> presence = actionsUtils.findAvailableFile(snapshot, file.getId());
 
            if (presence.isEmpty()) throw new IllegalStateException("файл недоступен или больше не является частью проекта");

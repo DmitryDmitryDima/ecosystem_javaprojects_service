@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FileAddExternalData implements ExternalEventData {
 
-    private long id;
+    private Long id;
     private String filename;
     private String extension;
     private long parentId;

@@ -36,7 +36,7 @@ public class TestProjectActions {
     @Test
     public void recursiveApproach(){
         Long id = 344L;
-        List<DirectoryReadOnly> directories = directoryJDBCRepository.loadAWholeStructureFromRoot(id);
+        List<DirectoryReadOnly> directories = directoryJDBCRepository.loadAWholeStructureBelowRoot(id);
 
         System.out.println(directories);
 
@@ -53,7 +53,7 @@ public class TestProjectActions {
 
     @Test
     public void snapshotService(){
-        System.out.println(snapshotService.getSnapshot(475L));
+        System.out.println(snapshotService.getFullChildrenSnapshot(475L));
     }
 
 }

@@ -6,11 +6,9 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.*
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.DirectoryAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.FileSaveRequest;
-import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
-import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ProjectEventFromUserContext;
@@ -33,10 +31,6 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.data
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
-import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
-import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
-import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
@@ -160,7 +154,7 @@ public class ProjectActionsService {
         projectDTO.setAuthor(project.getUserUUID());
         projectDTO.setParticipants(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
 
-        utils.generateStructureForDTO(project.getRoot().getId(), projectDTO, snapshotService.getSnapshot(project.getRoot().getId()));
+        utils.generateStructureForDTO(project.getRoot().getId(), projectDTO, snapshotService.getFullChildrenSnapshot(project.getRoot().getId()));
 
         return projectDTO;
     }
@@ -185,7 +179,7 @@ public class ProjectActionsService {
         // безопасно читаем файл из снимка бд - при статусе available его можно писать в кеш
 
 
-        StructureSnapshot snapshot = snapshotService.getSnapshot(project.getRoot().getId());
+        StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot().getId());
 
         // извлекаем файл из снимка, если он есть
         Optional<FileReadOnly> check = utils.findAvailableFile(snapshot, fileId);
@@ -431,7 +425,7 @@ public class ProjectActionsService {
     public List<SimpleFileInfo> getRecentFiles(SecurityContext securityContext, RequestContext requestContext, UUID projectId) throws Exception {
         Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
 
-        StructureSnapshot snapshot = snapshotService.getSnapshot(project.getRoot().getId());
+        StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot().getId());
 
         return utils.getRecentFiles(snapshot);
 
@@ -455,7 +449,7 @@ public class ProjectActionsService {
         if (fileDTOFromCache.isEmpty()){
 
 
-            StructureSnapshot snapshot = snapshotService.getSnapshot(project.getRoot().getId());
+            StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot().getId());
             // извлекаем файл из снимка, если он есть
             Optional<FileReadOnly> check = utils.findAvailableFile(snapshot, fileId);
 

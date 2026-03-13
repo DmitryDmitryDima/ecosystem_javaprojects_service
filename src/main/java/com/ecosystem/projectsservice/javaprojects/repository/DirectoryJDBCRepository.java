@@ -22,8 +22,8 @@ public class DirectoryJDBCRepository {
     private JdbcTemplate jdbcTemplate;
 
 
-    // возвращает плоскую структуру папок со всеми зависимостями
-    public List<DirectoryReadOnly> loadAWholeStructureFromRoot(long rootId){
+    // возвращает плоскую структуру папок со всеми зависимостями, начиная с root папки, включая root
+    public List<DirectoryReadOnly> loadAWholeStructureBelowRoot(long rootId){
 
         String query = """
                 
@@ -38,6 +38,27 @@ public class DirectoryJDBCRepository {
 
         return jdbcTemplate.query(query,
                 new BeanPropertyRowMapper<>(DirectoryReadOnly.class), rootId);
+    }
+
+    // плоская структура папок, при этом возвращается только то, что является предками по отношению к root. включая root
+    public List<DirectoryReadOnly> loadAWholeStructureAboveRoot(long rootId){
+
+        String query = """
+                
+                with recursive children as (
+                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status from directories where id = ?
+                union
+                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status from directories d join children c on d.id = c.parent_id
+                )
+                select * from children;
+                
+                """;
+
+        return jdbcTemplate.query(query,
+                new BeanPropertyRowMapper<>(DirectoryReadOnly.class), rootId);
+
+
+
     }
 
     // возвращаем все файлы, ассоциированные с директориями

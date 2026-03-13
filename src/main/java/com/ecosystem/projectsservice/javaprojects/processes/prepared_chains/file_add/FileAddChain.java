@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -13,6 +14,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
+import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -33,6 +35,9 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
     @Autowired
     private DirectoryRepository directoryRepository;
+
+    @Autowired
+    private FileRepository fileRepository;
 
     @Autowired
     private SnapshotService snapshotService;
@@ -68,6 +73,16 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
                 return null;
             });
+            if (event.getExternalData().getId()!=null){
+                // удаляем созданную сущность, если она есть
+                transaction().execute(status -> {
+                    fileRepository.deleteById(event.getExternalData().getId());
+                    return null;
+                });
+            }
+
+
+
         }
     }
 
@@ -85,20 +100,56 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
             Directory directory = directoryCheck.get();
 
-            StructureSnapshot snapshot = snapshotService.getSnapshot(fileAddEvent.getInternalData().getProjectRoot());
 
-            Optional<DirectoryReadOnly> presenceCheck = actionsUtils.findAvailableDirectory(snapshot, directory.getId());
-            if (presenceCheck.isEmpty()) throw new IllegalStateException("Директория не относится к проекту или недоступна для записи");
 
-            if (snapshot.getFiles().stream().anyMatch(fileReadOnly ->
-                    fileReadOnly.getName().equals(fileAddEvent.getExternalData().getFilename())
-                            && fileReadOnly.getExtension().equals(fileAddEvent.getExternalData().getExtension())
-            && Objects.equals(fileReadOnly.getParent_id(), directory.getId())
-            )){
+            /*
+            Анализируем снимок верхних уровней иерархии - мы должны проверить, есть ли в ответе одновременно parent id и project root
+            Если нет - это означает, что директория не принадлежит проекту
+            Помимо этого - проверяем статусы на самой директории и на родителях. Статус Removing или migrating - автоматически отмена
+            проверяем также список существующих папок и файлов
+            */
 
-                throw new IllegalStateException("файл с таким именем уже существует в этой директории");
+            List<DirectoryReadOnly> parents = snapshotService.getParentsSnapshotDirectoriesOnly(fileAddEvent.getExternalData().getParentId());
+
+            System.out.println(parents);
+
+
+            boolean parentContains = false;
+            boolean rootContains = false;
+
+            for (DirectoryReadOnly directoryReadOnly:parents){
+                if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING){
+                    throw new IllegalStateException("используемая папка заблокирована другим процессом");
+                }
+                // сам parent
+                if (directoryReadOnly.getId().equals(fileAddEvent.getExternalData().getParentId())){
+                    parentContains = true;
+
+                }
+                // root
+                if (directoryReadOnly.getId().equals(fileAddEvent.getInternalData().getProjectRoot())){
+                    rootContains = true;
+                }
+
+
 
             }
+
+            if (!(parentContains && rootContains)){
+                throw new IllegalStateException("директория не принадлежит проекту");
+            }
+
+            List<FileReadOnly> files = snapshotService.getFilesForDirectory(fileAddEvent.getExternalData().getParentId());
+
+            if (files.stream().anyMatch(fileReadOnly -> fileReadOnly.getExtension().equals(fileAddEvent.getExternalData().getExtension())
+                            && fileReadOnly.getName().equals(fileAddEvent.getExternalData().getFilename())
+
+                    )){
+                throw new IllegalStateException("файл с таким именем уже есть");
+            };
+
+
+
 
             // данный статус блокирует операцию удаления и операцию перемещения
             directory.setStatus(DirectoryStatus.GENERATING);

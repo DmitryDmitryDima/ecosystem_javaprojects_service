@@ -4,6 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ public class ProjectAccessValidator {
     public Project validateAccess(SecurityContext securityContext, RequestContext requestContext, UUID projectId){
         Optional<Project> projectCheck = projectRepository.findById(projectId);
 
-        if (projectCheck.isEmpty()) throw new IllegalStateException("Проекта не существует");
+        if (projectCheck.isEmpty() || projectCheck.get().getStatus()== ProjectStatus.REMOVING) throw new IllegalStateException("Проекта не существует");
 
         Project project = projectCheck.get();
 

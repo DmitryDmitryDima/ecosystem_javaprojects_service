@@ -2,17 +2,15 @@ package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.dir
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
-import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
-import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
@@ -24,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -80,12 +79,75 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
 
             Directory directory = directoryCheck.get();
 
-            StructureSnapshot snapshot = snapshotService.getSnapshot(event.getInternalData().getProjectRoot());
 
-            Optional<DirectoryReadOnly> presenceCheck = actionsUtils.findAvailableDirectory(snapshot, directory.getId());
+            List<DirectoryReadOnly> parents = snapshotService.getParentsSnapshotDirectoriesOnly(event.getExternalData().getParentId());
+
+            System.out.println(parents);
+
+
+            boolean parentContains = false;
+            boolean rootContains = false;
+
+            for (DirectoryReadOnly directoryReadOnly:parents){
+                if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING){
+                    throw new IllegalStateException("используемая папка заблокирована другим процессом");
+                }
+                // сам parent
+                if (directoryReadOnly.getId().equals(event.getExternalData().getParentId())){
+                    parentContains = true;
+
+                }
+                // root
+                if (directoryReadOnly.getId().equals(event.getInternalData().getProjectRoot())){
+                    rootContains = true;
+                }
+
+
+
+            }
+
+            if (!(parentContains && rootContains)){
+                throw new IllegalStateException("директория не принадлежит проекту");
+            }
+
+            List<DirectoryReadOnly> children = snapshotService.getChildrenSnapshotDirectoriesOnly(event.getExternalData().getParentId());
+
+            if (children.stream().anyMatch(directoryReadOnly -> directoryReadOnly.getParent_id()
+                    .equals(event.getExternalData().getParentId()) && directoryReadOnly.getName().equals(event.getExternalData().getName()))){
+                throw new IllegalStateException("папка с таким именем уже существует");
+            }
+
+
+
+
+
+            /*
+
+            StructureSnapshot structureSnapshot = snapshotService.getFullChildrenSnapshot(event.getInternalData().getProjectRoot());
+
+
+
+            Optional<DirectoryReadOnly> presenceCheck = actionsUtils.findAvailableDirectory(structureSnapshot, directory.getId());
             if (presenceCheck.isEmpty()) throw new IllegalStateException("Директория не относится к проекту или недоступна для записи");
 
+
             // нужно проверить, есть ли подпапки с таким же именем
+            if (structureSnapshot.getDirectories().stream().anyMatch(directoryReadOnly -> directoryReadOnly.getParent_id()!=null
+                    && directoryReadOnly.getParent_id().equals(directory.getId())
+
+                    && directoryReadOnly.getName().equals(event.getExternalData().getName()))
+
+            ) {
+                throw new IllegalStateException("папка с таким именем уже существует в выбранной директории");
+            }
+
+             */
+
+
+
+
+
+
 
             // данный статус блокирует операцию удаления и операцию перемещения
             directory.setStatus(DirectoryStatus.GENERATING);

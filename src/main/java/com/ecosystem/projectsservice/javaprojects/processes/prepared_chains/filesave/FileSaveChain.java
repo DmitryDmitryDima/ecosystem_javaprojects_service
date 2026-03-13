@@ -127,7 +127,7 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
             File fileEntity = fileCheck.get();
 
-            StructureSnapshot snapshot = snapshotService.getSnapshot(fileSaveEvent.getInternalData().getProjectRoot());
+            StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(fileSaveEvent.getInternalData().getProjectRoot());
             Optional<FileReadOnly> presence = actionsUtils.findAvailableFile(snapshot, fileEntity.getId());
 
             if (presence.isEmpty()) throw new IllegalStateException("файл недоступен или не является частью проекта");
