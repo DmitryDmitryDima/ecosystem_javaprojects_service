@@ -7,6 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.F
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
@@ -186,6 +187,21 @@ public class ProjectsActionsController {
 
         return ResponseEntity.noContent().build();
 
+
+
+    }
+
+    @PostMapping("/removeDirectory")
+    public ResponseEntity<Void> removeDirectory(@PathVariable("id") UUID projectId,
+                                                @RequestHeader Map<String, String> headers, @RequestBody DirectoryRemovalRequest request){
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        actionsService.removeDirectory(securityContext, requestContext, projectId, request);
+
+
+        return ResponseEntity.noContent().build();
 
 
     }

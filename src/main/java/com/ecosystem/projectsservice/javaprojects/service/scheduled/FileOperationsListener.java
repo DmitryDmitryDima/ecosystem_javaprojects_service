@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromSystemContext;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveExternalData;

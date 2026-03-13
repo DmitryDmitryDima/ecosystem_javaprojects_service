@@ -1,11 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;

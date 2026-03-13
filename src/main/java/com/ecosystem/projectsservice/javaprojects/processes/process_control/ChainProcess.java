@@ -1,15 +1,12 @@
 package com.ecosystem.projectsservice.javaprojects.processes.process_control;
 
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
-import jakarta.persistence.criteria.CriteriaBuilder;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 

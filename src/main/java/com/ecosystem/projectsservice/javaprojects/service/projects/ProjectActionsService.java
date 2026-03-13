@@ -4,17 +4,19 @@ import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.*;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_removal.DirectoryRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveChain;
@@ -95,6 +97,9 @@ public class ProjectActionsService {
 
     @Autowired
     private DirectoryAddChain directoryAddChain;
+
+    @Autowired
+    private DirectoryRemovalChain directoryRemovalChain;
 
 
 
@@ -229,6 +234,14 @@ public class ProjectActionsService {
 
 
         directoryAddChain.init(eventBuilder.buildDirectoryAddEvent(securityContext, requestContext, project, directoryAddRequest));
+
+
+    }
+
+    @Transactional
+    public void removeDirectory(SecurityContext securityContext, RequestContext requestContext, UUID projectId, DirectoryRemovalRequest request){
+
+        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
 
 
     }

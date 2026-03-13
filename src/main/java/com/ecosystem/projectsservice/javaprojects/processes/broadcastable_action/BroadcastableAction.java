@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action;
 
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.ExternalEventContext;

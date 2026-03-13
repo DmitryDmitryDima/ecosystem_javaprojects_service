@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.processes;
+package com.ecosystem.projectsservice.javaprojects.processes.external_events;
 
 public enum ExternalEventType {
 
@@ -13,7 +13,8 @@ public enum ExternalEventType {
     JAVA_PROJECT_ADD_PARTICIPANT("java_project_participant_add"),
     JAVA_PROJECT_FILE_ADD("java_project_file_add"),
     JAVA_PROJECT_REMOVE_PARTICIPANT("java_project_participant_remove"),
-    JAVA_PROJECT_ADD_DIRECTORY("java_project_directory_add");
+    JAVA_PROJECT_ADD_DIRECTORY("java_project_directory_add"),
+    JAVA_PROJECT_REMOVE_DIRECTORY("java_project_directory_remove");
 
     private final String name;
 

@@ -1,12 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure.DeclarativeChainEvent;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.EventStatus;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -183,6 +182,9 @@ public class TriggersAggregator {
     private void pushProcess(Trigger trigger) throws Exception {
         trigger.stop(); // останавливаем триггер для того, чтобы он больше не принимал ответы и не мог быть вновь рассмотрен обработчиком
         // не забываем, что методы триггера могут вносить изменения в internal data, стратегия прописывается создателем процесса
+        // ТО ЕСТЬ СИСТЕМА ТРИГГЕРОВ РЕШАЕТ ЛИШЬ ТО,
+        // ДВИЖЕТСЯ ЛИ ЦЕПОЧКА СЕЙЧАС ИЛИ НА СЛЕДУЮЩИЙ ФАЗЕ, ЕСЛИ ОНА ЕСТЬ.
+        // КАК ПОВЕДЕТ СЕБЯ САМ ПРОЦЕСС В ЗАВИСИМОСТИ ОТ ОТВЕТА - РЕШАЕТ ТОТ, КТО ПИШЕТ СТРАТЕГИЮ
         String payload = mapper.writeValueAsString(trigger.getChainEvent());
 
         // активируем outbox, вносим (возможно) новые данные через internal event data

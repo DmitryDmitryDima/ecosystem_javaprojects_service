@@ -11,7 +11,7 @@ import com.ecosystem.projectsservice.javaprojects.model.ProjectInviteToken;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ParticipantRole;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.ActionExecutionException;
 import com.ecosystem.projectsservice.javaprojects.processes.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.routing_strategies.AlarmAction;

@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations;
 
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

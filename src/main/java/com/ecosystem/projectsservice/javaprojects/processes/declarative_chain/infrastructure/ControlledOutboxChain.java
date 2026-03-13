@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.infrastructure;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
-import com.ecosystem.projectsservice.javaprojects.processes.ExternalEventType;
+import com.ecosystem.projectsservice.javaprojects.processes.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.annotations.enums.StepTimeUnit;
 import com.ecosystem.projectsservice.javaprojects.processes.declarative_chain.exceptions.ChainInitiationException;
