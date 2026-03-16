@@ -59,12 +59,38 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
             Optional<Directory> parent = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
             if (parent.isEmpty()) throw new IllegalStateException("missing parent");
             parent.get().setStatus(DirectoryStatus.AVAILABLE);
+
+
+
+            if (event.getInternalData().getCurrentStep().equals("write_to_disk")){
+                directoryRepository.deleteById(event.getExternalData().getId());
+            }
+
+            return null;
+        });
+
+
+    }
+
+    @OpeningStep(name = "preparing")
+    @Next(name = "block_directory")
+    @Message
+    public void preparingPhase(DirectoryAddEvent event){
+        event.setMessage("Резервируем сущность");
+        transaction().execute(status -> {
+            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
+            if (directoryCheck.isEmpty() || directoryCheck.get().getStatus()!=DirectoryStatus.AVAILABLE){
+                throw new IllegalStateException("Директория занята другим процессом");
+
+            }
+            directoryCheck.get().setStatus(DirectoryStatus.PREPARING_FOR_GENERATING);
             return null;
         });
     }
 
+
     // директория блокируется на операции удаления и перемещения - статус generating
-    @OpeningStep(name = "block_directory")
+    @Step(name = "block_directory")
     @Next(name="create_db_entity")
     @Message
     public void blockDirectory(DirectoryAddEvent event){
@@ -87,18 +113,37 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
             boolean rootContains = false;
 
             for (DirectoryReadOnly directoryReadOnly:parents){
-                if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING){
-                    throw new IllegalStateException("используемая папка заблокирована другим процессом");
-                }
-                // сам parent
+
                 if (directoryReadOnly.getId().equals(event.getExternalData().getParentId())){
+                    if (directoryReadOnly.getStatus()!=DirectoryStatus.PREPARING_FOR_GENERATING){
+                        // данный сценарий как правило означает сбой - например. если шаг каким то образом попал в цепь после компенсации
+                        throw new IllegalStateException("Директория не была зарезервирована для блокировки");
+                    }
                     parentContains = true;
+                }
+                else {
+
+                    // данные статусы у вышестоящих директорий препятствуют созданию новой папки в нижестоящей директории
+                    if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING
+                            || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING
+                            || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_MIGRATING
+                            || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL
+
+                    ){
+                        throw new IllegalStateException("используемая папка заблокирована другим процессом");
+                    }
+
+                    // root
+                    if (directoryReadOnly.getId().equals(event.getInternalData().getProjectRoot())){
+                        rootContains = true;
+                    }
+
 
                 }
-                // root
-                if (directoryReadOnly.getId().equals(event.getInternalData().getProjectRoot())){
-                    rootContains = true;
-                }
+
+
+
+
 
 
 
@@ -114,35 +159,6 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
                     .equals(event.getExternalData().getParentId()) && directoryReadOnly.getName().equals(event.getExternalData().getName()))){
                 throw new IllegalStateException("папка с таким именем уже существует");
             }
-
-
-
-
-
-            /*
-
-            StructureSnapshot structureSnapshot = snapshotService.getFullChildrenSnapshot(event.getInternalData().getProjectRoot());
-
-
-
-            Optional<DirectoryReadOnly> presenceCheck = actionsUtils.findAvailableDirectory(structureSnapshot, directory.getId());
-            if (presenceCheck.isEmpty()) throw new IllegalStateException("Директория не относится к проекту или недоступна для записи");
-
-
-            // нужно проверить, есть ли подпапки с таким же именем
-            if (structureSnapshot.getDirectories().stream().anyMatch(directoryReadOnly -> directoryReadOnly.getParent_id()!=null
-                    && directoryReadOnly.getParent_id().equals(directory.getId())
-
-                    && directoryReadOnly.getName().equals(event.getExternalData().getName()))
-
-            ) {
-                throw new IllegalStateException("папка с таким именем уже существует в выбранной директории");
-            }
-
-             */
-
-
-
 
 
 

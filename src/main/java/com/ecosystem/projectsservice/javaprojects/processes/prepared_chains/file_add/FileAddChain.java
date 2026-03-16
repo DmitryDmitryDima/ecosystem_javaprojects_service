@@ -85,8 +85,28 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
         }
     }
 
+    @OpeningStep(name = "prepare_directory")
+    @Next(name = "block_directory")
+    @Message
+    public void prepareDirectory(FileAddEvent fileAddEvent){
+        fileAddEvent.setMessage("резервируем родительскую директорию");
+        transaction().execute(status -> {
+
+            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(fileAddEvent.getExternalData().getParentId());
+            if (directoryCheck.isEmpty() || directoryCheck.get().isHidden())
+                throw new IllegalStateException("директории не существует");
+            if (directoryCheck.get().getStatus()!=DirectoryStatus.AVAILABLE)
+                throw new IllegalStateException("директория занята другим процессом");
+
+            directoryCheck.get().setStatus(DirectoryStatus.PREPARING_FOR_GENERATING);
+
+
+            return null;
+        });
+    }
+
     // директория блокируется на операции удаления и перемещения - статус generating
-    @OpeningStep(name = "block_directory")
+    @Step(name = "block_directory")
     @Next(name="create_db_entity")
     @Message
     public void blockDirectory(FileAddEvent fileAddEvent){
@@ -117,18 +137,30 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
             boolean rootContains = false;
 
             for (DirectoryReadOnly directoryReadOnly:parents){
-                if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING){
-                    throw new IllegalStateException("используемая папка заблокирована другим процессом");
-                }
-                // сам parent
+
+
                 if (directoryReadOnly.getId().equals(fileAddEvent.getExternalData().getParentId())){
                     parentContains = true;
+                }
 
+                else {
+
+                    if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING
+                    || directoryReadOnly.getStatus()==DirectoryStatus.PREPARING_FOR_REMOVAL
+                            || directoryReadOnly.getStatus()==DirectoryStatus.PREPARING_FOR_MIGRATING
+                    ){
+                        throw new IllegalStateException("используемая папка заблокирована другим процессом");
+                    }
+
+                    // root
+                    if (directoryReadOnly.getId().equals(fileAddEvent.getInternalData().getProjectRoot())){
+                        rootContains = true;
+                    }
                 }
-                // root
-                if (directoryReadOnly.getId().equals(fileAddEvent.getInternalData().getProjectRoot())){
-                    rootContains = true;
-                }
+
+
+
+
 
 
 

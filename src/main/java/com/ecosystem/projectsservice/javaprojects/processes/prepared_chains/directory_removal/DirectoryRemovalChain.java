@@ -69,11 +69,13 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     @Override
     public void compensationStrategy(DirectoryRemovalEvent event) {
 
+        // todo в идеале мы должны копировать удаляемый контент на диске в случае, если удаление диска провалилось.
+
     }
 
 
     @OpeningStep(name = "polling")
-    @Next(name = "block_directory")
+    @Next(name = "prepare_directory")
     public void polling(DirectoryRemovalEvent event){
 
 
@@ -81,6 +83,7 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             Optional<Directory> initialCheck = directoryRepository.findById(event.getExternalData().getId());
             if (initialCheck.isEmpty() || initialCheck.get().isHidden()) throw new IllegalStateException("директории не существует");
             if (initialCheck.get().isImmutable()) throw new IllegalStateException("Эту директорию нельзя удалить");
+            if (initialCheck.get().getStatus()!=DirectoryStatus.AVAILABLE) throw new IllegalStateException("Директория занята другим процессом");
             event.getExternalData().setName(initialCheck.get().getName());
            return null;
         });
@@ -151,9 +154,28 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
         createTrigger(phaseTrigger);
     }
 
+
+    @Step(name="prepare_directory")
+    @Message
+    @Next(name = "block_directory")
+    @WaitingFor(time = 20)
+    public void prepareDirectory(DirectoryRemovalEvent event){
+        event.setMessage("Согласование завершено. Резервируем сущность");
+        transaction().execute(status -> {
+            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getId());
+            if (directoryCheck.isEmpty() || directoryCheck.get().getStatus()!=DirectoryStatus.AVAILABLE){
+                throw new IllegalStateException("Директория занята другим процессом");
+
+            }
+            // данный статус не позволит никому сверху или снизу в иерархии что либо изменить
+            directoryCheck.get().setStatus(DirectoryStatus.PREPARING_FOR_REMOVAL);
+            return null;
+        });
+    }
+
+
     // блокировка директории по статусу - защищает от некоторых параллельных действий над родительскими и дочерними структурами
     @Step(name = "block_directory")
-    @WaitingFor(time = 20)
     @Next(name = "remove_from_db")
     @Message
     public void blockDirectory(DirectoryRemovalEvent event){
@@ -176,18 +198,38 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             boolean rootContains = false;
 
             for (DirectoryReadOnly directoryReadOnly:parents){
-                if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING){
-                    throw new IllegalStateException("используемая папка заблокирована другим процессом");
-                }
+
                 // сам parent
                 if (directoryReadOnly.getId().equals(event.getExternalData().getId())){
                     parentContains = true;
+                    if (directoryReadOnly.getStatus()!=DirectoryStatus.PREPARING_FOR_REMOVAL){
+                        throw new IllegalStateException("Директория не была зарезервирована для блокировки");
+                    }
 
                 }
-                // root
-                if (directoryReadOnly.getId().equals(event.getInternalData().getProjectRoot())){
-                    rootContains = true;
+                else {
+
+                    if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING ||
+                            directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING
+                            || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL
+                            || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_MIGRATING
+
+                    ){
+                        throw new IllegalStateException("используемая папка заблокирована другим процессом");
+                    }
+
+
+                    // root
+                    if (directoryReadOnly.getId().equals(event.getInternalData().getProjectRoot())){
+                        rootContains = true;
+                    }
+
                 }
+
+
+
+
+
 
 
 
@@ -197,10 +239,10 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
                 throw new IllegalStateException("директория не принадлежит проекту");
             }
 
-            // смотрим детей
+            // смотрим детей - при удалении они не могут быть затронуты никем
             StructureSnapshot children = snapshotService.getFullChildrenSnapshot(event.getExternalData().getId());
             children.getDirectories().forEach(directoryReadOnly -> {
-                if (directoryReadOnly.getStatus()!=DirectoryStatus.AVAILABLE){
+                if (!directoryReadOnly.getId().equals(event.getExternalData().getId()) && directoryReadOnly.getStatus()!=DirectoryStatus.AVAILABLE){
                     throw new IllegalStateException("Внутренняя часть директории затронута другим процессом");
                 }
             });

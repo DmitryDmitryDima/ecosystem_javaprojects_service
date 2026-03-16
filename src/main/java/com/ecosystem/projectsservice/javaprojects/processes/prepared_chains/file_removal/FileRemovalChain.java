@@ -157,6 +157,11 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
     }
 
+
+
+
+
+
     /*
     права на выполнение операции проверяются в верхнем уровне
      */
