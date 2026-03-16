@@ -136,6 +136,7 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
             root.setCreatedAt(Instant.now());
             root.setImmutable(true); // корневая папка строго иммутабельна
             root.setName(project.getName());
+            root.setHidden(true);
 
             /*
             путь в базе данных строится относительно папки проекта, все остальное конструируется исходя из запроса

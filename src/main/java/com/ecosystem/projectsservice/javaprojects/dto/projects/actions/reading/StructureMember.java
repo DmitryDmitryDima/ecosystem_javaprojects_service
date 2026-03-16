@@ -25,6 +25,12 @@ public class StructureMember {
 
     private boolean immutable;
 
+    private boolean hidden;
+
+    private boolean hiddenParent;
+
+
+
 
 
 
@@ -33,6 +39,6 @@ public class StructureMember {
 
     @Override
     public String toString(){
-        return type+" "+name+" " +children;
+        return type+" "+name+" "+hiddenParent;
     }
 }

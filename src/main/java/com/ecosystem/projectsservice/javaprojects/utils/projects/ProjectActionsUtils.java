@@ -52,7 +52,7 @@ public class ProjectActionsUtils {
 
 
         // Готовим структуру в виде таблицы - генерируем сущности Structure member и внедряем зависимости
-        Map<String, StructureMember> memberMap = prepareMembersTable(snapshot);
+        Map<String, StructureMember> memberMap = prepareMembersTable(snapshot, rootId);
 
 
 
@@ -60,10 +60,13 @@ public class ProjectActionsUtils {
 
 
 
-        // тут мы даем возможность выбирать режим отображения в зависимости от типа проекта
-        projectDTO.setStructure(getProjectSpecificLayerOfVisibility(memberMap, rootId, projectDTO.getProjectType()));
 
 
+
+        //projectDTO.setStructure(getProjectSpecificLayerOfVisibility(memberMap, rootId, projectDTO.getProjectType()));
+
+        projectDTO.setStructure(memberMap.values().stream().filter(structureMember ->
+                structureMember.getType().equals("directory") && structureMember.isHiddenParent() && !structureMember.isHidden()).toList());
 
 
 
@@ -90,7 +93,14 @@ public class ProjectActionsUtils {
 
 
     private List<StructureMember> getProjectSpecificLayerOfVisibility(Map<String, StructureMember> table, Long rootId, ProjectType type){
-        StructureMember root = table.get("directory_"+rootId);
+
+
+
+
+        return table.values().stream().filter(structureMember ->
+                structureMember.getType().equals("directory") && structureMember.isHiddenParent() && !structureMember.isHidden()).toList();
+
+        /*
         if (type==ProjectType.MAVEN_CLASSIC){
             StructureMember current = root;
             List<String> mavenHiddenLayers = List.of("src", "main");
@@ -112,15 +122,22 @@ public class ProjectActionsUtils {
 
 
         else return List.of(root);
+
+         */
+
+
     }
 
     // готовим таблицу
-    private Map<String, StructureMember> prepareMembersTable(StructureSnapshot snapshot ){
+    private Map<String, StructureMember> prepareMembersTable(StructureSnapshot snapshot, Long rootId){
 
         Map<String, StructureMember> table = new HashMap<>();
 
         for (DirectoryReadOnly directoryReadOnly: snapshot.getDirectories()){
+
+
             StructureMember structureMember = new StructureMember();
+            structureMember.setHidden(directoryReadOnly.isHidden());
             structureMember.setOriginalId(directoryReadOnly.getId());
             structureMember.setId("directory_"+directoryReadOnly.getId());
             structureMember.setType("directory");
@@ -128,6 +145,8 @@ public class ProjectActionsUtils {
             structureMember.setImmutable(directoryReadOnly.isImmutable());
 
             table.put(structureMember.getId(), structureMember);
+
+
 
 
         }
@@ -138,6 +157,7 @@ public class ProjectActionsUtils {
             if (fileReadOnly.isHidden() || fileReadOnly.getStatus()== FileStatus.REMOVING) continue;
 
             StructureMember structureMember = new StructureMember();
+            structureMember.setHidden(fileReadOnly.isHidden());
             structureMember.setOriginalId(fileReadOnly.getId());
             structureMember.setId("file_"+fileReadOnly.getId());
             structureMember.setType("file");
@@ -164,10 +184,17 @@ public class ProjectActionsUtils {
             StructureMember parent = table.get("directory_"+directoryReadOnly.getParent_id());
             StructureMember child = table.get("directory_"+directoryReadOnly.getId());
 
+            System.out.println(parent.getName()+" parent is "+parent.isHidden()+" and child "+child.getName());
+            child.setHiddenParent(parent.isHidden());
+
             parent.getChildren().add(child);
 
 
+
+
         }
+
+
 
 
 
