@@ -239,9 +239,16 @@ public class ProjectActionsService {
     }
 
     @Transactional
-    public void removeDirectory(SecurityContext securityContext, RequestContext requestContext, UUID projectId, DirectoryRemovalRequest request){
+    public void removeDirectory(SecurityContext securityContext, RequestContext requestContext, UUID projectId, DirectoryRemovalRequest request)
+
+    throws Exception
+    {
 
         Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+
+        directoryRemovalChain.init(eventBuilder.buildDirectoryRemovalEvent(securityContext, requestContext, project, request));
+
+
 
 
     }

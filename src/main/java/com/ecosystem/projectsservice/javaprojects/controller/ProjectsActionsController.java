@@ -193,7 +193,10 @@ public class ProjectsActionsController {
 
     @PostMapping("/removeDirectory")
     public ResponseEntity<Void> removeDirectory(@PathVariable("id") UUID projectId,
-                                                @RequestHeader Map<String, String> headers, @RequestBody DirectoryRemovalRequest request){
+                                                @RequestHeader Map<String, String> headers, @RequestBody DirectoryRemovalRequest request)
+
+    throws Exception
+    {
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);

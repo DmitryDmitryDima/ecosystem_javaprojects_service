@@ -4,12 +4,16 @@ package com.ecosystem.projectsservice.javaprojects.service.projects;
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.processes.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_removal.DirectoryRemovalEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_removal.DirectoryRemovalExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_removal.DirectoryRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveExternalData;
@@ -33,6 +37,35 @@ public class ProjectActionsEventBuilder {
 
     @Autowired
     private ExternalValues externalValues;
+
+
+    public DirectoryRemovalEvent buildDirectoryRemovalEvent(SecurityContext securityContext, RequestContext requestContext, Project project,
+                                                            DirectoryRemovalRequest request){
+
+        DirectoryRemovalEvent directoryRemovalEvent = new DirectoryRemovalEvent();
+        directoryRemovalEvent.setMessage("Удаляем директорию");
+
+        // ивент пересылается только подписчикам комнаты
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext,
+                requestContext,
+                project,
+                null, null);
+
+        DirectoryRemovalInternalData directoryRemovalInternalData = new DirectoryRemovalInternalData();
+        directoryRemovalInternalData.setProjectRoot(project.getRoot().getId());
+        directoryRemovalInternalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
+                project.getUserUUID().toString(),
+                "projects").normalize().toString());
+
+        DirectoryRemovalExternalData externalData = new DirectoryRemovalExternalData();
+        externalData.setId(request.getDirectoryId());
+
+        directoryRemovalEvent.setContext(context);
+        directoryRemovalEvent.setInternalData(directoryRemovalInternalData);
+        directoryRemovalEvent.setExternalData(externalData);
+        return directoryRemovalEvent;
+
+    }
 
 
     public FileRemovalEvent buildFileRemovalEvent(SecurityContext securityContext, RequestContext requestContext, Project project,

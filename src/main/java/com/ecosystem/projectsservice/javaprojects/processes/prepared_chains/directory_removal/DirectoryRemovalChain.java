@@ -80,6 +80,7 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
         Directory directory = transaction().execute(status -> {
             Optional<Directory> initialCheck = directoryRepository.findById(event.getExternalData().getId());
             if (initialCheck.isEmpty() || initialCheck.get().isHidden()) throw new IllegalStateException("директории не существует");
+            if (initialCheck.get().isImmutable()) throw new IllegalStateException("Эту директорию нельзя удалить");
             event.getExternalData().setName(initialCheck.get().getName());
            return null;
         });

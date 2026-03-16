@@ -93,6 +93,8 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
                     event.getInternalData().setCompensationPhase(true);
                     return true;
                 }
+
+
             }
             return false;
         };

@@ -14,7 +14,7 @@ public enum ExternalEventType {
     JAVA_PROJECT_FILE_ADD("java_project_file_add"),
     JAVA_PROJECT_REMOVE_PARTICIPANT("java_project_participant_remove"),
     JAVA_PROJECT_ADD_DIRECTORY("java_project_directory_add"),
-    JAVA_PROJECT_REMOVE_DIRECTORY("java_project_directory_remove");
+    JAVA_PROJECT_REMOVE_DIRECTORY("java_project_directory_removal");
 
     private final String name;
 
