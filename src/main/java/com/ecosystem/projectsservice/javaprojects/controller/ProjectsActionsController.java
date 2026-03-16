@@ -9,6 +9,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.S
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
@@ -173,6 +174,19 @@ public class ProjectsActionsController {
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
         actionsService.addFile(securityContext, requestContext, projectId, request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/moveFile")
+    public ResponseEntity<Void> moveFile(@PathVariable("id") UUID projectId,
+                                         @RequestHeader Map<String, String> headers, @RequestBody FileMoveRequest fileMoveRequest) throws Exception {
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        actionsService.moveFile(securityContext, requestContext, projectId, fileMoveRequest);
+
+
 
         return ResponseEntity.noContent().build();
     }

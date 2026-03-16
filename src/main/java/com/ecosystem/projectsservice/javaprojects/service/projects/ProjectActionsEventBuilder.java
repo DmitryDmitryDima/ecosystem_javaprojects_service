@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
@@ -15,6 +16,9 @@ import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.dire
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_removal.DirectoryRemovalExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_removal.DirectoryRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_move.FileMoveEvent;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_move.FileMoveExternalData;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_move.FileMoveInternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddEvent;
@@ -37,6 +41,40 @@ public class ProjectActionsEventBuilder {
 
     @Autowired
     private ExternalValues externalValues;
+
+
+    public FileMoveEvent buildFileMoveEvent(SecurityContext securityContext, RequestContext requestContext, Project project,
+                                            FileMoveRequest request
+                                            ){
+        FileMoveEvent fileMoveEvent = new FileMoveEvent();
+        fileMoveEvent.setMessage("Перемещаем файл в директорию");
+
+        // ивент пересылается только подписчикам комнаты
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext,
+                requestContext,
+                project,
+                null, null);
+
+        FileMoveInternalData internalData = new FileMoveInternalData();
+        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
+                project.getUserUUID().toString(),
+                "projects").normalize().toString());
+
+        FileMoveExternalData externalData = new FileMoveExternalData();
+
+        externalData.setParent(request.getParentId());
+        externalData.setFileId(request.getFileId());
+
+        fileMoveEvent.setContext(context);
+        fileMoveEvent.setInternalData(internalData);
+        fileMoveEvent.setExternalData(externalData);
+
+        return fileMoveEvent;
+
+
+
+    }
 
 
     public DirectoryRemovalEvent buildDirectoryRemovalEvent(SecurityContext securityContext, RequestContext requestContext, Project project,

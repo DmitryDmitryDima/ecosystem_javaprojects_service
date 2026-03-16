@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.*
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
@@ -238,6 +239,9 @@ public class ProjectActionsService {
 
     }
 
+
+
+
     @Transactional
     public void removeDirectory(SecurityContext securityContext, RequestContext requestContext, UUID projectId, DirectoryRemovalRequest request)
 
@@ -265,6 +269,13 @@ public class ProjectActionsService {
 
         fileAddChain.init(eventBuilder.buildFileAddEvent(securityContext, requestContext, project, fileAddRequest));
 
+    }
+
+    @Transactional
+    public void moveFile(SecurityContext securityContext, RequestContext requestContext, UUID projectId, FileMoveRequest fileMoveRequest){
+
+        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        // todo
     }
 
 
