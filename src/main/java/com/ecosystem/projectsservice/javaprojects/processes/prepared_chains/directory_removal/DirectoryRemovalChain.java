@@ -70,6 +70,21 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     public void compensationStrategy(DirectoryRemovalEvent event) {
 
         // todo в идеале мы должны копировать удаляемый контент на диске в случае, если удаление диска провалилось.
+        String step = event.getInternalData().getCurrentStep();
+
+        if (step.equals("prepare_directory") || step.equals("block_directory") || step.equals("remove_from_db")){
+            transaction().execute(status -> {
+                Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getId());
+                if (directoryCheck.isEmpty()){
+                    throw new IllegalStateException("Директории нет");
+
+                }
+
+                directoryCheck.get().setStatus(DirectoryStatus.AVAILABLE);
+                return null;
+            });
+        }
+
 
     }
 
@@ -246,7 +261,10 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
                     throw new IllegalStateException("Внутренняя часть директории затронута другим процессом");
                 }
             });
+
+
             children.getFiles().forEach(fileReadOnly -> {
+                System.out.println(fileReadOnly.getStatus()+" "+fileReadOnly.getName());
                 if (fileReadOnly.getStatus()!= FileStatus.AVAILABLE){
                     throw new IllegalStateException("Какой то из файлов внутри директории в данный момент затронут другим процессом");
                 }

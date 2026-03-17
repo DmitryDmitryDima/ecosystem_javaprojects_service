@@ -19,6 +19,7 @@ import com.ecosystem.projectsservice.javaprojects.processes.external_events.even
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_add.DirectoryAddChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.directory_removal.DirectoryRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_add.FileAddChain;
+import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_move.FileMoveChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.file_removal.FileRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveChain;
 import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveExternalData;
@@ -102,12 +103,8 @@ public class ProjectActionsService {
     @Autowired
     private DirectoryRemovalChain directoryRemovalChain;
 
-
-
-
-
-
-
+    @Autowired
+    private FileMoveChain fileMoveChain;
 
 
 
@@ -272,10 +269,18 @@ public class ProjectActionsService {
     }
 
     @Transactional
-    public void moveFile(SecurityContext securityContext, RequestContext requestContext, UUID projectId, FileMoveRequest fileMoveRequest){
+    public void moveFile(SecurityContext securityContext, RequestContext requestContext, UUID projectId, FileMoveRequest fileMoveRequest)
+    throws Exception
+    {
 
         Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
-        // todo
+
+        if (project.getEntryPoint().getId().equals(fileMoveRequest.getFileId())){
+            throw new IllegalStateException("Файл является точкой входа в проекте и не может быть перемещен");
+        }
+
+        fileMoveChain.init(eventBuilder.buildFileMoveEvent(securityContext, requestContext, project, fileMoveRequest));
+
     }
 
 

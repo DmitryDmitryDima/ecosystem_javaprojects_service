@@ -10,4 +10,5 @@ import lombok.Setter;
 public class FileMoveInternalData extends InternalEventData {
     private String projectsPath;
     private Long projectRoot;
+    private String oldPath;
 }
