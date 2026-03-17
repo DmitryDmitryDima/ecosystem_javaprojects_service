@@ -20,6 +20,10 @@ import java.util.List;
 public class Directory {
 
 
+    @Version
+    private Long version;
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

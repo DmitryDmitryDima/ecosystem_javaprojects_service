@@ -100,30 +100,7 @@ public class ProjectActionsUtils {
         return table.values().stream().filter(structureMember ->
                 structureMember.getType().equals("directory") && structureMember.isHiddenParent() && !structureMember.isHidden()).toList();
 
-        /*
-        if (type==ProjectType.MAVEN_CLASSIC){
-            StructureMember current = root;
-            List<String> mavenHiddenLayers = List.of("src", "main");
 
-
-            for (String hiddenlayer:mavenHiddenLayers){
-                current = current.getChildren().stream().filter(structureMember
-                        -> structureMember.getType().equals("directory")&&structureMember.getName().equals(hiddenlayer))
-                        .findFirst().orElseThrow(()->new IllegalStateException("Структура maven некорректна"));
-
-            }
-
-
-            return current.getChildren().stream().
-                    filter(structureMember ->
-                                    (structureMember.getName().equals("java")|| structureMember.getName().equals("resources"))
-                                            && structureMember.getType().equals("directory")).toList();
-        }
-
-
-        else return List.of(root);
-
-         */
 
 
     }
@@ -184,7 +161,7 @@ public class ProjectActionsUtils {
             StructureMember parent = table.get("directory_"+directoryReadOnly.getParent_id());
             StructureMember child = table.get("directory_"+directoryReadOnly.getId());
 
-            System.out.println(parent.getName()+" parent is "+parent.isHidden()+" and child "+child.getName());
+
             child.setHiddenParent(parent.isHidden());
 
             parent.getChildren().add(child);

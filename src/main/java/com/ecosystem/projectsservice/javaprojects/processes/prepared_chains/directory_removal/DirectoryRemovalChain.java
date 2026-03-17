@@ -97,6 +97,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
         Directory directory = transaction().execute(status -> {
             Optional<Directory> initialCheck = directoryRepository.findById(event.getExternalData().getId());
             if (initialCheck.isEmpty() || initialCheck.get().isHidden()) throw new IllegalStateException("директории не существует");
+
+            System.out.println(initialCheck.get().getVersion()+" version test for "+initialCheck.get().getName());
             if (initialCheck.get().isImmutable()) throw new IllegalStateException("Эту директорию нельзя удалить");
             if (initialCheck.get().getStatus()!=DirectoryStatus.AVAILABLE) throw new IllegalStateException("Директория занята другим процессом");
             event.getExternalData().setName(initialCheck.get().getName());
@@ -182,6 +184,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
                 throw new IllegalStateException("Директория занята другим процессом");
 
             }
+
+
             // данный статус не позволит никому сверху или снизу в иерархии что либо изменить
             directoryCheck.get().setStatus(DirectoryStatus.PREPARING_FOR_REMOVAL);
             return null;
@@ -201,7 +205,10 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             if (check.isEmpty()) throw new IllegalStateException("директории не существует");
 
 
+
+
             Directory directory = check.get();
+
 
             // сразу конструируем полный путь
             event.getInternalData()

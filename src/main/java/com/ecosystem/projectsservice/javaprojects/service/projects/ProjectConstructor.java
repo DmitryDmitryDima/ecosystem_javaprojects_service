@@ -103,7 +103,7 @@ public class ProjectConstructor {
         List<DirectoryInstruction> directoryInstructions = instruction.getDirectories();
         HashMap<Long, Directory> directoriesBase = new HashMap<>();
 
-        System.out.println(root.getConstructedPath());
+
 
 
 

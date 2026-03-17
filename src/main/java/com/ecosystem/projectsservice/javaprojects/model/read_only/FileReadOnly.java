@@ -22,4 +22,5 @@ public class FileReadOnly {
     private boolean immutable;
     private String extension;
     private FileStatus status;
+    private Long version;
 }

@@ -17,6 +17,10 @@ import java.time.Instant;
 public class File {
 
 
+    @Version
+    private Long version;
+
+
 
 
     @Id

@@ -46,9 +46,9 @@ public class DirectoryJDBCRepository {
         String query = """
                 
                 with recursive children as (
-                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status from directories where id = ?
+                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version from directories where id = ?
                 union
-                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status from directories d join children c on d.id = c.parent_id
+                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version from directories d join children c on d.id = c.parent_id
                 )
                 select * from children;
                 
@@ -65,7 +65,7 @@ public class DirectoryJDBCRepository {
     public List<FileReadOnly> loadFilesAssosiatedWithDirectories(List<Long> directories){
         String inSql = String.join(",", Collections.nCopies(directories.size(), "?"));
         String query = String
-                .format("select parent_id, name,id, constructed_path, created_at, updated_at, hidden, immutable,extension, status from files where files.parent_id in (%s)",
+                .format("select parent_id, name,id, constructed_path, created_at, updated_at, hidden, immutable,extension, status, version from files where files.parent_id in (%s)",
                         inSql);
 
 
