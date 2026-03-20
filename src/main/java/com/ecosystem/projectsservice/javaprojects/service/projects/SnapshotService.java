@@ -42,6 +42,8 @@ public class SnapshotService {
         return StructureSnapshot.builder().directories(directories).files(files).build();
     }
 
+
+
     public List<DirectoryReadOnly> getParentsSnapshotDirectoriesOnly(Long root){
         return directoryJDBCRepository.loadAWholeStructureAboveRoot(root);
     }
@@ -52,6 +54,11 @@ public class SnapshotService {
 
     public List<FileReadOnly> getFilesForDirectory(Long root){
         return directoryJDBCRepository.loadFilesAssosiatedWithDirectories(List.of(root));
+    }
+
+    // все файлы вниз по ветке
+    public List<FileReadOnly> getAllFilesBelowDirectory(Long root){
+        return directoryJDBCRepository.loadFilesBelowRoot(root);
     }
 
     public List<DirectoryReadOnly> getChildrenSnapshotDirectoriesOnlyWithLevel(Long root, Long level){

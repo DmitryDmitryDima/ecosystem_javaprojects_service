@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.repository;
 
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -109,6 +110,28 @@ public class DirectoryJDBCRepository {
 
 
         return jdbcTemplate.query(query,new BeanPropertyRowMapper<>(FileReadOnly.class), directories.toArray());
+
+    }
+
+
+    public List<FileReadOnly> loadFilesBelowRoot(@NotNull Long id){
+        String query = """
+                
+                
+                select * from files where files.parent_id in ( with recursive children as (
+                                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
+                                union
+                                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1 from directories d join children c
+                				on d.parent_id = c.id
+                                )
+                                select id from children)
+                
+                
+                """;
+
+
+        return jdbcTemplate.query(query,
+                new BeanPropertyRowMapper<>(FileReadOnly.class), id);
 
     }
 

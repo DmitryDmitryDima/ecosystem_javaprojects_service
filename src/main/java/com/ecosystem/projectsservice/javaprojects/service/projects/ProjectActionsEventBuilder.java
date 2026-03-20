@@ -62,6 +62,7 @@ public class ProjectActionsEventBuilder {
                 null, null);
 
         DirectoryMoveInternalData internalData = new DirectoryMoveInternalData();
+        internalData.setProjectOwner(project.getUserUUID());
         internalData.setProjectRoot(project.getRoot().getId());
         internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
                 project.getUserUUID().toString(),

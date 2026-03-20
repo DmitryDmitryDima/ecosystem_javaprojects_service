@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
@@ -9,13 +10,17 @@ import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadO
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.transport.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
+import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -39,6 +44,12 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
     @Autowired
     private SnapshotService snapshotService;
+
+    @Autowired
+    private BroadcastableAction broadcast;
+
+    @Autowired
+    private FileContentCache<FileDTO, Long> fileCache;
 
 
     @Override
@@ -178,8 +189,10 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
                         rootFound = true;
                     }
 
-                    if (directoryReadOnly.getStatus()!=DirectoryStatus.AVAILABLE){
-                        throw new IllegalStateException("родители перемещаемой вами директории затронуты другим процессом");
+                    if (!directoryReadOnly.getId().equals(parent.getId()) && directoryReadOnly.getStatus()!=DirectoryStatus.AVAILABLE){
+                        throw new IllegalStateException("родители перемещаемой вами директории затронуты другим процессом. "
+                                +directoryReadOnly.getName()
+                                +" "+directoryReadOnly.getStatus());
                     }
                 }
             }
@@ -372,6 +385,30 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
             throw new IllegalStateException("ошибка записи в диск. "+e.getMessage());
         }
 
+
+        // перестройка контента
+        // нам необходимо извлечь все файлы внутри child, после чего обновить каждому из них его dto
+
+        // todo по дизайну ошибка в кеше не должна обрывать весь процесс. Думаю, что разумнее просто инвалидировать кеш
+        try {
+
+            // валидны только те java файлы, что находятся в папке java
+            List<FileReadOnly> belowFiles = transaction().execute(status ->
+                    snapshotService.getAllFilesBelowDirectory(event.getExternalData().getDirectoryId()));
+
+
+            processAndBroadcastMovedJavaFiles(belowFiles, event);
+
+
+
+
+        }
+        catch (Exception e){
+
+        }
+
+
+
     }
 
 
@@ -411,6 +448,74 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
 
         event.setMessage("Освобождаем сущности");
+    }
+
+
+
+    private void processAndBroadcastMovedJavaFiles(List<FileReadOnly> files, DirectoryMoveEvent event){
+        // фильтруем
+        files = files.stream()
+                .filter(fileReadOnly ->
+                        fileReadOnly.getExtension().equals("java")
+
+                                && Path.of(fileReadOnly.getConstructed_path()).normalize().toString()
+                                .contains(Path.of("/main/src/java/").normalize().toString())
+
+
+                )
+                .toList();
+
+        // извлекаем контент
+
+        Map<Long, String> updatedContent = new HashMap<>();
+
+        for (FileReadOnly file:files){
+
+            try {
+
+                FileDTO dto;
+
+                Optional<FileDTO> cacheCheck = fileCache.read(file.getId());
+
+                dto = cacheCheck.orElseGet(() -> {
+                    try {
+                        return FileDTO.builder()
+                                .constructedPath(file.getConstructed_path())
+                                .id(file.getId())
+                                .extension(file.getExtension())
+                                .name(file.getName())
+                                .projectId(event.getContext().getProjectId())
+                                .ownerUUID(event.getInternalData().getProjectOwner())
+                                .content(ProjectUtils.readFile(Path.of(event.getInternalData().getProjectsPath(), file.getConstructed_path())))
+                                .build();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                // todo анализ package
+                dto.setContent(dto.getContent()+" changed");
+
+                fileCache.save(file.getId(), dto);
+                updatedContent.put(file.getId(), dto.getContent());
+
+
+            }
+            catch (Exception ignored){
+
+            }
+
+
+        }
+
+        // broadcast
+
+
+
+
+
+
+
     }
 
 
