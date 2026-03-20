@@ -1,9 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects;
 
 
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.testing.ControlTestChain;
-import com.ecosystem.projectsservice.javaprojects.processes.process_control.ProcessAggregator;
-import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggersAggregator;
+import com.ecosystem.projectsservice.javaprojects.transport.prepared_chains.testing.ControlTestChain;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.ProcessAggregator;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggersAggregator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 

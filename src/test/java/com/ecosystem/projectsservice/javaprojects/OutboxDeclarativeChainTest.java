@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects;
 
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveChain;
-import com.ecosystem.projectsservice.javaprojects.processes.prepared_chains.filesave.FileSaveEvent;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveChain;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveEvent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

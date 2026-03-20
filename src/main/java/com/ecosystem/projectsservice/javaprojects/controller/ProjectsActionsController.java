@@ -12,7 +12,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
-import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.TriggerAnswer;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectActionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

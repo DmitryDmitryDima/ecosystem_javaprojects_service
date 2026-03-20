@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects;
 
 
-import com.ecosystem.projectsservice.javaprojects.processes.process_control.triggers.PhaseStrategy;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.PhaseStrategy;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
