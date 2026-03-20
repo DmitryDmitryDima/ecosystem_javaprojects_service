@@ -1,15 +1,18 @@
 package com.ecosystem.projectsservice.javaprojects.service.projects;
 
-
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
+import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveEvent;
+import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveExternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveInternalData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddExternalData;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal.DirectoryRemovalEvent;
@@ -41,6 +44,40 @@ public class ProjectActionsEventBuilder {
 
     @Autowired
     private ExternalValues externalValues;
+
+
+    public DirectoryMoveEvent buildDirectoryMoveEvent(SecurityContext securityContext,
+                                                      RequestContext requestContext,
+                                                      Project project,
+                                                      DirectoryMoveRequest request
+                                                      ){
+
+        DirectoryMoveEvent directoryMoveEvent = new DirectoryMoveEvent();
+        directoryMoveEvent.setMessage("Перемещаем директорию...");
+
+        // ивент пересылается только подписчикам комнаты
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext,
+                requestContext,
+                project,
+                null, null);
+
+        DirectoryMoveInternalData internalData = new DirectoryMoveInternalData();
+        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
+                project.getUserUUID().toString(),
+                "projects").normalize().toString());
+
+        DirectoryMoveExternalData externalData = new DirectoryMoveExternalData();
+
+        externalData.setParent(request.getParentId());
+        externalData.setDirectoryId(request.getDirectoryId());
+
+        directoryMoveEvent.setContext(context);
+        directoryMoveEvent.setInternalData(internalData);
+        directoryMoveEvent.setExternalData(externalData);
+
+        return directoryMoveEvent;
+    }
 
 
     public FileMoveEvent buildFileMoveEvent(SecurityContext securityContext, RequestContext requestContext, Project project,

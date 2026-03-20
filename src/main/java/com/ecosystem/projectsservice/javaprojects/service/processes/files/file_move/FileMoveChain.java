@@ -92,7 +92,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
     }
 
 
-
+    /*
     @OpeningStep(name="polling")
     @Next(name="preparing")
     public void polling(FileMoveEvent event){
@@ -199,10 +199,12 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
     }
 
+     */
+
     // по идее мы должны поставить статус prepare for generating на директорию и preparing_for_migrating на файл
 
-    @Step(name = "preparing")
-    @WaitingFor(time = 20)
+    @OpeningStep(name = "preparing")
+    //@WaitingFor(time = 20)
     @Message
     @Next(name = "block_entities")
     public void preparing(FileMoveEvent fileMoveEvent){
@@ -214,6 +216,8 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
             if (fileCheck.isEmpty()) throw new IllegalStateException("файла больше не существует");
             if (fileCheck.get().getStatus()!=FileStatus.AVAILABLE) throw new IllegalStateException("Неподходящий статус файла на стадии preparing");
+            if (fileCheck.get().isHidden() || fileCheck.get().isImmutable()) throw new IllegalStateException("Файл не может быть перемещен");
+
 
             Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(fileMoveEvent.getExternalData().getParent());
 

@@ -54,6 +54,14 @@ public class SnapshotService {
         return directoryJDBCRepository.loadFilesAssosiatedWithDirectories(List.of(root));
     }
 
+    public List<DirectoryReadOnly> getChildrenSnapshotDirectoriesOnlyWithLevel(Long root, Long level){
+        return directoryJDBCRepository.loadAWholeStructureBelowRootWithLevel(root, level);
+    }
+
+    public List<DirectoryReadOnly> getParentsSnapshotDirectoriesOnlyWithLevel(Long root, Long level){
+        return directoryJDBCRepository.loadAWholeStructureAboveRootWithLevel(root, level);
+    }
+
 
 
 

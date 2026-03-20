@@ -21,4 +21,5 @@ public class DirectoryReadOnly {
     private boolean immutable;
     private DirectoryStatus status;
     private Long version;
+    private Long depth;
 }

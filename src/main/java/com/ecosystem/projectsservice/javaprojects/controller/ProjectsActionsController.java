@@ -7,6 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.F
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.SimpleFileInfo;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
@@ -188,6 +189,17 @@ public class ProjectsActionsController {
 
 
 
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/moveDirectory")
+    public ResponseEntity<Void> moveDirectory(@PathVariable("id") UUID projectId,
+                                              @RequestHeader Map<String, String> headers, @RequestBody DirectoryMoveRequest directoryMoveRequest
+                                              ) throws Exception {
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+        actionsService.moveDirectory(securityContext, requestContext, projectId, directoryMoveRequest);
         return ResponseEntity.noContent().build();
     }
 

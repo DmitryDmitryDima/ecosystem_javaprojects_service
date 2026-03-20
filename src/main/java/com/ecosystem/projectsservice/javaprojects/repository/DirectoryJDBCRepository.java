@@ -22,15 +22,53 @@ public class DirectoryJDBCRepository {
     private JdbcTemplate jdbcTemplate;
 
 
+    public List<DirectoryReadOnly> loadAWholeStructureBelowRootWithLevel(long rootId, long level){
+        String query = """
+                
+                with recursive children as (
+                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
+                union
+                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1
+                 from directories d join children c on d.parent_id = c.id and c.depth<?
+                )
+                select * from children;
+                
+                """;
+
+        return jdbcTemplate.query(query,
+                new BeanPropertyRowMapper<>(DirectoryReadOnly.class), rootId, level);
+
+
+    }
+
+    public List<DirectoryReadOnly> loadAWholeStructureAboveRootWithLevel(long rootId, long level){
+        String query = """
+                
+                with recursive children as (
+                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
+                union
+                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1
+                 from directories d join children c on d.id = c.parent_id and c.depth<?
+                )
+                select * from children;
+                
+                """;
+
+        return jdbcTemplate.query(query,
+                new BeanPropertyRowMapper<>(DirectoryReadOnly.class), rootId, level);
+
+
+    }
+
     // возвращает плоскую структуру папок со всеми зависимостями, начиная с root папки, включая root
     public List<DirectoryReadOnly> loadAWholeStructureBelowRoot(long rootId){
 
         String query = """
                 
                 with recursive children as (
-                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status from directories where id = ?
+                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
                 union
-                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status from directories d join children c on d.parent_id = c.id
+                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1 from directories d join children c on d.parent_id = c.id
                 )
                 select * from children;
                 
@@ -46,9 +84,9 @@ public class DirectoryJDBCRepository {
         String query = """
                 
                 with recursive children as (
-                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version from directories where id = ?
+                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
                 union
-                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version from directories d join children c on d.id = c.parent_id
+                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1 from directories d join children c on d.id = c.parent_id
                 )
                 select * from children;
                 

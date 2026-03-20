@@ -4,6 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.*;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
@@ -12,6 +13,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
+import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
@@ -105,6 +107,9 @@ public class ProjectActionsService {
 
     @Autowired
     private FileMoveChain fileMoveChain;
+
+    @Autowired
+    private DirectoryMoveChain directoryMoveChain;
 
 
 
@@ -280,6 +285,22 @@ public class ProjectActionsService {
         }
 
         fileMoveChain.init(eventBuilder.buildFileMoveEvent(securityContext, requestContext, project, fileMoveRequest));
+
+    }
+
+    @Transactional
+    public void moveDirectory(SecurityContext securityContext,
+                              RequestContext requestContext,
+                              UUID projectId,
+                              DirectoryMoveRequest directoryMoveRequest) throws Exception{
+
+        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+
+
+        directoryMoveChain.init(eventBuilder.buildDirectoryMoveEvent(securityContext, requestContext, project, directoryMoveRequest));
+
+
+
 
     }
 
