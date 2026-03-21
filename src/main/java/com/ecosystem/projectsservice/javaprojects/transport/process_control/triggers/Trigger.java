@@ -1,7 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers;
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.DeclarativeChainEvent;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.triggers.SimpleTriggerData;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;

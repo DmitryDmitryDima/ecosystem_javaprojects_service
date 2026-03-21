@@ -1,7 +1,6 @@
-package com.ecosystem.projectsservice.javaprojects.transport.external_events.data.triggers;
+package com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers;
 
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

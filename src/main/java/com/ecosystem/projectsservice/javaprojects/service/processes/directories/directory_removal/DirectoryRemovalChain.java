@@ -10,7 +10,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.triggers.SimpleTriggerData;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.SimpleTriggerData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.PhaseStrategy;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.PhaseTrigger;

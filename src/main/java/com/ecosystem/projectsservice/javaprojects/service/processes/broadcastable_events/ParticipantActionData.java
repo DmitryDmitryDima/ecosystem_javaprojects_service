@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.transport.external_events.data.broadcastable;
+package com.ecosystem.projectsservice.javaprojects.service.processes.broadcastable_events;
 
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.ExternalEventData;
 import lombok.AllArgsConstructor;

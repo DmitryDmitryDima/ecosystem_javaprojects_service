@@ -11,12 +11,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.triggers.SimpleTriggerData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.PhaseStrategy;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.PhaseTrigger;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerAnswer;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerType;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
@@ -28,9 +23,7 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_MOVE)

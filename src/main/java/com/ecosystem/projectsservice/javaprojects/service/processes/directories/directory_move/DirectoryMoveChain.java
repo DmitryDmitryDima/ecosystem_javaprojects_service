@@ -10,13 +10,17 @@ import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
+import com.ecosystem.projectsservice.javaprojects.service.processes.broadcastable_events.BatchedFileSaveData;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
+import com.ecosystem.projectsservice.javaprojects.transport.broadcast.BroadcastException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
+import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.UserPersonalEvent;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -41,6 +45,9 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
     @Autowired
     private SnapshotService snapshotService;
+
+    @Autowired
+    private Broadcast broadcast;
 
 
 
@@ -451,17 +458,24 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
     private void processAndBroadcastMovedJavaFiles(List<FileReadOnly> files, DirectoryMoveEvent event){
         // фильтруем
         files = files.stream()
+                .peek(fileReadOnly -> {
+                    System.out.println(Path.of(fileReadOnly.getConstructed_path()).normalize());
+                    System.out.println(Path.of("/main/src/java/").normalize());
+
+                })
                 .filter(fileReadOnly ->
                         fileReadOnly.getExtension().equals("java")
 
                                 && Path.of(fileReadOnly.getConstructed_path()).normalize().toString()
-                                .contains(Path.of("/main/src/java/").normalize().toString())
+                                .contains(Path.of("/src/main/java/").normalize().toString())
 
 
                 )
                 .toList();
 
         // извлекаем контент
+        System.out.println(files);
+        if (files.isEmpty()) return;
 
         Map<Long, String> updatedContent = new HashMap<>();
 
@@ -505,11 +519,17 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
         }
 
         // broadcast
-
-
-
-
-
+        BatchedFileSaveData batchedFileSaveData = new BatchedFileSaveData();
+        batchedFileSaveData.setContentMap(updatedContent);
+        try {
+            broadcast.sendAsync(new Broadcast.EventBuilder().useEvent(ProjectEventFromUser::new)
+                    .withContext(event::getContext).withData(()->batchedFileSaveData)
+                    .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_BATCHED)
+                    .withMessage("Обновление package информации после перемещения директории")
+                    .build());
+        } catch (BroadcastException e) {
+            e.printStackTrace();
+        }
 
 
     }

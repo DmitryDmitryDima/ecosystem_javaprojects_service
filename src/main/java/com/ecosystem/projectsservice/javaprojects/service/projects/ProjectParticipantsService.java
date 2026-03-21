@@ -18,7 +18,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.cont
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.AlarmStrategy;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.NotificationStrategy;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.broadcastable.ParticipantActionData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.broadcastable_events.ParticipantActionData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectInviteTokenRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectParticipantRepository;
