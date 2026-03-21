@@ -58,7 +58,7 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     }
 
     @Override
-    @Async("taskExecutor")
+    @Async("chainExecutor")
     @EventListener
     public void catchEvent(DirectoryRemovalEvent event) {
         super.processEvent(event);

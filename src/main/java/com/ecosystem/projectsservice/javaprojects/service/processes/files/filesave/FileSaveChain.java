@@ -56,7 +56,7 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
 
     @Override
-    @Async("taskExecutor")
+    @Async("chainExecutor")
     @EventListener
     public void catchEvent(FileSaveEvent event) {
 

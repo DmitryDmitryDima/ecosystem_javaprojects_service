@@ -67,7 +67,7 @@ public class ExternalQueueBridge {
 
 
     @EventListener
-    @Async
+    @Async("virtualThreadFactory")
     public void catchProjectSystemEvent(ProjectEventFromSystem projectEventFromSystem){
         try {
             MessagePostProcessor postProcessor = (message )->{
@@ -91,7 +91,7 @@ public class ExternalQueueBridge {
     }
 
     @EventListener
-    @Async
+    @Async("virtualThreadFactory")
     public void catchUserActivityEvent(UserPersonalEvent event){
         System.out.println("user event ");
         try {
@@ -118,7 +118,7 @@ public class ExternalQueueBridge {
 
 
     @EventListener
-    @Async
+    @Async("virtualThreadFactory")
     public void catchProjectUserEvent(ProjectEventFromUser event){
         System.out.println("project event "+event);
         try {

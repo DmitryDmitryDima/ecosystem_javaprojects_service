@@ -2,7 +2,6 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.directories
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
@@ -12,13 +11,11 @@ import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +42,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
     @Autowired
     private SnapshotService snapshotService;
 
-    @Autowired
-    private BroadcastableAction broadcast;
+
 
     @Autowired
     private FileContentCache<FileDTO, Long> fileCache;
@@ -63,7 +59,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
     }
 
     @Override
-    @Async("taskExecutor")
+    @Async("chainExecutor")
     @EventListener
     public void catchEvent(DirectoryMoveEvent event) {
         super.processEvent(event);

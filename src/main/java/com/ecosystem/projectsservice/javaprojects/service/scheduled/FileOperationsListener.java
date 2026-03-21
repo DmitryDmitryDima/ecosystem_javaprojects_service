@@ -3,8 +3,8 @@ package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromSystemContext;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromSystem;
@@ -55,8 +55,10 @@ public class FileOperationsListener {
 
 
 
+
+
     @Autowired
-    private BroadcastableAction broadcast;
+    private Broadcast broadcast;
 
 
     private boolean shouldWriteFile(CacheValueWrapper<FileDTO> entry){
@@ -123,18 +125,14 @@ public class FileOperationsListener {
             try {
 
 
-                broadcast.statelessAction(()-> performDiskWrite(file))
-                        .withContext(()->{
-                            // не нужны, адресат - комната
-                            return ProjectEventFromSystemContext.builder()
-                                            .correlationId(UUID.randomUUID())
-                                            .origin("background disk writer process")
-                                            .timestamp(Instant.now())
-                                            .projectId(file.getValue().getProjectId())
-                                            .build();
-                        })
+                performDiskWrite(file);
 
-
+                broadcast.sendSync(new Broadcast.EventBuilder()
+                        .useEvent(ProjectEventFromSystem::new)
+                        .withContext(()->ProjectEventFromSystemContext.builder().correlationId(UUID.randomUUID())
+                                .origin("background disk writer process")
+                                .timestamp(Instant.now())
+                                .projectId(file.getValue().getProjectId()).build())
                         .withData(()->{
                             FileSaveExternalData data = new FileSaveExternalData();
                             data.setFileOwner(file.getValue().getOwnerUUID());
@@ -144,10 +142,12 @@ public class FileOperationsListener {
                             data.setExtension(file.getValue().getExtension());
                             return data;
                         })
-                        .withEvent(ProjectEventFromSystem::new)
                         .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
-                        .withMessage("Данные записаны")
-                        .execute();
+                        .withMessage("Данные сохранены на диск")
+                        .build());
+
+
+
 
 
 

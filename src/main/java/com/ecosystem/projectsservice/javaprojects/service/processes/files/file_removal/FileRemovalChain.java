@@ -57,7 +57,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
     }
 
     @Override
-    @Async("taskExecutor")
+    @Async("chainExecutor")
     @EventListener
     public void catchEvent(FileRemovalEvent event) {
         super.processEvent(event);

@@ -55,7 +55,7 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
     }
 
     @Override
-    @Async("taskExecutor")
+    @Async("chainExecutor")
     @EventListener
     public void catchEvent(FileAddEvent event) {
        super.processEvent(event);

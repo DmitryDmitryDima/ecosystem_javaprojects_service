@@ -4,13 +4,17 @@ package com.ecosystem.projectsservice.javaprojects.transport;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.VirtualThreadTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 @Configuration
-public class TaskExecutorConfiguration {
+public class  TaskExecutorConfiguration {
 
     // быстрые операции, пример - удаление проекта
-    @Bean(name = "taskExecutor")
+    @Bean(name = "chainExecutor")
     public TaskExecutor defaultExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(5);
@@ -35,5 +39,11 @@ public class TaskExecutorConfiguration {
         taskExecutor.initialize();
 
         return taskExecutor;
+    }
+
+    @Bean(name="virtualThreadFactory")
+    public Executor virtualThreadsFactory(){
+
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 }

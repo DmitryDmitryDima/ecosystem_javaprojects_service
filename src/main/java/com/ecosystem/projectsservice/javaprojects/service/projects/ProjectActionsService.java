@@ -14,8 +14,8 @@ import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveChain;
+import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddChain;
@@ -84,9 +84,10 @@ public class ProjectActionsService {
     private FileContentCache<FileDTO, Long> fileContentCache;
 
 
-    // сервис для генерации действий из одного шага с публикацией внешнего ивента
+
+
     @Autowired
-    private BroadcastableAction broadcast;
+    private Broadcast broadcast;
 
 
     // процессы
@@ -132,6 +133,9 @@ public class ProjectActionsService {
         answer.setRenderId(requestContext.getRenderId());
 
         triggersAggregator.feedTrigger(answer);
+
+
+
 
 
 
@@ -210,18 +214,25 @@ public class ProjectActionsService {
 
 
 
+
+
+
         // ивент пересылается только подписчикам проекта
-        broadcast.statelessAction(
-                ()-> fileContentCache.save(request.getFileId(), fileDTO))
+
+
+        fileContentCache.save(request.getFileId(), fileDTO);
+
+        broadcast.sendSync(
+                new Broadcast.EventBuilder().useEvent(ProjectEventFromUser::new)
                 .withContext(()->ProjectEventFromUserContext.from(securityContext, requestContext, project, null, null))
                 .withData(()->{
                     FileSaveExternalData externalData = new FileSaveExternalData();
                     externalData.setContent(request.getContent());
                     externalData.setFileId(request.getFileId());
-                    return externalData;})
-                .withEvent(ProjectEventFromUser::new)
-                .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE).withMessage("Файл сохранен")
-                .execute();
+                    return externalData;}).withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE)
+                .withMessage("Файл сохранен").build());
+
+
 
 
     }

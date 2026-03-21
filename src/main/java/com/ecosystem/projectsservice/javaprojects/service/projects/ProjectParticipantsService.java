@@ -11,9 +11,9 @@ import com.ecosystem.projectsservice.javaprojects.model.ProjectInviteToken;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ParticipantRole;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
+import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
+import com.ecosystem.projectsservice.javaprojects.transport.broadcast.BroadcastException;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcastable_action.ActionExecutionException;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.AlarmAction;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.AlarmStrategy;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.NotificationStrategy;
@@ -44,8 +44,11 @@ public class ProjectParticipantsService {
     @Autowired
     private ProjectInviteTokenRepository projectInviteTokenRepository;
 
+
+
+
     @Autowired
-    private BroadcastableAction broadcast;
+    private Broadcast broadcast;
 
     /*
     создаем инвайт токен для приглашения в проект
@@ -136,30 +139,38 @@ public class ProjectParticipantsService {
                                          RequestContext requestContext,
                                          UUID toAddUUID,
                                          String toAddUsername,
-                                         Project project) throws ActionExecutionException {
+                                         Project project)  {
 
-        broadcast.statelessAction(()->createParticipant(toAddUUID, project))
-                .withContext(()-> {
-                    NotificationStrategy notificationStrategy = new NotificationStrategy();
-                    // вставляем необходимые дополнения в контекст
-                    // событие удаления проекта рассылается персонально участникам проекта и его автору, либо открытый, либо закрытый канал
-                    List<UUID> toNotify = new ArrayList<>();
-                    toNotify.add(project.getUserUUID());
-                    toNotify.addAll(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
+        createParticipant(toAddUUID, project);
 
-                    if (project.getPrivacyLevel() == ProjectPrivacyLevel.OPEN) {
-                        notificationStrategy.setPublicChannel(toNotify);
-                    } else {
-                        notificationStrategy.setPrivateChannel(toNotify);
-                    }
-                    return ProjectEventFromUserContext.from(context, requestContext, project, notificationStrategy, null);})
+        try {
+            broadcast.sendSync(new Broadcast.EventBuilder().useEvent(ProjectEventFromUser::new)
 
-                .withData(()->new ParticipantActionData(toAddUUID)
-                )
-                .withEvent(ProjectEventFromUser::new)
-                .withType(ExternalEventType.JAVA_PROJECT_ADD_PARTICIPANT)
-                .withMessage("К проекту "+project.getName()+" добавлен пользователь "+toAddUsername)
-                .execute();
+                    .withContext(()-> {
+                        NotificationStrategy notificationStrategy = new NotificationStrategy();
+                        // вставляем необходимые дополнения в контекст
+                        // событие удаления проекта рассылается персонально участникам проекта и его автору, либо открытый, либо закрытый канал
+                        List<UUID> toNotify = new ArrayList<>();
+                        toNotify.add(project.getUserUUID());
+                        toNotify.addAll(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
+
+                        if (project.getPrivacyLevel() == ProjectPrivacyLevel.OPEN) {
+                            notificationStrategy.setPublicChannel(toNotify);
+                        } else {
+                            notificationStrategy.setPrivateChannel(toNotify);
+                        }
+                        return ProjectEventFromUserContext.from(context, requestContext, project, notificationStrategy, null);})
+
+
+                    .withData(()->new ParticipantActionData(toAddUUID))
+                    .withType(ExternalEventType.JAVA_PROJECT_ADD_PARTICIPANT)
+                    .withMessage("К проекту "+project.getName()+" добавлен пользователь "+toAddUsername)
+                    .build());
+        } catch (BroadcastException e) {
+            e.printStackTrace();
+        }
+
+
 
     }
 
@@ -200,7 +211,7 @@ public class ProjectParticipantsService {
     // политика - если пользователь - участник проекта. то он может удалить только сам себя. В противном случае это право принадлежит автору проекта
     @Transactional
     public void removeParticipantFromProject(SecurityContext securityContext,
-                                             RequestContext requestContext, ProjectRemoveParticipantRequest request) throws ActionExecutionException {
+                                             RequestContext requestContext, ProjectRemoveParticipantRequest request)  {
 
 
         Optional<Project> projectCheck = projectRepository.findById(request.getProjectId());
@@ -224,8 +235,12 @@ public class ProjectParticipantsService {
             throw new IllegalStateException("Будучи участником, вы не можете удалить другого участника");
         }
 
-        broadcast.statelessAction(()->removeParticipant(request.getUserId(), project))
-                .withContext(()-> {
+
+        removeParticipant(request.getUserId(), project);
+
+        try {
+            broadcast.sendSync(new Broadcast.EventBuilder().useEvent(ProjectEventFromUser::new)
+                    .withContext(()-> {
 
                         // вставляем необходимые дополнения в контекст
                         // событие удаления участника рассылается персонально участникам проекта и его автору, либо открытый, либо закрытый канал
@@ -249,19 +264,14 @@ public class ProjectParticipantsService {
 
                         return ProjectEventFromUserContext.from(securityContext, requestContext, project, notificationStrategy, alarmStrategy);
 
-                })
-                .withData(()->new ParticipantActionData(request.getUserId())
-                )
-                .withEvent(ProjectEventFromUser::new)
-                .withType(ExternalEventType.JAVA_PROJECT_REMOVE_PARTICIPANT)
-                .withMessage("Из проекта "+project.getName()+" удален пользователь "+request.getUsername())
-                .execute();
-
-
-
-
-
-
+                    })
+                    .withData(()->new ParticipantActionData(request.getUserId()))
+                    .withType(ExternalEventType.JAVA_PROJECT_REMOVE_PARTICIPANT)
+                    .withMessage("Из проекта "+project.getName()+" удален пользователь "+request.getUsername())
+                    .build());
+        } catch (BroadcastException e) {
+            e.printStackTrace();
+        }
 
 
     }

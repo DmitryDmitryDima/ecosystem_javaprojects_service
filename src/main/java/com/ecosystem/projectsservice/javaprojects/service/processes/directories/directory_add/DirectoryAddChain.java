@@ -47,7 +47,7 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
     }
 
     @Override
-    @Async("taskExecutor")
+    @Async("chainExecutor")
     @EventListener
     public void catchEvent(DirectoryAddEvent event) {
         super.processEvent(event);

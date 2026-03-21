@@ -7,7 +7,6 @@ import com.ecosystem.projectsservice.javaprojects.model.Project;
 
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcastable_action.BroadcastableAction;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.NotificationStrategy;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.UserPersonalEventContext;
@@ -72,8 +71,7 @@ public class ProjectLifecycleService {
     @Autowired
     private ProjectInviteTokenRepository projectInviteTokenRepository;
 
-    @Autowired
-    private BroadcastableAction broadcast;
+
 
 
 

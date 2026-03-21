@@ -51,7 +51,7 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
     }
 
     @Override
-    @Async("taskExecutor")
+    @Async("chainExecutor")
     @EventListener
     public void catchEvent(ProjectCreationFromTemplateEvent event) {
         super.processEvent(event);

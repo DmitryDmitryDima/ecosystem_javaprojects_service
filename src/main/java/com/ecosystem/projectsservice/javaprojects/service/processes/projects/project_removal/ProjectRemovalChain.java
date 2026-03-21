@@ -46,7 +46,7 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
     }
 
     @Override
-    @Async("taskExecutor")
+    @Async("chainExecutor")
     @EventListener
     public void catchEvent(ProjectRemovalEvent event) {
         super.processEvent(event);
