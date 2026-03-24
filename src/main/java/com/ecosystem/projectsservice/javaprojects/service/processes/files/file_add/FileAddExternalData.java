@@ -14,6 +14,7 @@ public class FileAddExternalData implements ExternalEventData {
     private String filename;
     private String extension;
     private long parentId;
+    private String constructedPath;
 
 
 }

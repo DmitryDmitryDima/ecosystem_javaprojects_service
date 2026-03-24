@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.service.code.CodeService;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -23,7 +24,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +34,10 @@ import java.util.Optional;
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_ADD)
 public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
+
+
+    @Autowired
+    private CodeService codeService;
 
     @Autowired
     private DirectoryRepository directoryRepository;
@@ -225,18 +232,81 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
                 .setFilepath(Path.of(event.getInternalData().getProjectsPath(),
                         created.getConstructedPath()).normalize().toString());
         event.getExternalData().setId(created.getId());
+        event.getExternalData().setConstructedPath(created.getConstructedPath());
     }
 
     @Step(name = "write_file_to_disk")
     @Next(name = "release_directory")
     @MaxRetry(maxCount = 3)
     public void writeFileToDisk(FileAddEvent event){
+        String initialContent = resolveInitialContent(event);
+
+
+
+
         try {
-            Files.createFile(Path.of(event.getInternalData().getFilepath()));
+            Files.writeString(Path.of(event.getInternalData().getFilepath()), initialContent, StandardOpenOption.CREATE_NEW);
+            //Files.createFile(Path.of(event.getInternalData().getFilepath()));
         } catch (IOException e) {
             throw new IllegalStateException("Ошибка записи файла в диск "+e.getMessage());
         }
+
+
     }
+
+
+    private String resolveInitialContent(FileAddEvent event){
+
+        // проверяем расширение
+        if (!event.getExternalData().getExtension().equals("java")) return "";
+        Path normalizedJavaChunk = Path.of("/src/main/java/").normalize();
+
+
+        // проверяем, находится ли java файл в java директории
+        if (!Path.of(event.getExternalData().getConstructedPath()).normalize().toString()
+                .contains(normalizedJavaChunk.toString())) return "";
+
+        try {
+            String[] way = event.getExternalData().getConstructedPath().split("\\\\");
+            boolean isJavaDirectoryVisited = false;
+
+
+            StringBuilder newPackageName = new StringBuilder();
+
+            for (int x = 0; x< way.length-1; x++){
+                String component = way[x];
+
+                if (isJavaDirectoryVisited){
+                    newPackageName.append(component);
+                    if (x< way.length-2){
+                        newPackageName.append(".");
+                    }
+
+
+                }
+
+
+
+                if (component.equals("java")){
+                    isJavaDirectoryVisited = true;
+                }
+            }
+
+            return codeService.createEmptyPublicClass(newPackageName.toString(), event.getExternalData().getFilename());
+
+
+        }
+        catch (Exception e){
+            return "";
+        }
+
+
+
+
+
+
+    }
+
 
     @EndingStep(name = "release_directory")
     public void release(FileAddEvent event){

@@ -1,13 +1,12 @@
 package com.ecosystem.projectsservice.javaprojects.service.code;
 
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jface.text.Document;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 
 @Service
 public class JdtCodeService implements CodeService{
@@ -36,4 +35,26 @@ public class JdtCodeService implements CodeService{
 
         return document.get();
     }
+
+    @Override
+    public String createEmptyPublicClass(String packagePath, String name) {
+
+        String template = """
+                package %s;
+                
+                public class %s {}
+                
+                """;
+
+
+
+
+
+
+
+
+        return String.format(template, packagePath, name);
+    }
+
+
 }
