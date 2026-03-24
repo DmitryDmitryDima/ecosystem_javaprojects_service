@@ -5,10 +5,13 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 public class FileMoveInternalData extends InternalEventData {
     private String projectsPath;
     private Long projectRoot;
     private String oldPath;
+    private UUID projectOwner;
 }

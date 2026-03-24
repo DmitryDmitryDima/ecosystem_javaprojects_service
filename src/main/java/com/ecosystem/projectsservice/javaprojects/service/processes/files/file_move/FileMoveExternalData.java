@@ -16,4 +16,6 @@ public class FileMoveExternalData implements ExternalEventData {
     private String directoryName;
     private String extension;
     private Long parent; // кому
+
+    private String constructedPath;
 }

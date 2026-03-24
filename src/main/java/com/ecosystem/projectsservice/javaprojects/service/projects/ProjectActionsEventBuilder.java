@@ -99,10 +99,13 @@ public class ProjectActionsEventBuilder {
                 project.getUserUUID().toString(),
                 "projects").normalize().toString());
 
+        internalData.setProjectOwner(project.getUserUUID());
+
         FileMoveExternalData externalData = new FileMoveExternalData();
 
         externalData.setParent(request.getParentId());
         externalData.setFileId(request.getFileId());
+
 
         fileMoveEvent.setContext(context);
         fileMoveEvent.setInternalData(internalData);

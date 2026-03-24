@@ -1,11 +1,16 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
+import com.ecosystem.projectsservice.javaprojects.service.code.CodeService;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
@@ -15,6 +20,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.even
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -22,12 +28,23 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_MOVE)
 public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
+
+
+    @Autowired
+    private Broadcast broadcast;
+
+    @Autowired
+    private CodeService codeService;
+
+    @Autowired
+    private FileContentCache<FileDTO, Long> fileCache;
 
     @Autowired
     private FileRepository fileRepository;
@@ -85,119 +102,11 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
     }
 
 
-    /*
-    @OpeningStep(name="polling")
-    @Next(name="preparing")
-    public void polling(FileMoveEvent event){
 
-
-        class MoveInitialCheck {
-            final File file; final Directory directory;
-            MoveInitialCheck(File f, Directory d){
-                this.file = f;
-                this.directory = d;
-            }
-        }
-
-        MoveInitialCheck check = transaction().execute(status -> {
-            Optional<File> fileCheck = fileRepository.findById(event.getExternalData().getFileId());
-
-            if (fileCheck.isEmpty()) throw new IllegalStateException("Файла не существует");
-            if (fileCheck.get().isHidden() || fileCheck.get().isImmutable()) throw new IllegalStateException("Файл не может быть перемещен");
-
-            if (fileCheck.get().getStatus()!= FileStatus.AVAILABLE) throw new IllegalStateException("Файл занят другим процессом");
-
-            // ситуация, в которой перемещение происходит в папку. которая уже является родителем
-            if (fileCheck.get().getParent().getId().equals(event.getExternalData().getParent())){
-                throw new IllegalStateException("Директория - прямой родитель");
-            }
-
-            Optional<Directory> directory =directoryRepository.findById(event.getExternalData().getParent());
-            if (directory.isEmpty()) throw new IllegalStateException("Директории, куда вы собираетесь перемещать, не существует");
-            if (directory.get().isHidden()) throw new IllegalStateException("Операция запрещена для данной директории");
-            if (directory.get().getStatus()!= DirectoryStatus.AVAILABLE) throw new IllegalStateException("директория занята другим процессом");
-
-            return new MoveInitialCheck(fileCheck.get(), directory.get());
-        });
-
-        event.setMessage("Запрос на перемещения файла "+
-                check.file.getConstructedPath()+"/"+check.file.getName()+" в директорию "+check.directory.getConstructedPath()
-                +"/"+check.directory.getName());
-
-        event.getExternalData().setFilename(check.file.getName());
-        event.getExternalData().setExtension(check.file.getExtension());
-        event.getExternalData().setDirectoryName(check.directory.getName());
-
-        Function<Map<String, TriggerAnswer>, Boolean> onFeedStrategy = (answers -> {
-            for (TriggerAnswer answer:answers.values()){
-                // демонстрация мгновенного отказа
-                if (answer.isDecision()&& answer.getContent().equals("No")){
-                    event.setMessage("отказ в перемещении файла. Не получено одобрение других участников, просматривающих файл");
-                    event.getInternalData().setCompensationPhase(true);
-                    return true;
-                }
-            }
-            return false;
-
-        });
-
-        Function<Map<String, TriggerAnswer>, Boolean> activityPollingPhaseStrategy = (answers)->{
-
-            System.out.println("activity check phase");
-            for (TriggerAnswer answer:answers.values()){
-                // если обнаружен кто то, кто не принял решение. ждем его
-                if (!answer.isDecision()){
-                    return false;
-                }
-            }
-            // если все согласны, то очередь выполняет следующий шаг
-            return true;
-        };
-
-        // конечная фаза - тут необходимо принять решение о том, продолжать ли цепочку
-        Function<Map<String, TriggerAnswer>, Boolean> finalDecisionPhaseStrategy = (answers)->{
-
-            System.out.println("final decision phase");
-
-            for (TriggerAnswer answer:answers.values()){
-                if (!answer.isDecision()){
-                    event.setMessage("отказ в перемещении - не дождались сигнала от других участников");
-                    event.getInternalData().setCompensationPhase(true);
-                    return false;
-                }
-            }
-
-
-            return true;
-        };
-
-        PhaseStrategy strategy = PhaseStrategy.constructStrategy()
-                .addPhase(activityPollingPhaseStrategy, 500)
-                .addPhase(finalDecisionPhaseStrategy, 5000)
-                .getStrategy();
-
-        PhaseTrigger phaseTrigger = PhaseTrigger.builder()
-                .phaseStrategy(strategy)
-                .onFeedStrategy(onFeedStrategy)
-                .needPollingMessage(true)
-                .correlationId(event.getContext().getCorrelationId())
-                .message(event.getMessage())
-                .triggerExternalData(new SimpleTriggerData(TriggerType.YES_OR_NOT, Map.of("directoryId",
-                        event.getExternalData().getParent().toString(),"fileId", event.getExternalData().getFileId().toString())))
-                .build();
-
-
-        createTrigger(phaseTrigger);
-
-
-    }
-
-     */
 
     // по идее мы должны поставить статус prepare for generating на директорию и preparing_for_migrating на файл
 
     @OpeningStep(name = "preparing")
-    //@WaitingFor(time = 20)
     @Message
     @Next(name = "block_entities")
     public void preparing(FileMoveEvent fileMoveEvent){
@@ -329,6 +238,10 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
             directoryCheck.get().setStatus(DirectoryStatus.GENERATING);
 
 
+            event.getExternalData().setExtension(fileCheck.get().getExtension());
+            event.getExternalData().setFilename(fileCheck.get().getName());
+
+
 
             return null;
         });
@@ -363,6 +276,9 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
             // не забываем переписать путь у файла
             event.getInternalData().setOldPath(file.getConstructedPath());
             file.setConstructedPath(Path.of(directory.getConstructedPath(), file.getName()+"."+file.getExtension())
+                    .normalize().toString());
+
+            event.getExternalData().setConstructedPath(Path.of(directory.getConstructedPath(), file.getName()+"."+file.getExtension())
                     .normalize().toString());
 
 
@@ -407,6 +323,10 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
         }
 
 
+
+
+
+
     }
     // сброс статусов
     @EndingStep(name = "release")
@@ -429,6 +349,96 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
             return null;
         });
+
+        try {
+            cacheOperations(event);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    private void cacheOperations(FileMoveEvent event) throws Exception{
+        FileDTO dto;
+
+        Optional<FileDTO> cacheCheck = fileCache.read(event.getExternalData().getFileId());
+
+        dto = cacheCheck.orElseGet(() -> {
+            try {
+                return FileDTO.builder()
+                        .id(event.getExternalData().getFileId())
+                        .extension(event.getExternalData().getExtension())
+                        .name(event.getExternalData().getFilename())
+                        .projectId(event.getContext().getProjectId())
+                        .ownerUUID(event.getInternalData().getProjectOwner())
+                        .content(ProjectUtils.readFile(Path.of(event.getInternalData().getProjectsPath(),
+                                event.getExternalData().getConstructedPath())))
+                        .build();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        dto.setConstructedPath(event.getExternalData().getConstructedPath());
+
+        String[] way = dto.getConstructedPath().split("\\\\");
+
+        System.out.println(Arrays.toString(way)+" way");
+
+
+
+        boolean isJavaDirectoryVisited = false;
+
+
+        StringBuilder newPackageName = new StringBuilder();
+
+        for (int x = 0; x< way.length-1; x++){
+            String component = way[x];
+
+            if (isJavaDirectoryVisited){
+                newPackageName.append(component);
+                if (x< way.length-2){
+                    newPackageName.append(".");
+                }
+
+
+            }
+
+
+
+            if (component.equals("java")){
+                isJavaDirectoryVisited = true;
+            }
+        }
+
+
+        System.out.println(newPackageName);
+
+
+        dto.setContent(codeService.transformPackage(dto.getContent(), newPackageName.toString()));
+
+
+
+
+
+        fileCache.save(event.getExternalData().getFileId(), dto);
+        // todo как быть с гонкой при доступе к dto объекту кеша?
+        broadcast.sendAsync(new Broadcast.EventBuilder().useEvent(ProjectEventFromUser::new)
+                .withContext(event::getContext).withData(()->{
+                    FileSaveExternalData data = new FileSaveExternalData();
+                    data.setFileId(dto.getId());
+                    data.setFileOwner(event.getInternalData().getProjectOwner());
+                    data.setPath(dto.getConstructedPath());
+                    data.setExtension(dto.getExtension());
+                    data.setName(dto.getName());
+                    data.setContent(dto.getContent());
+                    return data;}
+                ).withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE)
+                .withMessage("файл сохранен").build());
+
     }
 
 

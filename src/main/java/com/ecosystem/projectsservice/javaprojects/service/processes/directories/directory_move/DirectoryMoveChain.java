@@ -401,7 +401,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
         // todo по дизайну ошибка в кеше не должна обрывать весь процесс. Думаю, что разумнее просто инвалидировать кеш
         try {
 
-            // валидны только те java файлы, что находятся в папке java
+
             List<FileReadOnly> belowFiles = transaction().execute(status ->
                     snapshotService.getAllFilesBelowDirectory(event.getExternalData().getDirectoryId()));
 
