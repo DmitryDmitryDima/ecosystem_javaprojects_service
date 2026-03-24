@@ -10,6 +10,7 @@ import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
+import com.ecosystem.projectsservice.javaprojects.service.code.CodeService;
 import com.ecosystem.projectsservice.javaprojects.service.processes.broadcastable_events.BatchedFileSaveData;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
@@ -34,6 +35,11 @@ import java.util.*;
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_DIRECTORY_MOVE)
 public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent> {
+
+
+
+    @Autowired
+    private CodeService codeService;
 
 
 
@@ -455,19 +461,20 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
 
 
+
+
+
     private void processAndBroadcastMovedJavaFiles(List<FileReadOnly> files, DirectoryMoveEvent event){
         // фильтруем
-        files = files.stream()
-                .peek(fileReadOnly -> {
-                    System.out.println(Path.of(fileReadOnly.getConstructed_path()).normalize());
-                    System.out.println(Path.of("/main/src/java/").normalize());
 
-                })
+        Path normalizedJavaChunk = Path.of("/src/main/java/").normalize();
+        files = files.stream()
+
                 .filter(fileReadOnly ->
                         fileReadOnly.getExtension().equals("java")
 
                                 && Path.of(fileReadOnly.getConstructed_path()).normalize().toString()
-                                .contains(Path.of("/src/main/java/").normalize().toString())
+                                .contains(normalizedJavaChunk.toString())
 
 
                 )
@@ -490,7 +497,6 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
                 dto = cacheCheck.orElseGet(() -> {
                     try {
                         return FileDTO.builder()
-                                .constructedPath(file.getConstructed_path())
                                 .id(file.getId())
                                 .extension(file.getExtension())
                                 .name(file.getName())
@@ -503,8 +509,50 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
                     }
                 });
 
-                // todo анализ package
-                dto.setContent(dto.getContent()+" changed");
+                dto.setConstructedPath(file.getConstructed_path());
+
+                // [project_name, java chunk, package line]
+
+
+                String[] way = dto.getConstructedPath().split("\\\\");
+
+                System.out.println(Arrays.toString(way)+" way");
+
+
+
+                boolean isJavaDirectoryVisited = false;
+
+
+                StringBuilder newPackageName = new StringBuilder();
+
+                for (int x = 0; x< way.length-1; x++){
+                    String component = way[x];
+
+                    if (isJavaDirectoryVisited){
+                        newPackageName.append(component);
+                        if (x< way.length-2){
+                            newPackageName.append(".");
+                        }
+
+
+                    }
+
+
+
+                    if (component.equals("java")){
+                        isJavaDirectoryVisited = true;
+                    }
+                }
+
+
+                System.out.println(newPackageName);
+
+
+                dto.setContent(codeService.transformPackage(dto.getContent(), newPackageName.toString()));
+
+
+
+
 
                 fileCache.save(file.getId(), dto);
                 updatedContent.put(file.getId(), dto.getContent());
@@ -512,7 +560,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
             }
             catch (Exception ignored){
-
+                ignored.printStackTrace();
             }
 
 
