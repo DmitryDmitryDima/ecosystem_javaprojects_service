@@ -121,11 +121,12 @@ public class ProjectActionsService {
 
 
     public void triggerPollingProcess(SecurityContext securityContext,
-                                      RequestContext requestContext, UUID projectId, TriggerAnswer answer) throws Exception {
+                                      RequestContext requestContext, UUID projectId,
+                                      TriggerAnswer answer) throws Exception {
 
         // проверяем, имеет ли право отвечающий на то, чтобы взаимодействовать с процессом, связанным с проектом
         // пример кейса - участника выкинули, но у него еще есть process uuid
-        accessValidator.validateAccess(securityContext, requestContext, projectId);
+        accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         // обогащаем контекстом
         answer.setUser(securityContext.getUuid());
@@ -151,11 +152,13 @@ public class ProjectActionsService {
 
     // данный метод ориентируется на выброс исключений, перехватываемых в advice
     @Transactional
-    public ProjectDTO readProject(SecurityContext securityContext, RequestContext requestContext, UUID projectId) throws Exception{
+    public ProjectDTO readProject(SecurityContext securityContext,
+                                  RequestContext requestContext,
+                                  UUID projectId) throws Exception{
 
 
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         ProjectDTO projectDTO = new ProjectDTO();
         projectDTO.setProjectType(project.getType());
@@ -175,6 +178,7 @@ public class ProjectActionsService {
 
 
     // todo механизм автосохранения не полагается на цепочку, так как работает только с redis
+    // todo быстрая операция автосохранения должна иметь возможность быть полностью лишенной запроса в бд
     @Transactional
     public void autosave(SecurityContext securityContext,
                          RequestContext requestContext,
@@ -183,7 +187,7 @@ public class ProjectActionsService {
 
 
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         // безопасно читаем файл из снимка бд - при статусе available его можно писать в кеш
 
@@ -243,7 +247,7 @@ public class ProjectActionsService {
                              UUID projectId,
                              DirectoryAddRequest directoryAddRequest) throws Exception{
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
 
@@ -261,7 +265,7 @@ public class ProjectActionsService {
     throws Exception
     {
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         directoryRemovalChain.init(eventBuilder.buildDirectoryRemovalEvent(securityContext, requestContext, project, request));
 
@@ -277,7 +281,7 @@ public class ProjectActionsService {
                         FileAddRequest fileAddRequest) throws Exception {
 
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
         fileAddChain.init(eventBuilder.buildFileAddEvent(securityContext, requestContext, project, fileAddRequest));
@@ -289,7 +293,7 @@ public class ProjectActionsService {
     throws Exception
     {
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         if (project.getEntryPoint().getId().equals(fileMoveRequest.getFileId())){
             throw new IllegalStateException("Файл является точкой входа в проекте и не может быть перемещен");
@@ -305,7 +309,7 @@ public class ProjectActionsService {
                               UUID projectId,
                               DirectoryMoveRequest directoryMoveRequest) throws Exception{
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
         directoryMoveChain.init(eventBuilder.buildDirectoryMoveEvent(securityContext, requestContext, project, directoryMoveRequest));
@@ -324,7 +328,7 @@ public class ProjectActionsService {
 
         System.out.println(requestContext.getCorrelationId());
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         // быстрая проверка - если файл - часть конфигурации, нужно попросить пользователя его изменить
         if (project.getEntryPoint().getId().equals(request.getFileId())){
@@ -353,7 +357,7 @@ public class ProjectActionsService {
                          UUID projectId,
                          FileSaveRequest request) throws Exception {
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
 
@@ -379,7 +383,7 @@ public class ProjectActionsService {
 
     @Transactional
     public List<SimpleFileInfo> getRecentFiles(SecurityContext securityContext, RequestContext requestContext, UUID projectId) throws Exception {
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot().getId());
 
@@ -396,7 +400,7 @@ public class ProjectActionsService {
     public FileDTO readFile(SecurityContext securityContext, RequestContext requestContext, UUID projectId, Long fileId) throws Exception{
 
 
-        Project project = accessValidator.validateAccess(securityContext, requestContext, projectId);
+        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         Optional<FileDTO> fileDTOFromCache = fileContentCache.read(fileId);
 

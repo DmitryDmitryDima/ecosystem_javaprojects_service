@@ -1,12 +1,8 @@
-package com.ecosystem.projectsservice.javaprojects.service.code;
+package com.ecosystem.projectsservice.javaprojects.service.state;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jface.text.Document;
 import org.springframework.stereotype.Service;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.text.MessageFormat;
 
 @Service
 public class JdtCodeService implements CodeService{

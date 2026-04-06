@@ -2,10 +2,13 @@ package com.ecosystem.projectsservice.javaprojects.service.projects;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.access_validation.ValidationInfo;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
+import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
+import com.ecosystem.projectsservice.javaprojects.repository.cache.ProjectValidationHashRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,16 +18,29 @@ import java.util.UUID;
 
 
 // проверяет, имеет ли пользователь доступ к проекту и может ли совершать в нем действия
-// todo короткоживущие токены доступа
+// полагается либо на кеш, либо на бд
 @Service
 public class ProjectAccessValidator {
+
+
+
+    @Autowired
+    private ProjectValidationHashRepository cacheValidationRepo;
+
+
+
+
+
+
 
     @Autowired
     private ProjectRepository projectRepository;
 
 
-
-    public Project validateAccess(SecurityContext securityContext, RequestContext requestContext, UUID projectId){
+    // прямой запрос к db
+    public Project validateAccessUsingDb(SecurityContext securityContext,
+                                         RequestContext requestContext,
+                                         UUID projectId){
         Optional<Project> projectCheck = projectRepository.findById(projectId);
 
         if (projectCheck.isEmpty() || projectCheck.get().getStatus()== ProjectStatus.REMOVING) throw new IllegalStateException("Проекта не существует");
@@ -53,5 +69,28 @@ public class ProjectAccessValidator {
         // todo проверка доступа к проекту
 
         return project;
+    }
+
+    // метод, предполагающий обращение к кешу и кеширование некоторых параметров проекта
+    public ValidationInfo validateAccessUsingCache(SecurityContext securityContext,
+                                                   RequestContext requestContext,
+                                                   UUID projectId){
+
+        ProjectValidationHash hash = new ProjectValidationHash();
+
+        String id = 1+":"+1;
+        hash.setId(id);
+
+
+
+
+        //cacheValidationRepo.save(hash);
+
+
+        Optional<ProjectValidationHash> hashSaved = cacheValidationRepo.findById(hash.getId());
+        System.out.println(hashSaved.get().getId());
+
+
+        return null;
     }
 }

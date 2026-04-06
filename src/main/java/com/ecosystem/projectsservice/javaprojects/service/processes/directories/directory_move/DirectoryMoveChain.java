@@ -10,7 +10,7 @@ import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
-import com.ecosystem.projectsservice.javaprojects.service.code.CodeService;
+import com.ecosystem.projectsservice.javaprojects.service.state.CodeService;
 import com.ecosystem.projectsservice.javaprojects.service.processes.broadcastable_events.BatchedFileSaveData;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
@@ -21,7 +21,6 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.UserPersonalEvent;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
