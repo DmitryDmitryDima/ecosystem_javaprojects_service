@@ -17,6 +17,10 @@ public class ProjectDTO {
 
     private String name;
 
+    private Long root;
+    private UUID id;
+    private Long entryPoint;
+
     // при чтении в workspace может быть либо RUNNING, либо AVAILABLE
     private ProjectStatus status;
 

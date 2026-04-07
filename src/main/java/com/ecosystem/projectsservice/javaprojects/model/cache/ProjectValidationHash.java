@@ -16,7 +16,7 @@ import java.util.UUID;
 // кешируем валидационные данные
 // данный объект живет в кеше одну минуту
 
-@RedisHash(value = "project_validation",
+@RedisHash(value = "project:validation",
         timeToLive = 60)
 @Getter
 @Setter
@@ -31,6 +31,8 @@ public class ProjectValidationHash {
     private String id;
 
     private UUID projectOwner;
+
+    private long root;
 
     //@Indexed - аннотация, позволяющая искать записи по полю в хеше
 

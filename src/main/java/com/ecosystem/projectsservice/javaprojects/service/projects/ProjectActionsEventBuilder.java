@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.service.projects;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryAddRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.directories.DirectoryRemovalRequest;
@@ -48,7 +49,7 @@ public class ProjectActionsEventBuilder {
 
     public DirectoryMoveEvent buildDirectoryMoveEvent(SecurityContext securityContext,
                                                       RequestContext requestContext,
-                                                      Project project,
+                                                      ProjectDTO project,
                                                       DirectoryMoveRequest request
                                                       ){
 
@@ -62,10 +63,10 @@ public class ProjectActionsEventBuilder {
                 null, null);
 
         DirectoryMoveInternalData internalData = new DirectoryMoveInternalData();
-        internalData.setProjectOwner(project.getUserUUID());
-        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectOwner(project.getAuthor());
+        internalData.setProjectRoot(project.getRoot());
         internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getUserUUID().toString(),
+                project.getAuthor().toString(),
                 "projects").normalize().toString());
 
         DirectoryMoveExternalData externalData = new DirectoryMoveExternalData();
@@ -81,7 +82,9 @@ public class ProjectActionsEventBuilder {
     }
 
 
-    public FileMoveEvent buildFileMoveEvent(SecurityContext securityContext, RequestContext requestContext, Project project,
+    public FileMoveEvent buildFileMoveEvent(SecurityContext securityContext,
+                                            RequestContext requestContext,
+                                            ProjectDTO project,
                                             FileMoveRequest request
                                             ){
         FileMoveEvent fileMoveEvent = new FileMoveEvent();
@@ -94,12 +97,12 @@ public class ProjectActionsEventBuilder {
                 null, null);
 
         FileMoveInternalData internalData = new FileMoveInternalData();
-        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectRoot(project.getRoot());
         internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getUserUUID().toString(),
+                project.getAuthor().toString(),
                 "projects").normalize().toString());
 
-        internalData.setProjectOwner(project.getUserUUID());
+        internalData.setProjectOwner(project.getAuthor());
 
         FileMoveExternalData externalData = new FileMoveExternalData();
 
@@ -118,7 +121,9 @@ public class ProjectActionsEventBuilder {
     }
 
 
-    public DirectoryRemovalEvent buildDirectoryRemovalEvent(SecurityContext securityContext, RequestContext requestContext, Project project,
+    public DirectoryRemovalEvent buildDirectoryRemovalEvent(SecurityContext securityContext,
+                                                            RequestContext requestContext,
+                                                            ProjectDTO project,
                                                             DirectoryRemovalRequest request){
 
         DirectoryRemovalEvent directoryRemovalEvent = new DirectoryRemovalEvent();
@@ -131,9 +136,9 @@ public class ProjectActionsEventBuilder {
                 null, null);
 
         DirectoryRemovalInternalData directoryRemovalInternalData = new DirectoryRemovalInternalData();
-        directoryRemovalInternalData.setProjectRoot(project.getRoot().getId());
+        directoryRemovalInternalData.setProjectRoot(project.getRoot());
         directoryRemovalInternalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getUserUUID().toString(),
+                project.getAuthor().toString(),
                 "projects").normalize().toString());
 
         DirectoryRemovalExternalData externalData = new DirectoryRemovalExternalData();
@@ -147,7 +152,9 @@ public class ProjectActionsEventBuilder {
     }
 
 
-    public FileRemovalEvent buildFileRemovalEvent(SecurityContext securityContext, RequestContext requestContext, Project project,
+    public FileRemovalEvent buildFileRemovalEvent(SecurityContext securityContext,
+                                                  RequestContext requestContext,
+                                                  ProjectDTO project,
                                                   FileRemovalRequest request){
         FileRemovalEvent mainEvent = new FileRemovalEvent();
         mainEvent.setMessage("Удаляем файл");
@@ -164,9 +171,9 @@ public class ProjectActionsEventBuilder {
         FileRemovalInternalData internalData = new FileRemovalInternalData();
 
 
-        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectRoot(project.getRoot());
         internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getUserUUID().toString(),
+                project.getAuthor().toString(),
                 "projects").normalize().toString());
 
 
@@ -180,7 +187,7 @@ public class ProjectActionsEventBuilder {
         externalData.setFileId(request.getFileId());
 
         // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
-        externalData.setFileOwner(project.getUserUUID());
+        externalData.setFileOwner(project.getAuthor());
 
         mainEvent.setExternalData(externalData);
 
@@ -190,11 +197,12 @@ public class ProjectActionsEventBuilder {
 
     public DirectoryAddEvent buildDirectoryAddEvent(SecurityContext securityContext,
                                                     RequestContext requestContext,
-                                                    Project project, DirectoryAddRequest request){
+                                                    ProjectDTO project, DirectoryAddRequest request){
 
         DirectoryAddEvent event = new DirectoryAddEvent();
 
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, project,
+        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext,
+                requestContext, project,
                 null,
                 null);
 
@@ -203,9 +211,9 @@ public class ProjectActionsEventBuilder {
         externalData.setName(request.getName());
 
         DirectoryAddInternalData internalData = new DirectoryAddInternalData();
-        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectRoot(project.getRoot());
         internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getUserUUID().toString(),
+                project.getAuthor().toString(),
                 "projects").normalize().toString());
 
         event.setContext(context);
@@ -219,13 +227,14 @@ public class ProjectActionsEventBuilder {
 
     public FileAddEvent buildFileAddEvent(SecurityContext securityContext,
                                           RequestContext requestContext,
-                                          Project project,
+                                          ProjectDTO project,
                                           FileAddRequest request){
 
         FileAddEvent fileAddEvent = new FileAddEvent();
 
 
-        ProjectEventFromUserContext context = ProjectEventFromUserContext.from(securityContext, requestContext, project,
+        ProjectEventFromUserContext context = ProjectEventFromUserContext
+                .from(securityContext, requestContext, project,
                 null,
                 null);
 
@@ -237,10 +246,10 @@ public class ProjectActionsEventBuilder {
 
         FileAddInternalData internalData = new FileAddInternalData();
         internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getUserUUID().toString(),
+                project.getAuthor().toString(),
                 "projects").normalize().toString());
 
-        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectRoot(project.getRoot());
 
         fileAddEvent.setContext(context);
         fileAddEvent.setExternalData(externalData);
@@ -251,7 +260,9 @@ public class ProjectActionsEventBuilder {
     }
 
 
-    public FileSaveEvent buildFileSaveEvent(SecurityContext securityContext, RequestContext requestContext, Project project,
+    public FileSaveEvent buildFileSaveEvent(SecurityContext securityContext,
+                                            RequestContext requestContext,
+                                            ProjectDTO project,
                                             FileSaveRequest request){
         FileSaveEvent mainEvent = new FileSaveEvent();
         mainEvent.setMessage("Сохраняем файл...");
@@ -266,9 +277,9 @@ public class ProjectActionsEventBuilder {
         FileSaveInternalData internalData = new FileSaveInternalData();
 
 
-        internalData.setProjectRoot(project.getRoot().getId());
+        internalData.setProjectRoot(project.getRoot());
         internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getUserUUID().toString(),
+                project.getAuthor().toString(),
                 "projects").normalize().toString());
 
 
@@ -282,7 +293,7 @@ public class ProjectActionsEventBuilder {
         externalData.setFileId(request.getFileId());
 
         // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
-        externalData.setFileOwner(project.getUserUUID());
+        externalData.setFileOwner(project.getAuthor());
 
 
         mainEvent.setExternalData(externalData);

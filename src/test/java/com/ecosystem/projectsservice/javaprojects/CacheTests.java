@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects;
 
 
-import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectAccessValidator;
+import com.ecosystem.projectsservice.javaprojects.service.projects.access_validation.ProjectAccessValidator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

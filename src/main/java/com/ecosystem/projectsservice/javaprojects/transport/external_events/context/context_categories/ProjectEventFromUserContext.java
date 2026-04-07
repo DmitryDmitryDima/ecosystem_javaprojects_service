@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.external_events.con
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.AlarmStrategy;
@@ -35,7 +36,7 @@ public class ProjectEventFromUserContext extends ExternalEventContext {
 
     public static ProjectEventFromUserContext from (SecurityContext securityContext,
                                                     RequestContext requestContext,
-                                                    Project project, NotificationStrategy notificationStrategy,
+                                                    ProjectDTO project, NotificationStrategy notificationStrategy,
                                                     AlarmStrategy alarmStrategy){
 
         return ProjectEventFromUserContext.builder()
@@ -46,6 +47,29 @@ public class ProjectEventFromUserContext extends ExternalEventContext {
                 .alarmStrategy(alarmStrategy)
 
                 .projectId(project.getId())
+
+                .renderId(requestContext.getRenderId())
+                .timestamp(Instant.now())
+                .username(securityContext.getUsername())
+                .userUUID(securityContext.getUuid())
+                .build();
+
+
+    }
+
+    public static ProjectEventFromUserContext from (SecurityContext securityContext,
+                                                    RequestContext requestContext,
+                                                    UUID project, NotificationStrategy notificationStrategy,
+                                                    AlarmStrategy alarmStrategy){
+
+        return ProjectEventFromUserContext.builder()
+
+
+                .correlationId(requestContext.getCorrelationId())
+                .notificationStrategy(notificationStrategy)
+                .alarmStrategy(alarmStrategy)
+
+                .projectId(project)
 
                 .renderId(requestContext.getRenderId())
                 .timestamp(Instant.now())

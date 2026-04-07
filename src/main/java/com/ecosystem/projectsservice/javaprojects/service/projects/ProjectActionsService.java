@@ -10,10 +10,12 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveChain;
+import com.ecosystem.projectsservice.javaprojects.service.projects.access_validation.ProjectAccessValidator;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
@@ -158,8 +160,8 @@ public class ProjectActionsService {
 
 
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
-
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        /*
         ProjectDTO projectDTO = new ProjectDTO();
         projectDTO.setProjectType(project.getType());
         projectDTO.setStatus(project.getStatus());
@@ -167,9 +169,12 @@ public class ProjectActionsService {
         projectDTO.setAuthor(project.getUserUUID());
         projectDTO.setParticipants(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
 
-        utils.generateStructureForDTO(project.getRoot().getId(), projectDTO, snapshotService.getFullChildrenSnapshot(project.getRoot().getId()));
 
-        return projectDTO;
+         */
+        utils.generateStructureForDTO(project.getRoot(), project,
+                snapshotService.getFullChildrenSnapshot(project.getRoot()));
+
+        return project;
     }
 
 
@@ -187,12 +192,15 @@ public class ProjectActionsService {
 
 
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+
+
+        ProjectValidationHash hash = accessValidator
+                .validateAccessUsingCache(securityContext, requestContext, projectId);
 
         // безопасно читаем файл из снимка бд - при статусе available его можно писать в кеш
 
 
-        StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot().getId());
+        StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(hash.getRoot());
 
         // извлекаем файл из снимка, если он есть
         Optional<FileReadOnly> check = utils.findAvailableFile(snapshot, request.getFileId());
@@ -213,7 +221,7 @@ public class ProjectActionsService {
                 .extension(dbFile.getExtension())
                 .name(dbFile.getName())
                 .projectId(projectId)
-                .ownerUUID(project.getUserUUID())
+                .ownerUUID(hash.getProjectOwner())
                         .build();
 
 
@@ -228,7 +236,9 @@ public class ProjectActionsService {
 
         broadcast.sendSync(
                 new Broadcast.EventBuilder().useEvent(ProjectEventFromUser::new)
-                .withContext(()->ProjectEventFromUserContext.from(securityContext, requestContext, project, null, null))
+                .withContext(()->ProjectEventFromUserContext
+                        .from(securityContext, requestContext,
+                                projectId, null, null))
                 .withData(()->{
                     FileSaveExternalData externalData = new FileSaveExternalData();
                     externalData.setContent(request.getContent());
@@ -247,11 +257,13 @@ public class ProjectActionsService {
                              UUID projectId,
                              DirectoryAddRequest directoryAddRequest) throws Exception{
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
 
-        directoryAddChain.init(eventBuilder.buildDirectoryAddEvent(securityContext, requestContext, project, directoryAddRequest));
+        directoryAddChain
+                .init(eventBuilder
+                        .buildDirectoryAddEvent(securityContext, requestContext, project, directoryAddRequest));
 
 
     }
@@ -265,9 +277,11 @@ public class ProjectActionsService {
     throws Exception
     {
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
-        directoryRemovalChain.init(eventBuilder.buildDirectoryRemovalEvent(securityContext, requestContext, project, request));
+        directoryRemovalChain
+                .init(eventBuilder
+                        .buildDirectoryRemovalEvent(securityContext, requestContext, project, request));
 
 
 
@@ -281,10 +295,12 @@ public class ProjectActionsService {
                         FileAddRequest fileAddRequest) throws Exception {
 
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator
+                .validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
-        fileAddChain.init(eventBuilder.buildFileAddEvent(securityContext, requestContext, project, fileAddRequest));
+        fileAddChain.init(eventBuilder
+                .buildFileAddEvent(securityContext, requestContext, project, fileAddRequest));
 
     }
 
@@ -293,9 +309,9 @@ public class ProjectActionsService {
     throws Exception
     {
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
-        if (project.getEntryPoint().getId().equals(fileMoveRequest.getFileId())){
+        if (project.getEntryPoint().equals(fileMoveRequest.getFileId())){
             throw new IllegalStateException("Файл является точкой входа в проекте и не может быть перемещен");
         }
 
@@ -309,10 +325,13 @@ public class ProjectActionsService {
                               UUID projectId,
                               DirectoryMoveRequest directoryMoveRequest) throws Exception{
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
-        directoryMoveChain.init(eventBuilder.buildDirectoryMoveEvent(securityContext, requestContext, project, directoryMoveRequest));
+        directoryMoveChain.init(eventBuilder.buildDirectoryMoveEvent(securityContext,
+                requestContext,
+                project,
+                directoryMoveRequest));
 
 
 
@@ -328,10 +347,10 @@ public class ProjectActionsService {
 
         System.out.println(requestContext.getCorrelationId());
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         // быстрая проверка - если файл - часть конфигурации, нужно попросить пользователя его изменить
-        if (project.getEntryPoint().getId().equals(request.getFileId())){
+        if (project.getEntryPoint().equals(request.getFileId())){
             throw new IllegalStateException("файл входит в выбранный конфиг запуска");
         }
 
@@ -357,7 +376,7 @@ public class ProjectActionsService {
                          UUID projectId,
                          FileSaveRequest request) throws Exception {
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
 
@@ -383,9 +402,9 @@ public class ProjectActionsService {
 
     @Transactional
     public List<SimpleFileInfo> getRecentFiles(SecurityContext securityContext, RequestContext requestContext, UUID projectId) throws Exception {
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
-        StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot().getId());
+        StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot());
 
         return utils.getRecentFiles(snapshot);
 
@@ -400,7 +419,7 @@ public class ProjectActionsService {
     public FileDTO readFile(SecurityContext securityContext, RequestContext requestContext, UUID projectId, Long fileId) throws Exception{
 
 
-        Project project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         Optional<FileDTO> fileDTOFromCache = fileContentCache.read(fileId);
 
@@ -409,7 +428,7 @@ public class ProjectActionsService {
         if (fileDTOFromCache.isEmpty()){
 
 
-            StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot().getId());
+            StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot());
             // извлекаем файл из снимка, если он есть
             Optional<FileReadOnly> check = utils.findAvailableFile(snapshot, fileId);
 
@@ -426,12 +445,13 @@ public class ProjectActionsService {
                     .extension(dbFile.getExtension())
                     .constructedPath(dbFile.getConstructed_path())
                     .id(dbFile.getId())
-                    .ownerUUID(project.getUserUUID())
+                    .ownerUUID(project.getAuthor())
                     .projectId(projectId)
                     .build();
 
             try {
-                Path path = ProjectUtils.constructPathToFile(externalValues.getUserStoragePath(), project, dbFile.getConstructed_path());
+                Path path = ProjectUtils.constructPathToFile(externalValues.getUserStoragePath(),
+                        project.getAuthor(), dbFile.getConstructed_path());
                 fileDTO.setContent(ProjectUtils.readFile(path));
 
             }
