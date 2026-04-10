@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.state;
+package com.ecosystem.projectsservice.javaprojects.service.projects.state;
 
 public interface CodeService {
 

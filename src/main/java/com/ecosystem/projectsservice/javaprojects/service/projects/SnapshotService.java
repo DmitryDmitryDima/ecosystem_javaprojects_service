@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 // гибкий сервис для работы со снимками структуры
 // todo можно добавить глубину уровня
@@ -59,6 +60,10 @@ public class SnapshotService {
     // все файлы вниз по ветке
     public List<FileReadOnly> getAllFilesBelowDirectory(Long root){
         return directoryJDBCRepository.loadFilesBelowRoot(root);
+    }
+
+    public Optional<FileReadOnly> getFileBelowDirectory(Long root, Long fileId){
+        return directoryJDBCRepository.loadFileBelowRoot(root, fileId);
     }
 
     public List<DirectoryReadOnly> getChildrenSnapshotDirectoriesOnlyWithLevel(Long root, Long level){

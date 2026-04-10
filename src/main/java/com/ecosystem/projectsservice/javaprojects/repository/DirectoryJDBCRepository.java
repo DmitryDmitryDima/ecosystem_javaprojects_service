@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 // работа с нативными query, нужными для оптимального чтения структуры
@@ -113,15 +114,18 @@ public class DirectoryJDBCRepository {
 
     }
 
+    // загружаем все файлы ниже root
 
     public List<FileReadOnly> loadFilesBelowRoot(@NotNull Long id){
         String query = """
                 
                 
                 select * from files where files.parent_id in ( with recursive children as (
-                                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
+                                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth
+                                 from directories where id = ?
                                 union
-                                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1 from directories d join children c
+                                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1 
+                                from directories d join children c
                 				on d.parent_id = c.id
                                 )
                                 select id from children)
@@ -130,10 +134,37 @@ public class DirectoryJDBCRepository {
                 """;
 
 
+
+
         return jdbcTemplate.query(query,
                 new BeanPropertyRowMapper<>(FileReadOnly.class), id);
 
     }
+
+    // загружаем конкретный файл в иерархии root
+    public Optional<FileReadOnly> loadFileBelowRoot(Long rootId, Long fileId){
+        String query = """
+                
+                
+                select * from files where files.parent_id in ( with recursive children as (
+                                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth
+                                 from directories where id = ?
+                                union
+                                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1 
+                                from directories d join children c
+                				on d.parent_id = c.id
+                                )
+                                select id from children) AND files.id = ?
+                
+                
+                """;
+
+        return jdbcTemplate
+                .query(query,new BeanPropertyRowMapper<>(FileReadOnly.class), rootId, fileId)
+                .stream().findFirst();
+    }
+
+
 
 
 }

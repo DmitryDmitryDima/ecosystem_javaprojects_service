@@ -197,6 +197,9 @@ public class ProjectActionsService {
         ProjectValidationHash hash = accessValidator
                 .validateAccessUsingCache(securityContext, requestContext, projectId);
 
+
+
+
         // безопасно читаем файл из снимка бд - при статусе available его можно писать в кеш
 
 
