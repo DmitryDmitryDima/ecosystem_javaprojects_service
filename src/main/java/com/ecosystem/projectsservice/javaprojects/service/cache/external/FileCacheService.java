@@ -1,50 +1,49 @@
 package com.ecosystem.projectsservice.javaprojects.service.cache.external;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class FileCacheService implements FileCache{
 
+
     @Autowired
-    private RedisTemplate<String, FileDTO> fileCacheTemplate;
+    private ObjectMapper mapper;
 
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
 
-
-
-
-    private final long expirationTimeInSec = 60;
-
-
-    @Override
-    public boolean saveIfPresent(FileDTO fileDTO) {
+    // LUA скрипт, производящий модификацию hash поля только при наличии ключа
+    // в противном случае возвращает false - это требует db валидации действия
+    @Autowired
+    @Qualifier("updateFieldIfKeyExists")
+    private RedisScript<Boolean> updateIfExistsScript;
 
 
 
 
 
 
-        if (fileDTO.getId() == null){
-            throw new IllegalStateException("missing file id");
-        }
+
+    private final long expirationTimeInSec = 30;
 
 
-        return Boolean.TRUE.equals(fileCacheTemplate
-                        .opsForValue()
-                        .setIfPresent(createKey(fileDTO.getId()),
-                                fileDTO, expirationTimeInSec, TimeUnit.SECONDS));
-    }
+
 
     @Override
     public void saveOrUpdate(FileDTO fileDTO) {
@@ -53,39 +52,65 @@ public class FileCacheService implements FileCache{
             throw new IllegalStateException("missing file id");
         }
 
+        redisTemplate.opsForHash().putAll(createKey(fileDTO.getId()), mapper.convertValue(fileDTO,
+                new TypeReference<Map<String, String>>() {}));
+
+        redisTemplate.expire(createKey(fileDTO.getId()), expirationTimeInSec, TimeUnit.SECONDS);
 
 
 
 
-        fileCacheTemplate
-                .opsForValue()
-                .set(createKey(fileDTO.getId()), fileDTO, expirationTimeInSec, TimeUnit.SECONDS);
+
+
     }
 
     @Override
     public Optional<FileDTO> get(Long id) {
 
 
-        FileDTO dto = fileCacheTemplate.opsForValue().get(createKey(id));
+
+        Map<Object, Object> hash = redisTemplate.opsForHash().entries(createKey(id));
+
+        if (hash.isEmpty()){
+            return Optional.empty();
+        }
+        else {
+            return Optional.of(mapper.convertValue(hash, FileDTO.class));
+        }
 
 
-        return dto==null?Optional.empty():Optional.of(dto);
+
+
+
     }
 
     @Override
     public boolean delete(Long id) {
 
-        return fileCacheTemplate.delete(createKey(id));
+        return redisTemplate.delete(createKey(id));
     }
 
+
+
+
     @Override
-    public boolean updateContent(Long key, String content) {
+    public boolean updateContent(Long id, String content) {
+
+
+        String key = createKey(id);
+        String contentField = "content";
 
 
 
 
 
-        return false;
+
+
+
+
+
+        return redisTemplate.execute(updateIfExistsScript,
+                List.of(key), contentField, content);
     }
 
 

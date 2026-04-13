@@ -106,8 +106,9 @@ public class CacheTests {
 
         String content = (String) obj;//mapper.convertValue(obj, String.class);
         System.out.println(content);
-
-        FileDTO dto = mapper.convertValue(commonRedisTemplate.opsForHash().entries("file:8"),  FileDTO.class);
+        System.out.println(commonRedisTemplate.opsForHash().entries("file:8").size());
+        FileDTO dto = mapper.convertValue(commonRedisTemplate.opsForHash().entries("file:9"),
+                FileDTO.class);
 
         System.out.println(dto);
 

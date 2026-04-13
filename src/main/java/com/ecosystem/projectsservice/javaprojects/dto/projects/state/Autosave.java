@@ -18,6 +18,9 @@ public class Autosave {
 
     private Long fileId;
     private UUID projectId;
+    private Long projectRoot;
+    private UUID projectOwner;
+    private String content;
 
 
     private SecurityContext securityContext;

@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.repository;
 
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -17,6 +18,7 @@ import java.util.Optional;
 // работа с нативными query, нужными для оптимального чтения структуры
 // таким образом, мы имеем 2 параллельных репозитория для directory
 @Repository
+
 public class DirectoryJDBCRepository {
 
 

@@ -6,7 +6,7 @@ import java.util.Optional;
 
 public interface FileCache {
 
-    boolean saveIfPresent(FileDTO fileDTO);
+
 
     void saveOrUpdate(FileDTO fileDTO);
 
@@ -15,7 +15,7 @@ public interface FileCache {
     boolean delete(Long id);
 
 
-    boolean updateContent(Long key, String content);
+    boolean updateContent(Long id, String content);
 
 
 

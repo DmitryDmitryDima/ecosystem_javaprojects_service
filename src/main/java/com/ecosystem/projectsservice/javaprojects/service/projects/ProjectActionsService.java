@@ -10,12 +10,14 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
 import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveChain;
 import com.ecosystem.projectsservice.javaprojects.service.projects.access_validation.ProjectAccessValidator;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.ContentStateProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
@@ -120,6 +122,9 @@ public class ProjectActionsService {
     @Autowired
     private ExternalValues externalValues;
 
+    @Autowired
+    private ContentStateProcessor contentStateProcessor;
+
 
 
     public void triggerPollingProcess(SecurityContext securityContext,
@@ -161,16 +166,7 @@ public class ProjectActionsService {
 
 
         ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
-        /*
-        ProjectDTO projectDTO = new ProjectDTO();
-        projectDTO.setProjectType(project.getType());
-        projectDTO.setStatus(project.getStatus());
-        projectDTO.setName(project.getName());
-        projectDTO.setAuthor(project.getUserUUID());
-        projectDTO.setParticipants(project.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
 
-
-         */
         utils.generateStructureForDTO(project.getRoot(), project,
                 snapshotService.getFullChildrenSnapshot(project.getRoot()));
 
@@ -184,7 +180,7 @@ public class ProjectActionsService {
 
     // todo механизм автосохранения не полагается на цепочку, так как работает только с redis
     // todo быстрая операция автосохранения должна иметь возможность быть полностью лишенной запроса в бд
-    @Transactional
+
     public void autosave(SecurityContext securityContext,
                          RequestContext requestContext,
                          UUID projectId,
@@ -198,7 +194,28 @@ public class ProjectActionsService {
                 .validateAccessUsingCache(securityContext, requestContext, projectId);
 
 
+        contentStateProcessor.onAutosave(Autosave
 
+                .builder()
+                        .projectId(projectId)
+                        .projectOwner(hash.getProjectOwner())
+                        .projectRoot(hash.getRoot())
+                        .fileId(request.getFileId())
+                        .content(request.getContent())
+                        .requestContext(requestContext)
+                        .securityContext(securityContext)
+                .build());
+
+
+
+
+
+
+
+
+
+
+        /*
 
         // безопасно читаем файл из снимка бд - при статусе available его можно писать в кеш
 
@@ -237,6 +254,8 @@ public class ProjectActionsService {
 
         fileContentCache.save(request.getFileId(), fileDTO);
 
+
+
         broadcast.sendSync(
                 new Broadcast.EventBuilder().useEvent(ProjectEventFromUser::new)
                 .withContext(()->ProjectEventFromUserContext
@@ -248,6 +267,8 @@ public class ProjectActionsService {
                     externalData.setFileId(request.getFileId());
                     return externalData;}).withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE)
                 .withMessage("Файл сохранен").build());
+
+         */
 
 
 
@@ -418,11 +439,32 @@ public class ProjectActionsService {
     /*
     todo - вопрос - создает ли чтение с диска запись в кеш?
      */
-    @Transactional
-    public FileDTO readFile(SecurityContext securityContext, RequestContext requestContext, UUID projectId, Long fileId) throws Exception{
+    //@Transactional
+    public FileDTO readFile(SecurityContext securityContext,
+                            RequestContext requestContext,
+                            UUID projectId,
+                            Long fileId) throws Exception{
 
 
+
+
+        // так как операция чтения не является такой же частой, как операция сохранения, валидируем через db
         ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
+
+
+        return contentStateProcessor.readFile(fileId, project);
+
+
+
+
+
+
+
+
+
+
+
+        /*
 
         Optional<FileDTO> fileDTOFromCache = fileContentCache.read(fileId);
 
@@ -468,6 +510,8 @@ public class ProjectActionsService {
         }
 
         else return fileDTOFromCache.get();
+
+         */
 
     }
 

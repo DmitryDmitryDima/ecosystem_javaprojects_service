@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.service.cache.external.FileCache;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromSystemContext;
@@ -52,6 +53,9 @@ public class FileOperationsListener {
 
     @Autowired
     private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private FileCache fileCache;
 
 
 

@@ -5,6 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.S
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryJDBCRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,12 @@ import java.util.Optional;
 
 // гибкий сервис для работы со снимками структуры
 // todo можно добавить глубину уровня
+
+
+
+
 @Service
+@Transactional // внимание - все public методы сервиса - Transactional
 public class SnapshotService {
 
     @Autowired
