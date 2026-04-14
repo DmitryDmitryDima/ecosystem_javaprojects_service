@@ -6,14 +6,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.StringRedisConnection;
+import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -40,13 +41,17 @@ public class FileCacheService implements FileCache{
 
 
 
-    private final long expirationTimeInSec = 30;
+    private final long expirationTimeInSec = 60*10;
+
+    private final String keyPattern = "file:";
 
 
 
 
     @Override
     public void saveOrUpdate(FileDTO fileDTO) {
+
+
 
         if (fileDTO.getId() == null){
             throw new IllegalStateException("missing file id");
@@ -55,6 +60,7 @@ public class FileCacheService implements FileCache{
         redisTemplate.opsForHash().putAll(createKey(fileDTO.getId()), mapper.convertValue(fileDTO,
                 new TypeReference<Map<String, String>>() {}));
 
+        // период устаревания кеша
         redisTemplate.expire(createKey(fileDTO.getId()), expirationTimeInSec, TimeUnit.SECONDS);
 
 
@@ -93,6 +99,9 @@ public class FileCacheService implements FileCache{
 
 
 
+    /*
+    при обновлении контента обновляется и expire time
+     */
     @Override
     public boolean updateContent(Long id, String content) {
 
@@ -110,15 +119,66 @@ public class FileCacheService implements FileCache{
 
 
         return redisTemplate.execute(updateIfExistsScript,
-                List.of(key), contentField, content);
+                List.of(key), contentField, content, Long.toString(expirationTimeInSec));
+    }
+
+    /*
+    todo во избежание гонок необходимо обдумать внедрение комбинации поля written и version
+    первое позволит избежать записи в диск уже записанных до этого данных,
+    второе - позволит корректно проставить written, гарантируя,
+    что во время записи в диск никто не обновил контент в кеше.
+    Если это произошло - written не ставится и ожидается следующая итерация
+     */
+
+    @Override
+    public List<FileDTO> scan() {
+
+        System.out.println("scan operation starts in cache");
+
+        ScanOptions scanOptions = ScanOptions
+                .scanOptions()
+                .match(keyPattern+"*")
+                .build();
+
+
+        // шаг 1 - извлекаем все активные ключи в redis
+
+        Set<String> keys = new HashSet<>();
+
+
+
+        try (Cursor<String> cursor = redisTemplate.scan(scanOptions)){
+            while (cursor.hasNext()){
+                keys.add(cursor.next());
+            }
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+        List<Object> result = redisTemplate.executePipelined(new SessionCallback<>() {
+            @Override
+            public Object execute(RedisOperations operations) throws DataAccessException {
+
+                for (String key : keys) {
+                    operations.opsForHash().entries(key);
+                }
+                return null;
+            }
+        });
+
+
+
+
+        // шаг 2 - извлекаем по полученным ключам hash values
+        return result.stream().map(obj->mapper.convertValue(obj, FileDTO.class)).toList();
+
+
     }
 
 
-
-
-
-
     private String createKey(Long id){
-        return "file:"+id;
+        return keyPattern+id;
     }
 }
