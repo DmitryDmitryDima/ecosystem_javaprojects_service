@@ -67,12 +67,16 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     @Override
     public void compensationStrategy(DirectoryRemovalEvent event) {
 
-        // todo в идеале мы должны копировать удаляемый контент на диске в случае, если удаление диска провалилось.
+        // todo в идеале мы должны копировать удаляемый контент на диске в случае,
+        //  если удаление диска провалилось.
         String step = event.getInternalData().getCurrentStep();
 
-        if (step.equals("prepare_directory") || step.equals("block_directory") || step.equals("remove_from_db")){
+        if (step.equals("prepare_directory")
+                || step.equals("block_directory")
+                || step.equals("remove_from_db")){
             transaction().execute(status -> {
-                Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getId());
+                Optional<Directory> directoryCheck = directoryRepository
+                        .findByIdForUpdate(event.getExternalData().getId());
                 if (directoryCheck.isEmpty()){
                     throw new IllegalStateException("Директории нет");
 
@@ -83,7 +87,6 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             });
         }
 
-
     }
 
 
@@ -92,26 +95,31 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     public void polling(DirectoryRemovalEvent event){
 
 
+        // проверка доступности директории на момент опроса
         Directory directory = transaction().execute(status -> {
             Optional<Directory> initialCheck = directoryRepository.findById(event.getExternalData().getId());
-            if (initialCheck.isEmpty() || initialCheck.get().isHidden()) throw new IllegalStateException("директории не существует");
+            if (initialCheck.isEmpty() || initialCheck.get().isHidden())
+                throw new IllegalStateException("директории не существует");
 
-            System.out.println(initialCheck.get().getVersion()+" version test for "+initialCheck.get().getName());
-            if (initialCheck.get().isImmutable()) throw new IllegalStateException("Эту директорию нельзя удалить");
-            if (initialCheck.get().getStatus()!=DirectoryStatus.AVAILABLE) throw new IllegalStateException("Директория занята другим процессом");
+
+            if (initialCheck.get().isImmutable())
+                throw new IllegalStateException("Эту директорию нельзя удалить");
+            if (initialCheck.get().getStatus()!=DirectoryStatus.AVAILABLE)
+                throw new IllegalStateException("Директория занята другим процессом");
             event.getExternalData().setName(initialCheck.get().getName());
            return null;
         });
 
+        // обновление сообщения для ивента цепочки
         event.setMessage("Запрос на удаление директории от "+event.getContext().getUsername());
 
+        // стратегия обработки каждого из ответов
         Function<Map<String, TriggerAnswer>, Boolean> onFeedStrategy = (answers)->{
-            System.out.println("зарегистрирован ответ для фазового триггера. Текущие ответы "+answers);
-
             for (TriggerAnswer answer:answers.values()){
                 // демонстрация мгновенного отказа
-                if (answer.isDecision()&& answer.getContent().equals("No")){
-                    event.setMessage("отказ в удалении директории. Не получено одобрение других участников, просматривающих контент внутри директории");
+                if (answer.isDecision() && answer.getContent().equals("No")){
+                    event.setMessage("отказ в удалении директории." +
+                            " Не получено одобрение других участников, просматривающих контент внутри директории");
                     event.getInternalData().setCompensationPhase(true);
                     return true;
                 }
@@ -119,11 +127,13 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             return false;
         };
 
+
+        // первая фаза - опрос
         Function<Map<String, TriggerAnswer>, Boolean> activityPollingPhaseStrategy = (answers)->{
 
             System.out.println("activity check phase");
             for (TriggerAnswer answer:answers.values()){
-                // если обнаружен кто то, кто не принял решение. ждем его
+                // если обнаружен кто-то, кто не принял решение. ждем его
                 if (!answer.isDecision()){
                     return false;
                 }
@@ -132,23 +142,24 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             return true;
         };
 
-        // конечная фаза - тут необходимо принять решение о том, продолжать ли цепочку
+        // конечная фаза - тут необходимо принять решение о том,
+        // продолжать ли цепочку - на основании полученных ответов
         Function<Map<String, TriggerAnswer>, Boolean> finalDecisionPhaseStrategy = (answers)->{
-
-            System.out.println("final decision phase");
 
             for (TriggerAnswer answer:answers.values()){
                 if (!answer.isDecision()){
-                    event.setMessage("отказ в удалении директории. Не получено одобрение других участников, просматривающих контент внутри директории");
+                    event.setMessage("отказ в удалении директории." +
+                            " Не получено одобрение других участников," +
+                            " просматривающих контент внутри директории");
                     event.getInternalData().setCompensationPhase(true);
                     return false;
                 }
             }
 
-
             return true;
         };
 
+        // для каждой фазы проставляется время срабатывания
         PhaseStrategy strategy = PhaseStrategy.constructStrategy()
                 .addPhase(activityPollingPhaseStrategy, 500)
                 .addPhase(finalDecisionPhaseStrategy, 5000)
@@ -165,7 +176,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
                 .build();
 
 
-        // чтобы система увидела триггер, следующий шаг обязательно должен сопровождаться аннотацией waiting for
+        // чтобы система увидела триггер,
+        // следующий шаг обязательно должен сопровождаться аннотацией waiting for
         createTrigger(phaseTrigger);
     }
 
@@ -191,7 +203,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     }
 
 
-    // блокировка директории по статусу - защищает от некоторых параллельных действий над родительскими и дочерними структурами
+    // блокировка директории по статусу - защищает от некоторых параллельных действий
+    // над родительскими и дочерними структурами
     @Step(name = "block_directory")
     @Next(name = "remove_from_db")
     @Message

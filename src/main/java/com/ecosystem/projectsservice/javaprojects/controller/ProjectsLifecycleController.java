@@ -27,7 +27,8 @@ public class ProjectsLifecycleController {
     private ProjectParticipantsService participantsService;
 
     @PostMapping("/createProject")
-    public ResponseEntity<Void> createProject(@RequestHeader Map<String, String> headers, @RequestBody ProjectCreationRequest request) throws Exception {
+    public ResponseEntity<Void> createProject(@RequestHeader Map<String, String> headers,
+                                              @RequestBody ProjectCreationRequest request) throws Exception {
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
@@ -78,7 +79,8 @@ public class ProjectsLifecycleController {
 
     // точечное добавление пользователя к проекту
     @PostMapping("/addParticipant")
-    public ResponseEntity<Void> addParticipant(@RequestHeader Map<String, String> headers, @RequestBody ProjectAddParticipantRequest request)
+    public ResponseEntity<Void> addParticipant(@RequestHeader Map<String, String> headers,
+                                               @RequestBody ProjectAddParticipantRequest request)
     throws Exception
     {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
@@ -88,7 +90,8 @@ public class ProjectsLifecycleController {
     }
 
     @PostMapping("/removeParticipant")
-    public ResponseEntity<Void> removeParticipant(@RequestHeader Map<String, String> headers, @RequestBody ProjectRemoveParticipantRequest request)
+    public ResponseEntity<Void> removeParticipant(@RequestHeader Map<String, String> headers,
+                                                  @RequestBody ProjectRemoveParticipantRequest request)
     throws Exception
     {
         SecurityContext securityContext = SecurityContext.generateContext(headers);

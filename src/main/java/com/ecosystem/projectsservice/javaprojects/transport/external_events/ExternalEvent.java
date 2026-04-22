@@ -11,22 +11,15 @@ import lombok.ToString;
 @Setter
 @ToString
 public class ExternalEvent <C extends ExternalEventContext> {
-
-
-
-    private String message;
+ private String message;
     private String type;
     private EventStatus status;
     @JsonIgnore
     private Long outboxParent;
 
-
-
     // raw json data
     private String data;
 
     private C context;
-
-
 
 }

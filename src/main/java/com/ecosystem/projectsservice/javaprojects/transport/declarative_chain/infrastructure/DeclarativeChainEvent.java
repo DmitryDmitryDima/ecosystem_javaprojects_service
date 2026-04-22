@@ -17,15 +17,8 @@ public abstract class DeclarativeChainEvent <
         Internal extends InternalEventData
 
         > {
-
-
     private Context context;
-
     private String message;
-
     private External externalData;
-
     private Internal internalData;
-
-
 }

@@ -56,6 +56,11 @@ public class ProjectsActionsController {
 
     // эндпоинт для воздействия на триггер процесса внутри проекта
     // используется для ответов ui на polling ивенты
+
+    /*
+    TODO РАЗРЕШИТЬ, КАК МЫ ПОЛУЧАЕМ CORR_ID - ИЗ ЗАГОЛОВКА ИЛИ ИЗ ПЕРЕМЕННОЙ ПУТИ
+     */
+
     @PostMapping("/trigger/{uuid}")
     public ResponseEntity<Void> triggerProcess(@PathVariable("uuid") UUID processId, @PathVariable("id") UUID projectId,
                                                @RequestHeader Map<String, String> headers, @RequestBody TriggerAnswer answer)
@@ -85,8 +90,15 @@ public class ProjectsActionsController {
     }
 
     // обновляем отдельно список последних редактируемых файлов (файлы должны иметь статус visible)
+
+    // TODO СДЕЛАТЬ запрос с настраиваемым количеством последних файлов
+    // TODO ОПТИМИЗИРОВАТЬ ЗАПРОС С УЧЕТОМ ОБНОВЛЕННОГО SNAPSHOT СЕРВИСА
     @GetMapping("/readRecentFiles")
-    public ResponseEntity<List<SimpleFileInfo>> readRecentFiles(@PathVariable("id") UUID id, @RequestHeader Map<String, String> headers) throws Exception{
+    public ResponseEntity<List<SimpleFileInfo>> readRecentFiles(@PathVariable("id") UUID id,
+                                                                @RequestHeader Map<String, String> headers)
+            throws Exception{
+
+
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
@@ -97,8 +109,10 @@ public class ProjectsActionsController {
     // чтение файла - viewer id, project id, project author id, file id - все данные для конструирования пути
 
     @GetMapping("/readFile/{file_id}")
-    public ResponseEntity<FileDTO> readFile(@PathVariable("id") UUID projectId, @PathVariable("file_id") Long fileId,
-                                            @RequestHeader Map<String, String> headers) throws Exception{
+    public ResponseEntity<FileDTO> readFile(@PathVariable("id") UUID projectId,
+                                            @PathVariable("file_id") Long fileId,
+                                            @RequestHeader Map<String,
+                                                    String> headers) throws Exception{
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
@@ -129,14 +143,13 @@ public class ProjectsActionsController {
      */
     @PostMapping("/saveFile")
     public ResponseEntity<Void> saveFile(@PathVariable("id") UUID projectId,
-                                         @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request,
-
-                                         @CookieValue(required = false, name = "accessToken") String accessToken
+                                         @RequestHeader Map<String, String> headers,
+                                         @RequestBody FileSaveRequest request
 
                                          ) throws Exception{
 
 
-        System.out.println(accessToken);
+
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
@@ -219,7 +232,8 @@ public class ProjectsActionsController {
 
     @PostMapping("/removeDirectory")
     public ResponseEntity<Void> removeDirectory(@PathVariable("id") UUID projectId,
-                                                @RequestHeader Map<String, String> headers, @RequestBody DirectoryRemovalRequest request)
+                                                @RequestHeader Map<String, String> headers,
+                                                @RequestBody DirectoryRemovalRequest request)
 
     throws Exception
     {

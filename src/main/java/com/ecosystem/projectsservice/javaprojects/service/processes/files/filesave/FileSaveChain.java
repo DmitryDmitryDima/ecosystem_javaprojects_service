@@ -3,9 +3,11 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.files.files
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.ContentStateProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
@@ -44,6 +46,9 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
     @Autowired
     private ProjectActionsUtils actionsUtils;
+
+    @Autowired
+    private ContentStateProcessor contentStateProcessor;
 
 
 
@@ -104,7 +109,7 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
     @Message
     @Next(name="writeFileToDisk")
     @MaxDuration(time = 5)
-    public FileSaveEvent lockFile(FileSaveEvent fileSaveEvent){
+    public void lockFile(FileSaveEvent fileSaveEvent){
 
         System.out.println("perform - lock file");
 
@@ -127,8 +132,9 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
             File fileEntity = fileCheck.get();
 
-            StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(fileSaveEvent.getInternalData().getProjectRoot());
-            Optional<FileReadOnly> presence = actionsUtils.findAvailableFile(snapshot, fileEntity.getId());
+
+            Optional<FileReadOnly> presence = snapshotService
+                    .getFileBelowDirectory(fileSaveEvent.getInternalData().getProjectRoot(), fileEntity.getId());
 
             if (presence.isEmpty()) throw new IllegalStateException("файл недоступен или не является частью проекта");
 
@@ -158,14 +164,14 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
 
 
-        return fileSaveEvent;
+
     }
 
     @Step(name = "writeFileToDisk")
     @Message
     @MaxRetry(maxCount = 3)
     @Next(name = "releaseFile")
-    public FileSaveEvent writeFileToDisk(FileSaveEvent fileSaveEvent) throws IOException {
+    public void writeFileToDisk(FileSaveEvent fileSaveEvent) throws IOException {
 
         System.out.println("perform - write to disk");
         fileSaveEvent.setMessage("выполняем запись в диск");
@@ -182,13 +188,13 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
 
 
-        return fileSaveEvent;
+
 
 
     }
 
     @EndingStep(name = "releaseFile")
-    public FileSaveEvent releaseFile(FileSaveEvent fileSaveEvent){
+    public void releaseFile(FileSaveEvent fileSaveEvent){
         System.out.println("perform - release file");
         fileSaveEvent.setMessage("освобождаем файл");
 
@@ -215,16 +221,13 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
                 .ownerUUID(fileSaveEvent.getExternalData().getFileOwner())
                 .build();
 
-        try {
-            fileContentCache.save(fileDTO.getId(), fileDTO);
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
+        contentStateProcessor.onForcedSave(ForcedSave.builder()
+                .fileDTO(fileDTO)
+                .build());
 
 
 
-        return fileSaveEvent;
+
     }
 
 

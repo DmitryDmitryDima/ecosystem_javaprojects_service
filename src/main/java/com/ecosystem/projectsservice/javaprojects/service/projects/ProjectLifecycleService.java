@@ -50,14 +50,7 @@ public class ProjectLifecycleService {
     @Autowired
     private ProjectRepository projectRepository;
 
-    @Autowired
-    private ProjectParticipantRepository projectParticipantRepository;
 
-    @Autowired
-    private DirectoryRepository directoryRepository;
-
-    @Autowired
-    private FileRepository fileRepository;
 
 
 
@@ -68,8 +61,7 @@ public class ProjectLifecycleService {
     @Autowired
     private ProjectCreationFromTemplateChain projectCreationFromTemplateChain;
 
-    @Autowired
-    private ProjectInviteTokenRepository projectInviteTokenRepository;
+
 
 
 
@@ -175,8 +167,10 @@ public class ProjectLifecycleService {
     пока что удаление происходит безвозвратно, возможно на более поздних этапах разработки добавлю что-то вроде корзины
     удалить проект может только тот, кто его создал
      */
-
-    public void deleteProject(SecurityContext securityContext, RequestContext requestContext, ProjectRemovalRequest request)
+    // TODO можно ли тут, или в цепочке, использовать project access validator?
+    public void deleteProject(SecurityContext securityContext,
+                              RequestContext requestContext,
+                              ProjectRemovalRequest request)
             throws Exception {
 
         ProjectRemovalEvent mainEvent = new ProjectRemovalEvent();

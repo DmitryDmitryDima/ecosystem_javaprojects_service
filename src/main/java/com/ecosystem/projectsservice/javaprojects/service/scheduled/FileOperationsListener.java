@@ -81,33 +81,39 @@ public class FileOperationsListener {
     @Scheduled(fixedDelay = 30000)
     public void writeFileContentToDisk(){
         fileCache.scan().forEach(file->{
+
+
             performDiskWriting(file);
 
-            try {
-                broadcast.sendSync(new Broadcast.EventBuilder()
-                        .useEvent(ProjectEventFromSystem::new)
-                        .withContext(()->ProjectEventFromSystemContext.builder().correlationId(UUID.randomUUID())
-                                .origin("background disk writer process")
-                                .timestamp(Instant.now())
-                                .projectId(file.getProjectId()).build())
-                        .withData(()->{
-                            FileSaveExternalData data = new FileSaveExternalData();
-                            data.setFileOwner(file.getOwnerUUID());
-                            data.setFileId(file.getId());
-                            data.setPath(file.getConstructedPath());
-                            data.setName(file.getName());
-                            data.setExtension(file.getExtension());
-                            return data;
-                        })
-                        .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
-                        .withMessage("Данные сохранены на диск")
-                        .build());
-            } catch (BroadcastException e) {
-                throw new RuntimeException(e);
-            }
+            performBroadcast(file);
 
 
         });
+    }
+
+    private void performBroadcast(FileDTO file){
+        try {
+            broadcast.sendSync(new Broadcast.EventBuilder()
+                    .useEvent(ProjectEventFromSystem::new)
+                    .withContext(()->ProjectEventFromSystemContext.builder().correlationId(UUID.randomUUID())
+                            .origin("background disk writer process")
+                            .timestamp(Instant.now())
+                            .projectId(file.getProjectId()).build())
+                    .withData(()->{
+                        FileSaveExternalData data = new FileSaveExternalData();
+                        data.setFileOwner(file.getOwnerUUID());
+                        data.setFileId(file.getId());
+                        data.setPath(file.getConstructedPath());
+                        data.setName(file.getName());
+                        data.setExtension(file.getExtension());
+                        return data;
+                    })
+                    .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
+                    .withMessage("Данные сохранены на диск")
+                    .build());
+        } catch (BroadcastException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void performDiskWriting(FileDTO file) {
@@ -126,7 +132,7 @@ public class FileOperationsListener {
 
     }
 
-
+    /*
     private boolean shouldWriteFile(CacheValueWrapper<FileDTO> entry){
         return (
                 Duration.between(entry.getLastUpdate(),
@@ -166,11 +172,17 @@ public class FileOperationsListener {
     }
 
 
+     */
+
+
 
 
     /*
     периодически записываем в диск данные кеша, при этом определяя, нужно ли это делать
      */
+
+
+    /*
     @Scheduled(fixedDelay = 30000)
     public void fileDiskWriteOperations(){
 
@@ -234,6 +246,8 @@ public class FileOperationsListener {
         });
 
     }
+
+    */
 
 
 }

@@ -8,5 +8,4 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.cont
 public class DirectoryRemovalEvent extends DeclarativeChainEvent<ProjectEventFromUserContext,
         DirectoryRemovalExternalData,
         DirectoryRemovalInternalData> {
-
 }

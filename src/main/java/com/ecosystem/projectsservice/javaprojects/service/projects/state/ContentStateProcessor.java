@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.service.projects.state;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
@@ -39,6 +40,11 @@ public class ContentStateProcessor {
     // файловый кеш
     @Autowired
     private FileCache fileCache;
+
+
+
+    @Autowired
+    private CodeService codeService;
 
     @Autowired
     private ExternalValues externalValues;
@@ -115,6 +121,16 @@ public class ContentStateProcessor {
 
 
 
+    // отличие от autosave в том, что не требуется валидация и рассылка,
+    // так как это произошло в цепочке
+    public void onForcedSave(ForcedSave forcedSave){
+        // сохраняем dto в кеш
+        fileCache.saveOrUpdate(forcedSave.getFileDTO());
+    }
+
+
+
+
 
 
 
@@ -165,10 +181,6 @@ public class ContentStateProcessor {
 
             // сохраняем dto в кеш
             fileCache.saveOrUpdate(fileDTO);
-
-
-
-
         }
 
         // рассылаем ивент

@@ -90,8 +90,7 @@ public class ProjectActionsService {
 
 
 
-    @Autowired
-    private Broadcast broadcast;
+
 
 
     // процессы
