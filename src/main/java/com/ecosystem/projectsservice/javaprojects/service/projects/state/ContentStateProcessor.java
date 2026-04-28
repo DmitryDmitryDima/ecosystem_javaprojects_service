@@ -38,6 +38,7 @@ public class ContentStateProcessor {
     private SnapshotService snapshotService;
 
     // файловый кеш
+    // todo собственный dto с кешированным файловым api и полями управления
     @Autowired
     private FileCache fileCache;
 
