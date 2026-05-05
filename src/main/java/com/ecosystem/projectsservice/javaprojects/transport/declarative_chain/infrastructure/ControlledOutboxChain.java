@@ -15,11 +15,12 @@ import com.ecosystem.projectsservice.javaprojects.transport.process_control.Proc
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.Trigger;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.ObjectMapper;
 
 import java.lang.reflect.Method;
 import java.time.Instant;

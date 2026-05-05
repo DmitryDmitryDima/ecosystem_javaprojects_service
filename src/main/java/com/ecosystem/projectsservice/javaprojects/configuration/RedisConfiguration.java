@@ -9,6 +9,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
 @Configuration
@@ -26,7 +27,7 @@ public class RedisConfiguration {
         template.setConnectionFactory(connectionFactory);
         template.setKeySerializer(RedisSerializer.string());
 
-        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(FileDTO.class));
+        template.setValueSerializer(new JacksonJsonRedisSerializer<>(FileDTO.class));
 
 
 

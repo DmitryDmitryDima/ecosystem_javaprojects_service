@@ -1,19 +1,21 @@
 package com.ecosystem.projectsservice.javaprojects.service.cache.external;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.connection.StringRedisConnection;
+
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +60,12 @@ public class FileCacheService implements FileCache{
         }
 
         redisTemplate.opsForHash().putAll(createKey(fileDTO.getId()), mapper.convertValue(fileDTO,
+
+
                 new TypeReference<Map<String, String>>() {}));
+
+
+
 
         // период устаревания кеша
         redisTemplate.expire(createKey(fileDTO.getId()), expirationTimeInSec, TimeUnit.SECONDS);

@@ -8,7 +8,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.even
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ChainManager;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.annotation.PostConstruct;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -17,6 +17,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
