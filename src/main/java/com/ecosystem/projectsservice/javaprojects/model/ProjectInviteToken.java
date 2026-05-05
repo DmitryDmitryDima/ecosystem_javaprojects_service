@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -26,7 +28,8 @@ import java.util.UUID;
 public class ProjectInviteToken {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @UuidGenerator(algorithm = UuidVersion7Strategy.class)
     private UUID id;
 
     private Instant expiredAt = Instant.now().plusSeconds(2*60);

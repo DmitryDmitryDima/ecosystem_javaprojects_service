@@ -8,6 +8,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,7 +26,8 @@ import java.util.UUID;
 public class Project {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @UuidGenerator(algorithm = UuidVersion7Strategy.class)
     private UUID id;
 
 
@@ -35,6 +38,8 @@ public class Project {
     @Column(nullable = false)
     private String name;
 
+
+    // todo это поле не нужно с введением uuidv7 ?
     @Column
     private Instant createdAt;
 
