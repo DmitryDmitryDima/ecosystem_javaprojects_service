@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 
 import java.util.UUID;
 
@@ -20,8 +22,9 @@ import java.util.UUID;
 public class ProjectParticipant {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    @UuidGenerator(algorithm = UuidVersion7Strategy.class)
+    private UUID id;
 
     // uuid участника
     @Column(nullable = false, columnDefinition = "uuid")
