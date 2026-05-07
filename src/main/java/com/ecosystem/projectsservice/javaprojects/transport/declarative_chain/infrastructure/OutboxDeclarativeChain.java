@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 // старая версия цепочки без контроля времени
 @Deprecated
@@ -494,7 +495,7 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
     }
 
-    protected void outboxCallback(long id){
+    protected void outboxCallback(UUID id){
         Optional<OutboxEvent> outboxEventCheck = outboxEventRepository.findById(id);
         outboxEventCheck.ifPresent(outbox->{
             outbox.setStatus(OutboxEvent.OutboxEventStatus.PROCESSED);

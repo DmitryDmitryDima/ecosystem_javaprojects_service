@@ -2,6 +2,8 @@ package com.ecosystem.projectsservice.javaprojects.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -29,8 +31,9 @@ public class OutboxEvent {
     public static enum OutboxEventStatus {PROCESSING, PROCESSED, WAITING, WAITING_FOR_EXTERNAL}
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    @UuidGenerator(algorithm = UuidVersion7Strategy.class)
+    private UUID id;
 
     // дублируем correlation id в теле outbox ивента
     private UUID correlationId;

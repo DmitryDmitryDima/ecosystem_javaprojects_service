@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.UUID;
+
 
 @Getter
 @Setter
@@ -15,7 +17,7 @@ public class ExternalEvent <C extends ExternalEventContext> {
     private String type;
     private EventStatus status;
     @JsonIgnore
-    private Long outboxParent;
+    private UUID outboxParent;
 
     // raw json data
     private String data;

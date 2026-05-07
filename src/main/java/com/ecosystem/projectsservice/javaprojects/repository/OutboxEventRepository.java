@@ -13,7 +13,7 @@ import java.util.UUID;
 
 
 @Repository
-public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> {
+public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> {
 
     List<OutboxEvent> findByStatus(OutboxEvent.OutboxEventStatus status);
 

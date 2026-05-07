@@ -731,7 +731,7 @@ public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? e
 
 
     // уведомляем систему о том, что шаг был успешно обработан
-    private void outboxCallback(long id){
+    private void outboxCallback(UUID id){
         Optional<OutboxEvent> outboxEventCheck = outboxEventRepository.findById(id);
         outboxEventCheck.ifPresent(outbox->{
             outbox.setStatus(OutboxEvent.OutboxEventStatus.PROCESSED);

@@ -20,6 +20,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.UUID;
 
 
 // присылаются
@@ -144,7 +145,7 @@ public class ExternalQueueBridge {
 
     }
 
-    private void outboxCallback(Long id){
+    private void outboxCallback(UUID id){
 
         try {
             transactionTemplate.execute(status -> {

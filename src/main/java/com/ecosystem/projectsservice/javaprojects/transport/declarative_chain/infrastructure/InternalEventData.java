@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,7 +20,7 @@ public abstract class InternalEventData {
 
     // данное поле вставляется в менеджере
     @JsonIgnore
-    private Long outboxParent = -1L;
+    private UUID outboxParent = null;
 
     // явно указываем, что достигнуто и должно быть исполнено состояние компенсации
     private boolean compensationPhase = false;
