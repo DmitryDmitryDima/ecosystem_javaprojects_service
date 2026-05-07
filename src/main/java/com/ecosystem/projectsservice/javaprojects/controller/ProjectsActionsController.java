@@ -110,7 +110,7 @@ public class ProjectsActionsController {
 
     @GetMapping("/readFile/{file_id}")
     public ResponseEntity<FileDTO> readFile(@PathVariable("id") UUID projectId,
-                                            @PathVariable("file_id") Long fileId,
+                                            @PathVariable("file_id") UUID fileId,
                                             @RequestHeader Map<String,
                                                     String> headers) throws Exception{
 
@@ -167,7 +167,8 @@ public class ProjectsActionsController {
 
     @PostMapping ("/autosave")
     public ResponseEntity<Void> autosave(@PathVariable("id") UUID projectId,
-                                         @RequestHeader Map<String, String> headers, @RequestBody FileSaveRequest request) throws Exception{
+                                         @RequestHeader Map<String, String> headers,
+                                         @RequestBody FileSaveRequest request) throws Exception{
 
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
@@ -182,7 +183,8 @@ public class ProjectsActionsController {
 
     @PostMapping("/addFile")
     public ResponseEntity<Void> addFile(@PathVariable("id") UUID projectId,
-                                        @RequestHeader Map<String, String> headers, @RequestBody FileAddRequest request) throws Exception{
+                                        @RequestHeader Map<String, String> headers,
+                                        @RequestBody FileAddRequest request) throws Exception{
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
@@ -194,7 +196,8 @@ public class ProjectsActionsController {
 
     @PostMapping("/moveFile")
     public ResponseEntity<Void> moveFile(@PathVariable("id") UUID projectId,
-                                         @RequestHeader Map<String, String> headers, @RequestBody FileMoveRequest fileMoveRequest) throws Exception {
+                                         @RequestHeader Map<String, String> headers,
+                                         @RequestBody FileMoveRequest fileMoveRequest) throws Exception {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
@@ -207,7 +210,8 @@ public class ProjectsActionsController {
 
     @PostMapping("/moveDirectory")
     public ResponseEntity<Void> moveDirectory(@PathVariable("id") UUID projectId,
-                                              @RequestHeader Map<String, String> headers, @RequestBody DirectoryMoveRequest directoryMoveRequest
+                                              @RequestHeader Map<String, String> headers,
+                                              @RequestBody DirectoryMoveRequest directoryMoveRequest
                                               ) throws Exception {
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
@@ -218,7 +222,8 @@ public class ProjectsActionsController {
 
     @PostMapping("/addDirectory")
     public ResponseEntity<Void> addDirectory(@PathVariable("id") UUID projectId,
-                                             @RequestHeader Map<String, String> headers, @RequestBody DirectoryAddRequest request) throws Exception{
+                                             @RequestHeader Map<String, String> headers,
+                                             @RequestBody DirectoryAddRequest request) throws Exception{
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 

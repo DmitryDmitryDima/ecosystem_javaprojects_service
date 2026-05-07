@@ -1,13 +1,17 @@
 package com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 // универсальный ответ для триггера
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TriggerAnswer {
 
     // принято или нет решение

@@ -21,7 +21,7 @@ public class CachedFile {
     private String extension;
     private String name;
     private String constructedPath;
-    private Long id;
+    private UUID id;
 
     // кешируем uuid владельца файла
     private UUID ownerUUID;

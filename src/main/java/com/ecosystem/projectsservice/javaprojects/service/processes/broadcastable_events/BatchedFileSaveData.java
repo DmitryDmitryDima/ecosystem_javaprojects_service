@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Map;
+import java.util.UUID;
 
 
 
@@ -18,5 +19,5 @@ import java.util.Map;
 @NoArgsConstructor
 public class BatchedFileSaveData implements ExternalEventData {
 
-    private Map<Long, String> contentMap;
+    private Map<UUID, String> contentMap;
 }

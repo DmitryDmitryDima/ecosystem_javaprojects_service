@@ -6,17 +6,18 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class StructureMember {
 
-    // directory_id or file_id - поле для фронтенда. чтобы не было ситуации, когда id папки равен id файла
+    // directory_id or file_id - поле для фронтенда
     private String id;
 
     // сохраняем это поле для настройки
-    private Long originalId;
+    private UUID originalId;
 
     private String name;
 

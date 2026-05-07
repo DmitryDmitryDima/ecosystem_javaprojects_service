@@ -2,7 +2,6 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.files.files
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
@@ -15,7 +14,6 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,9 +35,10 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
     @Autowired
     private FileRepository fileRepository;
 
-    // обновляем кеш в конце цепочки
-    @Autowired
-    private FileContentCache<FileDTO, Long> fileContentCache;
+
+
+
+
 
     @Autowired
     private SnapshotService snapshotService;

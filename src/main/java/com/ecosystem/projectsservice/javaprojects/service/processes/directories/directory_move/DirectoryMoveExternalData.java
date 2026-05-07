@@ -5,17 +5,19 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class DirectoryMoveExternalData implements ExternalEventData {
 
-    private Long directoryId; // кого
+    private UUID directoryId; // кого
     private String directoryName;
 
 
-    private Long parent; // кому
+    private UUID parent; // кому
 
 
 }

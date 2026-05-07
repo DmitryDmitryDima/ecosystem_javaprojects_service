@@ -12,7 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class FileSaveExternalData implements ExternalEventData {
 
-    private Long fileId;
+    private UUID fileId;
     private String name;
     private String extension;
     private String content;

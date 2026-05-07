@@ -32,7 +32,7 @@ public class ProjectValidationHash {
 
     private UUID projectOwner;
 
-    private long root;
+    private UUID root;
 
     //@Indexed - аннотация, позволяющая искать записи по полю в хеше
 

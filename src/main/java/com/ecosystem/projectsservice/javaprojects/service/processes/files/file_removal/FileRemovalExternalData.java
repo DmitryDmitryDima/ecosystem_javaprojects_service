@@ -11,7 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FileRemovalExternalData implements ExternalEventData {
-    private Long fileId;
+    private UUID fileId;
     private String name;
     private String extension;
     private String path;

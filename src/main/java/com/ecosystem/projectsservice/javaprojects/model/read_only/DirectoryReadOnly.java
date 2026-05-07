@@ -6,15 +6,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class DirectoryReadOnly {
 
-    private Long parent_id;
+    private UUID parent_id;
     private String name;
-    private Long id;
+    private UUID id;
     private String constructed_path;
     private Instant created_at;
     private boolean hidden;

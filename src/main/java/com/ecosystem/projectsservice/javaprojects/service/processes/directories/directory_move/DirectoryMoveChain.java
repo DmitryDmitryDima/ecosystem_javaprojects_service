@@ -9,7 +9,6 @@ import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadO
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.CodeService;
 import com.ecosystem.projectsservice.javaprojects.service.processes.broadcastable_events.BatchedFileSaveData;
 import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
@@ -56,8 +55,9 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
 
 
-    @Autowired
-    private FileContentCache<FileDTO, Long> fileCache;
+
+
+
 
 
     @Override
@@ -305,7 +305,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
             StructureSnapshot belowChild = snapshotService.getFullChildrenSnapshot(child.getId());
 
 
-            Map<Long, String> directoryConstructedPaths = new HashMap<>();
+            Map<UUID, String> directoryConstructedPaths = new HashMap<>();
 
             // обновляем пути директорий
             belowChild.getDirectories().stream().sorted(Comparator.comparingLong(DirectoryReadOnly::getDepth))
@@ -332,7 +332,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
             });
 
             // обновляем пути для файлов
-            HashMap<Long, String> files = new HashMap<>();
+            HashMap<UUID, String> files = new HashMap<>();
 
             belowChild.getFiles().forEach(fileReadOnly -> {
 
@@ -394,6 +394,10 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
         }
 
 
+
+        /*
+
+
         // перестройка контента
         // нам необходимо извлечь все файлы внутри child, после чего обновить каждому из них его dto
 
@@ -405,6 +409,8 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
                     snapshotService.getAllFilesBelowDirectory(event.getExternalData().getDirectoryId()));
 
 
+
+
             processAndBroadcastMovedJavaFiles(belowFiles, event);
 
 
@@ -414,6 +420,8 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
         catch (Exception e){
 
         }
+
+         */
 
 
 
@@ -462,7 +470,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
 
 
-
+    /*
     private void processAndBroadcastMovedJavaFiles(List<FileReadOnly> files, DirectoryMoveEvent event){
         // фильтруем
 
@@ -483,7 +491,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
         System.out.println(files);
         if (files.isEmpty()) return;
 
-        Map<Long, String> updatedContent = new HashMap<>();
+        Map<UUID, String> updatedContent = new HashMap<>();
 
         for (FileReadOnly file:files){
 
@@ -580,6 +588,8 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
 
     }
+
+     */
 
 
 }

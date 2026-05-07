@@ -7,7 +7,6 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
-import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.CodeService;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
@@ -31,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_MOVE)
@@ -43,8 +43,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
     @Autowired
     private CodeService codeService;
 
-    @Autowired
-    private FileContentCache<FileDTO, Long> fileCache;
+
 
     @Autowired
     private FileRepository fileRepository;
@@ -351,7 +350,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
         });
 
         try {
-            cacheOperations(event);
+            //cacheOperations(event);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -360,7 +359,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
     }
 
-
+    /*
     private void cacheOperations(FileMoveEvent event) throws Exception{
         FileDTO dto;
 
@@ -440,6 +439,8 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
                 .withMessage("файл сохранен").build());
 
     }
+
+     */
 
 
 }

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 // работа с нативными query, нужными для оптимального чтения структуры
@@ -26,7 +27,7 @@ public class DirectoryJDBCRepository {
     private JdbcTemplate jdbcTemplate;
 
 
-    public List<DirectoryReadOnly> loadAWholeStructureBelowRootWithLevel(long rootId, long level){
+    public List<DirectoryReadOnly> loadAWholeStructureBelowRootWithLevel(UUID rootId, long level){
         String query = """
                 
                 with recursive children as (
@@ -45,7 +46,7 @@ public class DirectoryJDBCRepository {
 
     }
 
-    public List<DirectoryReadOnly> loadAWholeStructureAboveRootWithLevel(long rootId, long level){
+    public List<DirectoryReadOnly> loadAWholeStructureAboveRootWithLevel(UUID rootId, long level){
         String query = """
                 
                 with recursive children as (
@@ -65,7 +66,7 @@ public class DirectoryJDBCRepository {
     }
 
     // возвращает плоскую структуру папок со всеми зависимостями, начиная с root папки, включая root
-    public List<DirectoryReadOnly> loadAWholeStructureBelowRoot(long rootId){
+    public List<DirectoryReadOnly> loadAWholeStructureBelowRoot(UUID rootId){
 
         String query = """
                 
@@ -83,7 +84,7 @@ public class DirectoryJDBCRepository {
     }
 
     // плоская структура папок, при этом возвращается только то, что является предками по отношению к root. включая root
-    public List<DirectoryReadOnly> loadAWholeStructureAboveRoot(long rootId){
+    public List<DirectoryReadOnly> loadAWholeStructureAboveRoot(UUID rootId){
 
         String query = """
                 
@@ -104,7 +105,7 @@ public class DirectoryJDBCRepository {
     }
 
     // возвращаем все файлы, ассоциированные с директориями
-    public List<FileReadOnly> loadFilesAssosiatedWithDirectories(List<Long> directories){
+    public List<FileReadOnly> loadFilesAssosiatedWithDirectories(List<UUID> directories){
         String inSql = String.join(",", Collections.nCopies(directories.size(), "?"));
         String query = String
                 .format("select parent_id, name,id, constructed_path, created_at, updated_at, hidden, immutable,extension, status, version from files where files.parent_id in (%s)",
@@ -112,13 +113,14 @@ public class DirectoryJDBCRepository {
 
 
 
-        return jdbcTemplate.query(query,new BeanPropertyRowMapper<>(FileReadOnly.class), directories.toArray());
+        return jdbcTemplate.query(query,new BeanPropertyRowMapper<>(FileReadOnly.class),
+                directories.toArray());
 
     }
 
     // загружаем все файлы ниже root
 
-    public List<FileReadOnly> loadFilesBelowRoot(@NotNull Long id){
+    public List<FileReadOnly> loadFilesBelowRoot(@NotNull UUID id){
         String query = """
                 
                 
@@ -144,7 +146,7 @@ public class DirectoryJDBCRepository {
     }
 
     // загружаем конкретный файл в иерархии root
-    public Optional<FileReadOnly> loadFileBelowRoot(Long rootId, Long fileId){
+    public Optional<FileReadOnly> loadFileBelowRoot(UUID rootId, UUID fileId){
         String query = """
                 
                 

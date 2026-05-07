@@ -19,7 +19,7 @@ public class ProjectActionsUtils {
 
 
 
-    public Optional<FileReadOnly> findAvailableFile(StructureSnapshot snapshot, Long toCheck){
+    public Optional<FileReadOnly> findAvailableFile(StructureSnapshot snapshot, UUID toCheck){
         return snapshot.getFiles()
                 .stream()
                 .filter(fileReadOnly -> fileReadOnly.getId().equals(toCheck)
@@ -41,7 +41,7 @@ public class ProjectActionsUtils {
 
 
     // метод вызывается из контекста @Transactional
-    public void generateStructureForDTO(Long rootId, ProjectDTO projectDTO,
+    public void generateStructureForDTO(UUID rootId, ProjectDTO projectDTO,
                                               StructureSnapshot snapshot){
 
 
@@ -106,7 +106,7 @@ public class ProjectActionsUtils {
     }
 
     // готовим таблицу
-    private Map<String, StructureMember> prepareMembersTable(StructureSnapshot snapshot, Long rootId){
+    private Map<String, StructureMember> prepareMembersTable(StructureSnapshot snapshot, UUID rootId){
 
         Map<String, StructureMember> table = new HashMap<>();
 

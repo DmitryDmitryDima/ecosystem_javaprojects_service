@@ -1,8 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
-import com.ecosystem.projectsservice.javaprojects.model.File;
-import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
 import com.ecosystem.projectsservice.javaprojects.service.cache.external.FileCache;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
@@ -12,10 +10,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.cont
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromSystem;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.service.cache.CacheValueWrapper;
-import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -23,12 +18,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 // фоновые процессы, ассоциированные с файлами в проектах
 @Service
@@ -49,8 +40,7 @@ public class FileOperationsListener {
 
 
 
-    @Autowired
-    private FileContentCache<FileDTO, Long> fileContentCache;
+
 
     @Autowired
     private FileRepository fileRepository;

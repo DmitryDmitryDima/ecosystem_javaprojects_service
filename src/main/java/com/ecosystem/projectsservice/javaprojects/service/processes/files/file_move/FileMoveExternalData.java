@@ -6,16 +6,18 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class FileMoveExternalData implements ExternalEventData {
 
-    private Long fileId; // кого
+    private UUID fileId; // кого
     private String filename;
     private String directoryName;
     private String extension;
-    private Long parent; // кому
+    private UUID parent; // кому
 
     private String constructedPath;
 }

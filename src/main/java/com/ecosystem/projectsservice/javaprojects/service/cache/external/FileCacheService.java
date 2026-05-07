@@ -78,7 +78,7 @@ public class FileCacheService implements FileCache{
     }
 
     @Override
-    public Optional<FileDTO> get(Long id) {
+    public Optional<FileDTO> get(UUID id) {
 
 
 
@@ -98,7 +98,7 @@ public class FileCacheService implements FileCache{
     }
 
     @Override
-    public boolean delete(Long id) {
+    public boolean delete(UUID id) {
 
         return redisTemplate.delete(createKey(id));
     }
@@ -110,7 +110,7 @@ public class FileCacheService implements FileCache{
     при обновлении контента обновляется и expire time
      */
     @Override
-    public boolean updateContent(Long id, String content) {
+    public boolean updateContent(UUID id, String content) {
 
 
         String key = createKey(id);
@@ -185,7 +185,7 @@ public class FileCacheService implements FileCache{
     }
 
 
-    private String createKey(Long id){
+    private String createKey(UUID id){
         return keyPattern+id;
     }
 }

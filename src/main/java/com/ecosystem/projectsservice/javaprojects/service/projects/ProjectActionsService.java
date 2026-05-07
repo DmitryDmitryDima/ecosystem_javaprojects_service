@@ -12,36 +12,24 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
 import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
-import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.Project;
-import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveChain;
 import com.ecosystem.projectsservice.javaprojects.service.projects.access_validation.ProjectAccessValidator;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.ContentStateProcessor;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal.DirectoryRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_add.FileAddChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move.FileMoveChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal.FileRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveChain;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
-import com.ecosystem.projectsservice.javaprojects.service.cache.FileContentCache;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 
@@ -84,8 +72,7 @@ public class ProjectActionsService {
 
 
 
-    @Autowired
-    private FileContentCache<FileDTO, Long> fileContentCache;
+
 
 
 
@@ -442,7 +429,7 @@ public class ProjectActionsService {
     public FileDTO readFile(SecurityContext securityContext,
                             RequestContext requestContext,
                             UUID projectId,
-                            Long fileId) throws Exception{
+                            UUID fileId) throws Exception{
 
 
 

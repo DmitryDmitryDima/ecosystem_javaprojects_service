@@ -115,9 +115,14 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
 
         // стратегия обработки каждого из ответов
         Function<Map<String, TriggerAnswer>, Boolean> onFeedStrategy = (answers)->{
+
+
+            System.out.println("on answer callback "+answers);
             for (TriggerAnswer answer:answers.values()){
                 // демонстрация мгновенного отказа
                 if (answer.isDecision() && answer.getContent().equals("No")){
+
+
                     event.setMessage("отказ в удалении директории." +
                             " Не получено одобрение других участников, просматривающих контент внутри директории");
                     event.getInternalData().setCompensationPhase(true);
@@ -131,7 +136,9 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
         // первая фаза - опрос
         Function<Map<String, TriggerAnswer>, Boolean> activityPollingPhaseStrategy = (answers)->{
 
-            System.out.println("activity check phase");
+            System.out.println("activity check phase "+answers);
+
+
             for (TriggerAnswer answer:answers.values()){
                 // если обнаружен кто-то, кто не принял решение. ждем его
                 if (!answer.isDecision()){
@@ -146,6 +153,7 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
         // продолжать ли цепочку - на основании полученных ответов
         Function<Map<String, TriggerAnswer>, Boolean> finalDecisionPhaseStrategy = (answers)->{
 
+            System.out.println("finalDecision "+answers);
             for (TriggerAnswer answer:answers.values()){
                 if (!answer.isDecision()){
                     event.setMessage("отказ в удалении директории." +

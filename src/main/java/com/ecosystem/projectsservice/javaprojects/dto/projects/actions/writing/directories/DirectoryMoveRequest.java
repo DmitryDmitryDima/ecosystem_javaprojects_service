@@ -6,13 +6,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 public class DirectoryMoveRequest {
     @NotNull
-    private Long directoryId;
+    private UUID directoryId;
 
     @NotNull
-    private Long parentId;
+    private UUID parentId;
 }

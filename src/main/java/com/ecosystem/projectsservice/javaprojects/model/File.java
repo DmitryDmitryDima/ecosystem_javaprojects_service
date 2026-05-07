@@ -6,8 +6,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.id.uuid.UuidVersion7Strategy;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "files")
@@ -24,8 +27,9 @@ public class File {
 
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    @UuidGenerator(algorithm = UuidVersion7Strategy.class)
+    private UUID id;
 
     @Column
     private String name;

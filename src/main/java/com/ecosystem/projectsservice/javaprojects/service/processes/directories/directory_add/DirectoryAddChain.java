@@ -104,7 +104,8 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
             Directory directory = directoryCheck.get();
 
 
-            List<DirectoryReadOnly> parents = snapshotService.getParentsSnapshotDirectoriesOnly(event.getExternalData().getParentId());
+            List<DirectoryReadOnly> parents = snapshotService
+                    .getParentsSnapshotDirectoriesOnly(event.getExternalData().getParentId());
 
             System.out.println(parents);
 

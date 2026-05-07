@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 // гибкий сервис для работы со снимками структуры
 // todo можно добавить глубину уровня
@@ -26,7 +27,7 @@ public class SnapshotService {
     private DirectoryJDBCRepository directoryJDBCRepository;
 
     // снимок представляет собой все, что является ребенком root (root входит в ответ)
-    public StructureSnapshot getFullChildrenSnapshot(Long root){
+    public StructureSnapshot getFullChildrenSnapshot(UUID root){
         // извлекаем все папки, принадлежащие проекту, вместе с зависимостями
         List<DirectoryReadOnly> directories = directoryJDBCRepository.loadAWholeStructureBelowRoot(root);
         System.out.println(directories);
@@ -41,7 +42,7 @@ public class SnapshotService {
 
     }
 
-    public StructureSnapshot getFullParentsSnapshot(Long root){
+    public StructureSnapshot getFullParentsSnapshot(UUID root){
         List<DirectoryReadOnly> directories = directoryJDBCRepository.loadAWholeStructureAboveRoot(root);
         List<FileReadOnly> files = directoryJDBCRepository.loadFilesAssosiatedWithDirectories(
                 directories.stream().map(DirectoryReadOnly::getId).toList()
@@ -51,32 +52,32 @@ public class SnapshotService {
 
 
 
-    public List<DirectoryReadOnly> getParentsSnapshotDirectoriesOnly(Long root){
+    public List<DirectoryReadOnly> getParentsSnapshotDirectoriesOnly(UUID root){
         return directoryJDBCRepository.loadAWholeStructureAboveRoot(root);
     }
 
-    public List<DirectoryReadOnly> getChildrenSnapshotDirectoriesOnly(Long root){
+    public List<DirectoryReadOnly> getChildrenSnapshotDirectoriesOnly(UUID root){
         return directoryJDBCRepository.loadAWholeStructureBelowRoot(root);
     }
 
-    public List<FileReadOnly> getFilesForDirectory(Long root){
+    public List<FileReadOnly> getFilesForDirectory(UUID root){
         return directoryJDBCRepository.loadFilesAssosiatedWithDirectories(List.of(root));
     }
 
     // все файлы вниз по ветке
-    public List<FileReadOnly> getAllFilesBelowDirectory(Long root){
+    public List<FileReadOnly> getAllFilesBelowDirectory(UUID root){
         return directoryJDBCRepository.loadFilesBelowRoot(root);
     }
 
-    public Optional<FileReadOnly> getFileBelowDirectory(Long root, Long fileId){
+    public Optional<FileReadOnly> getFileBelowDirectory(UUID root, UUID fileId){
         return directoryJDBCRepository.loadFileBelowRoot(root, fileId);
     }
 
-    public List<DirectoryReadOnly> getChildrenSnapshotDirectoriesOnlyWithLevel(Long root, Long level){
+    public List<DirectoryReadOnly> getChildrenSnapshotDirectoriesOnlyWithLevel(UUID root, Long level){
         return directoryJDBCRepository.loadAWholeStructureBelowRootWithLevel(root, level);
     }
 
-    public List<DirectoryReadOnly> getParentsSnapshotDirectoriesOnlyWithLevel(Long root, Long level){
+    public List<DirectoryReadOnly> getParentsSnapshotDirectoriesOnlyWithLevel(UUID root, Long level){
         return directoryJDBCRepository.loadAWholeStructureAboveRootWithLevel(root, level);
     }
 

@@ -10,9 +10,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface DirectoryRepository extends JpaRepository<Directory, Long> {
+public interface DirectoryRepository extends JpaRepository<Directory, UUID> {
 
 
     @NativeQuery
@@ -29,6 +30,6 @@ public interface DirectoryRepository extends JpaRepository<Directory, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT directory FROM Directory directory WHERE directory.id = :id")
-    Optional<Directory> findByIdForUpdate(Long id);
+    Optional<Directory> findByIdForUpdate(UUID id);
 
 }

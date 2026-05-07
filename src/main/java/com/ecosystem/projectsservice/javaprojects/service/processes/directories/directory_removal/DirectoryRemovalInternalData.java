@@ -4,11 +4,13 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 public class DirectoryRemovalInternalData extends InternalEventData {
 
     private String projectsPath;
-    private Long projectRoot;
+    private UUID projectRoot;
     private String fullPath;
 }

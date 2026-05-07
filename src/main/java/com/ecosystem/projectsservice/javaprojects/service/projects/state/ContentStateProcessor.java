@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.UUID;
 
 // данный класс предоставляет хуки, вызываемые при совершении каких либо действий с кодовой базой
 // хуки должны получить всю необходимую для изменения состояния/состояний информацию, поэтому выделяем отдельные dto
@@ -55,7 +56,7 @@ public class ContentStateProcessor {
 
     // читаем файл. Если его нет в кеше - валидируем через дб и читаем с диска,
     // при этом внося запись в кеш, если файл - AVAILABLE
-    public FileDTO readFile(Long fileId, ProjectDTO projectDTO)
+    public FileDTO readFile(UUID fileId, ProjectDTO projectDTO)
     {
 
         Optional<FileDTO> cacheCheck = fileCache.get(fileId);

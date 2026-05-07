@@ -5,6 +5,8 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 public class FileAddInternalData extends InternalEventData {
@@ -12,5 +14,5 @@ public class FileAddInternalData extends InternalEventData {
     private String projectsPath;
     private String filepath;
 
-    private long projectRoot;
+    private UUID projectRoot;
 }

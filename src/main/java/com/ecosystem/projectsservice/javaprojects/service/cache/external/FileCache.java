@@ -4,6 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.F
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface FileCache {
 
@@ -11,12 +12,12 @@ public interface FileCache {
 
     void saveOrUpdate(FileDTO fileDTO);
 
-    Optional<FileDTO> get(Long id);
+    Optional<FileDTO> get(UUID id);
 
-    boolean delete(Long id);
+    boolean delete(UUID id);
 
 
-    boolean updateContent(Long id, String content);
+    boolean updateContent(UUID id, String content);
 
 
     List<FileDTO> scan();

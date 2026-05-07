@@ -16,9 +16,9 @@ import java.util.UUID;
 @Builder
 public class Autosave {
 
-    private Long fileId;
+    private UUID fileId;
     private UUID projectId;
-    private Long projectRoot;
+    private UUID projectRoot;
     private UUID projectOwner;
     private String content;
 

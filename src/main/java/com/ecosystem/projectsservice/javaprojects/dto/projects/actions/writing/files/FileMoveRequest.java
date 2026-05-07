@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,10 +15,10 @@ import lombok.NoArgsConstructor;
 public class FileMoveRequest {
 
     @NotNull
-    private Long parentId; // директория, куда планируется переместить файл
+    private UUID parentId; // директория, куда планируется переместить файл
 
     @NotNull
-    private Long fileId; // файл
+    private UUID fileId; // файл
 
 
 }
