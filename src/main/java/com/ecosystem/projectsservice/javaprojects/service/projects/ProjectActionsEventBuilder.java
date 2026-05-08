@@ -10,7 +10,6 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
-import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveEvent;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveExternalData;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveInternalData;
@@ -33,7 +32,7 @@ import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_r
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal.FileRemovalInternalData;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveEvent;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveInternalData;
-import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

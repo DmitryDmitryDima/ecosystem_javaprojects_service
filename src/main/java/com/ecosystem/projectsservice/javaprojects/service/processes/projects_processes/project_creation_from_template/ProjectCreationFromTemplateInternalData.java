@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.processes.projects.project_creation_from_template;
+package com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_creation_from_template;
 
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;

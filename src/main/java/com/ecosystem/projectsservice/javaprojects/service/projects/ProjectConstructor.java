@@ -34,7 +34,8 @@ public class ProjectConstructor {
 
 
     // постройка проекта на основе готового system template
-    public void buildProjectFromSystemTemplate(ConstructorSettingsForSystemTemplateBuild settings) throws Exception{
+    public void buildProjectFromSystemTemplate(ConstructorSettingsForSystemTemplateBuild settings)
+            throws Exception{
 
         Project project = settings.getProject();
         Directory root = project.getRoot();
@@ -65,7 +66,8 @@ public class ProjectConstructor {
 
         try {
             // читаем инструкцию
-            YamlInstruction instruction = readInstruction(Path.of(settings.getInstructionsPath(), instructionName));
+            YamlInstruction instruction
+                    = readInstruction(Path.of(settings.getInstructionsPath(), instructionName));
             // запускаем инструкцию
             runInstruction(instruction, root, settings.getFileTemplatesPath(), settings.getProjectsPath());
             // выполняем дополнительные действия над готовой структурой проекта
@@ -97,7 +99,10 @@ public class ProjectConstructor {
         }
     }
 
-    private void runInstruction(YamlInstruction instruction, Directory root, String templatePath, String projectsPath) throws Exception{
+    private void runInstruction(YamlInstruction instruction,
+                                Directory root,
+                                String templatePath,
+                                String projectsPath) throws Exception{
 
         // parent = null - значит верх иерархии, имеющий прямую зависимость с root. Иерархия строится с директорий
         List<DirectoryInstruction> directoryInstructions = instruction.getDirectories();
@@ -128,7 +133,8 @@ public class ProjectConstructor {
 
                     Directory parent = directoriesBase.get(directoryInstruction.getParent());
                     if (parent == null){
-                        throw new IllegalStateException("Инструкция содержит неправильную зависимость между директориями");
+                        throw new IllegalStateException("Инструкция содержит неправильную зависимость" +
+                                " между директориями");
                     }
 
                     Directory child = directoryInstruction.prepareDirectoryEntity();
@@ -173,7 +179,8 @@ public class ProjectConstructor {
         for (FileInstruction fileInstruction:fileInstructions){
             Directory parent = directoriesBase.get(fileInstruction.getParent());
             if (parent == null) {
-                throw new IllegalStateException("instruction contains broken dependency between file and directory");
+                throw new IllegalStateException("instruction contains " +
+                        "broken dependency between file and directory");
             }
 
 
@@ -192,7 +199,9 @@ public class ProjectConstructor {
             // создаем файл
             // загружаем шаблон, если он присутствует
 
-            ProjectLifecycleUtils.writeFileFromSystemTemplate(parent, file, templatePath, fileInstruction.getTemplate(), projectsPath);
+            ProjectLifecycleUtils
+                    .writeFileFromSystemTemplate(parent, file, templatePath,
+                            fileInstruction.getTemplate(), projectsPath);
 
 
 
@@ -209,13 +218,16 @@ public class ProjectConstructor {
     private void prepareProject(ConstructorSettingsForSystemTemplateBuild info) throws Exception {
         if (info.getProjectType()== ProjectType.MAVEN_CLASSIC){
             // добавляем artefact id к pom.xml
-            ProjectLifecycleUtils.setArtifactIdInsidePomXML(Path.of(info.getProjectsPath(),info.getProject().getName(), "pom.xml").toString(),
+            ProjectLifecycleUtils
+                    .setArtifactIdInsidePomXML(Path.of(info.getProjectsPath(),
+                                    info.getProject().getName(), "pom.xml").toString(),
                     info.getProject().getName()+"-project"
                     );
             // генерируем точку входа, если этого желает пользователь
             if (info.isNeedEntryPoint()){
 
-                ProjectLifecycleUtils.generateEntryPointForMavenProject(info.getProject(), info.getProjectsPath());
+                ProjectLifecycleUtils
+                        .generateEntryPointForMavenProject(info.getProject(), info.getProjectsPath());
 
             }
 

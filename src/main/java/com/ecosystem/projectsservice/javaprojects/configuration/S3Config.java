@@ -1,7 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.configuration;
 
 
-import org.springframework.beans.factory.annotation.Value;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -15,8 +16,8 @@ import java.net.URI;
 @Configuration
 public class S3Config {
 
-    @Value("${s3.endpoint}")
-    private String endpoint;
+    @Autowired
+    private ExternalValues externalValues;
 
 
     private String accessKey = "any";
@@ -30,7 +31,7 @@ public class S3Config {
         AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKey, secretKey);
 
         return S3Client.builder()
-                .endpointOverride(URI.create(endpoint))
+                .endpointOverride(URI.create(externalValues.getStorageEndpoint()))
                 .credentialsProvider(StaticCredentialsProvider.create(credentials))
                 .region(Region.US_EAST_1)
                 .serviceConfiguration(S3Configuration.builder()

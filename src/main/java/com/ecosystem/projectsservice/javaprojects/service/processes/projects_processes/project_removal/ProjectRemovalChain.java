@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.processes.projects.project_removal;
+package com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_removal;
 
 
 import com.ecosystem.projectsservice.javaprojects.model.Project;

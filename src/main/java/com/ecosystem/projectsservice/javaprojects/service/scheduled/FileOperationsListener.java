@@ -1,8 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
-import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
-import com.ecosystem.projectsservice.javaprojects.service.cache.external.FileCache;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
+import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.BroadcastException;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;

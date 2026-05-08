@@ -1,9 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.configuration;
 
-import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

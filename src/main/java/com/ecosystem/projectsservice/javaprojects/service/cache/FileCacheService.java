@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.cache.external;
+package com.ecosystem.projectsservice.javaprojects.service.cache;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 
@@ -15,7 +15,6 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 

@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.cache.external;
+package com.ecosystem.projectsservice.javaprojects.service.cache;
 
 
 // кеш структуры проекта

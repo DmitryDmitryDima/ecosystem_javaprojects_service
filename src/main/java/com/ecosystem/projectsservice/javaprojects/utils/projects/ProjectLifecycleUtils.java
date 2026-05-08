@@ -43,7 +43,8 @@ public class ProjectLifecycleUtils {
         file.setParent(parent);
     }
     // пишем директории на диск и кешируем путь для child
-    public static void writeDirectoriesAndCachePath(Directory parent, Directory child, String projectsPath) throws Exception{
+    public static void writeDirectoriesAndCachePath(Directory parent,
+                                                    Directory child, String projectsPath) throws Exception{
 
         Path childPath = Path.of(parent.getConstructedPath(), child.getName());
         System.out.println("child "+childPath);
@@ -182,7 +183,8 @@ public class ProjectLifecycleUtils {
         Files.writeString(Path.of(projectsPath,currentDirectory.getConstructedPath(), "Main.java"), formattedTemplate);
 
         // изменяем pom xml
-        setMainClassInsidePomXML(Path.of(projectsPath,project.getRoot().getConstructedPath(), "pom.xml").toString(), "com.Main");
+        setMainClassInsidePomXML(Path.of(projectsPath,
+                project.getRoot().getConstructedPath(), "pom.xml").toString(), "com.Main");
 
 
 

@@ -23,7 +23,7 @@ import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_r
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveChain;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggersAggregator;
-import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.processes.projects.project_creation_from_template;
+package com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_creation_from_template;
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ConstructorSettingsForSystemTemplateBuild;
@@ -174,7 +174,8 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
                     new IllegalStateException("Сущность не была создана"));
 
             // формируем настройки для конструктора. тут мы намеренно используем единый контекст из-за обилия транзакций
-            ConstructorSettingsForSystemTemplateBuild settings = ConstructorSettingsForSystemTemplateBuild.builder()
+            ConstructorSettingsForSystemTemplateBuild settings = ConstructorSettingsForSystemTemplateBuild
+                    .builder()
                     .projectType(event.getInternalData().getProjectType())
                     .project(project)
                     .fileTemplatesPath(event.getInternalData().getFileTemplatesPath())

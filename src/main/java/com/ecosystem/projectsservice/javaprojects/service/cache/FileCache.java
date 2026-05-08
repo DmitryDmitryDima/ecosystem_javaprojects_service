@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.cache.external;
+package com.ecosystem.projectsservice.javaprojects.service.cache;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 

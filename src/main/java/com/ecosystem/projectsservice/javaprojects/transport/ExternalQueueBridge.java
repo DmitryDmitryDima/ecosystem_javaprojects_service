@@ -7,7 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.even
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.UserPersonalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ChainManager;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
-import com.ecosystem.projectsservice.javaprojects.service.ExternalValues;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.amqp.core.MessagePostProcessor;
