@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.utils.yaml;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.constructors;
 
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import lombok.AllArgsConstructor;

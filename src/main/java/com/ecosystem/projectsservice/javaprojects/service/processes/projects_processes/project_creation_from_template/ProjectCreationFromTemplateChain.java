@@ -14,7 +14,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.even
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
-import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectConstructor;
+import com.ecosystem.projectsservice.javaprojects.service.projects.constructors.ProjectConstructor;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectLifecycleUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -153,7 +153,8 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
 
         // пишем в диск
 
-        ProjectLifecycleUtils.createDirectory(Path.of(event.getInternalData().getProjectsPath(),  event.getExternalData().getName()));
+        ProjectLifecycleUtils
+                .createDirectory(Path.of(event.getInternalData().getProjectsPath(),  event.getExternalData().getName()));
 
 
 
@@ -168,7 +169,7 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
     public ProjectCreationFromTemplateEvent prepareStructure(ProjectCreationFromTemplateEvent event) throws Exception{
         event.setMessage("Готовим первоначальную структуру проекта");
 
-        transaction().execute(status -> {
+        Project projectUpdated = transaction().execute(status -> {
 
             Project project = projectRepository.findById(event.getExternalData().getProjectId()).orElseThrow(()->
                     new IllegalStateException("Сущность не была создана"));
@@ -194,8 +195,16 @@ public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<Proj
 
             project.setStatus(ProjectStatus.AVAILABLE);
 
-            return null;
+
+
+            return project;
         });
+
+        projectUpdated.getRoot().getChildren().forEach(directory -> {
+            System.out.println(directory.getId());
+        });
+
+
 
 
         return event;

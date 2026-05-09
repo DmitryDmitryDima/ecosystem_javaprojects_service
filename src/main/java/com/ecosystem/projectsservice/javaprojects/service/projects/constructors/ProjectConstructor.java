@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.projects;
+package com.ecosystem.projectsservice.javaprojects.service.projects.constructors;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.ConstructorSettingsForSystemTemplateBuild;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
@@ -6,9 +6,9 @@ import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectLifecycleUtils;
-import com.ecosystem.projectsservice.javaprojects.utils.yaml.DirectoryInstruction;
-import com.ecosystem.projectsservice.javaprojects.utils.yaml.FileInstruction;
-import com.ecosystem.projectsservice.javaprojects.utils.yaml.YamlInstruction;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.constructors.DirectoryInstruction;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.constructors.FileInstruction;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.constructors.YamlInstruction;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileSystemUtils;
 import org.yaml.snakeyaml.LoaderOptions;
