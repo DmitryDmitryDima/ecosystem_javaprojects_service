@@ -29,7 +29,8 @@ import java.util.UUID;
 
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_CREATION_FROM_TEMPLATE)
-public class ProjectCreationFromTemplateChain extends ControlledOutboxChain<ProjectCreationFromTemplateEvent> {
+public class ProjectCreationFromTemplateChain extends
+        ControlledOutboxChain<ProjectCreationFromTemplateEvent> {
 
 
     @Autowired

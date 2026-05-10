@@ -4,13 +4,12 @@ package com.ecosystem.projectsservice.javaprojects.controller;
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.*;
-import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectLifecycleService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.lifecycle.ProjectLifecycleService;
 import com.ecosystem.projectsservice.javaprojects.service.projects.ProjectParticipantsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 

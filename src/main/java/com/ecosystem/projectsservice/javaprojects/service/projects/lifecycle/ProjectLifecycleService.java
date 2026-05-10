@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.projects;
+package com.ecosystem.projectsservice.javaprojects.service.projects.lifecycle;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
@@ -7,13 +7,10 @@ import com.ecosystem.projectsservice.javaprojects.model.Project;
 
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
+import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_creation_from_template.*;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.NotificationStrategy;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.UserPersonalEventContext;
-import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_creation_from_template.ProjectCreationFromTemplateChain;
-import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_creation_from_template.ProjectCreationFromTemplateEvent;
-import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_creation_from_template.ProjectCreationFromTemplateExternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_creation_from_template.ProjectCreationFromTemplateInternalData;
 import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_removal.ProjectRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_removal.ProjectRemovalEvent;
 import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_removal.ProjectRemovalExternalData;
@@ -23,6 +20,7 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectType;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -60,6 +58,9 @@ public class ProjectLifecycleService {
 
     @Autowired
     private ProjectCreationFromTemplateChain projectCreationFromTemplateChain;
+
+    @Autowired
+    private ProjectCreationFromSystemInstructionChain creationFromInstructionChain;
 
 
 
@@ -230,6 +231,69 @@ public class ProjectLifecycleService {
     public void createProject(SecurityContext securityContext, RequestContext requestContext,
                               ProjectCreationRequest projectCreationRequest) throws Exception {
 
+
+        // главный ивент процесса
+        ProjectCreationFromSystemInstructionEvent mainEvent
+                = new ProjectCreationFromSystemInstructionEvent();
+
+        // внутренние данные процесса
+        ProjectCreationFromSystemInstructionInternalData internalData
+                = new ProjectCreationFromSystemInstructionInternalData();
+        internalData.setProjectType(ProjectType.MAVEN_CLASSIC);
+
+        internalData.setNeedEntryPoint(projectCreationRequest.isNeedEntryPoint());
+        internalData.setPrivacyLevel(projectCreationRequest.getPrivacyLevel());
+
+        // открытые данные процесса
+        ProjectCreationFromSystemInstructionExternalData externalData
+                = new ProjectCreationFromSystemInstructionExternalData();
+        externalData.setName(projectCreationRequest.getName());
+
+
+        // контекст процесса
+        UserPersonalEventContext context = new UserPersonalEventContext();
+        context.setUsername(securityContext.getUsername());
+        context.setTimestamp(Instant.now());
+        context.setUserUUID(securityContext.getUuid());
+        context.setCorrelationId(requestContext.getCorrelationId());
+        context.setRenderId(requestContext.getRenderId());
+
+
+        // расширенная стратегия рассылки внешних событий процесса
+        // если проект публичный,
+        // о его появлении узнает в том числе внешний наблюдатель страницы пользователя (списка его проектов)
+        NotificationStrategy notificationStrategy = new NotificationStrategy();
+        if (projectCreationRequest.getPrivacyLevel()==ProjectPrivacyLevel.OPEN){
+            notificationStrategy.setPublicChannel(List.of(securityContext.getUuid()));
+        }
+
+        context.setNotificationStrategy(notificationStrategy);
+
+        // обогащаем главный ивент процесса
+        mainEvent.setContext(context);
+        mainEvent.setExternalData(externalData);
+        mainEvent.setInternalData(internalData);
+
+        try {
+            // запускаем процесс
+            creationFromInstructionChain.init(mainEvent);
+        }
+
+        catch (Exception e){
+
+            throw new ProjectLifecycleException("ошибка запуска процесса создания проекта "+e.getMessage(),
+                    "PROJECT_CREATION_START_ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+
+
+
+
+
+
+
+        /*
+
         System.out.println(projectCreationRequest);
 
         ProjectCreationFromTemplateEvent mainEvent = new ProjectCreationFromTemplateEvent();
@@ -253,7 +317,8 @@ public class ProjectLifecycleService {
         context.setCorrelationId(requestContext.getCorrelationId());
         context.setRenderId(requestContext.getRenderId());
 
-        // если проект публичный, о его появлении узнает в том числе внешний наблюдатель страницы пользователя (списка его проектов)
+        // если проект публичный,
+        о его появлении узнает в том числе внешний наблюдатель страницы пользователя (списка его проектов)
         NotificationStrategy notificationStrategy = new NotificationStrategy();
         if (projectCreationRequest.getPrivacyLevel()==ProjectPrivacyLevel.OPEN){
             notificationStrategy.setPublicChannel(List.of(securityContext.getUuid()));
@@ -267,6 +332,9 @@ public class ProjectLifecycleService {
         mainEvent.setInternalData(internalData);
 
         projectCreationFromTemplateChain.init(mainEvent);
+
+
+         */
 
 
 

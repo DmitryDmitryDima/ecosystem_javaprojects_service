@@ -13,7 +13,7 @@ public class StorageExternals {
     @Value("${s3.endpoint}")
     private String storageEndpoint;
 
-    @Value("${s3.user.bucket")
+    @Value("${s3.user.bucket}")
     private String storageUserBucket;
 
     @Value("${s3.system.bucket}")

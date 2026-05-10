@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.UUID;
+
 @SpringBootTest
 public class S3Test {
 
@@ -19,12 +21,11 @@ public class S3Test {
 
 
     @Test
-    public void testDownload(){
+    public void testLoad(){
 
 
-        storageService.delete(storageExternals
-                        .getStorageSystemBucket(),
-                "standart_pom.txt");
+        storageService.saveOrUpdate(storageExternals.getStorageUserBucket(),
+                UUID.randomUUID().toString(), "hello");
 
 
 

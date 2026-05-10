@@ -231,6 +231,9 @@ public class ProjectYamlConstructor {
 
         }
 
+
+        // специфичная донастройка структуры в зависимости от типа проекта и параметров,
+        // заданных пользователем
         prepareStructure(properties, fileTemplateEnvelopes);
 
 
