@@ -27,18 +27,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-// todo добавить инвалидацию кеша
+
+
+// TODO инвалидация кешей
+
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_REMOVAL)
 public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEvent> {
 
 
-    @Autowired
-    private DirectoryRepository directoryRepository;
+
     @Autowired
     private ProjectRepository projectRepository;
-    @Autowired
-    private FileRepository fileRepository;
+
 
     @Override
     public void configure() throws Exception {

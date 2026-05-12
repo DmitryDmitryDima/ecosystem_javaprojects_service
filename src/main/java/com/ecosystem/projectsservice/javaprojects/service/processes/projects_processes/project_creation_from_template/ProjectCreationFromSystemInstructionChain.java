@@ -6,9 +6,13 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.constru
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
+import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.service.projects.constructors.ProjectYamlConstructor;
+import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
@@ -45,6 +49,14 @@ public class ProjectCreationFromSystemInstructionChain extends ControlledOutboxC
 
     @Autowired
     private ProjectYamlConstructor constructor;
+
+
+    @Autowired
+    private ProjectCreationFromSystemInstructionCompensator compensator;
+
+
+
+
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
@@ -177,6 +189,11 @@ public class ProjectCreationFromSystemInstructionChain extends ControlledOutboxC
         });
 
 
+        // тест
+
+
+
+
     }
 
 
@@ -190,16 +207,8 @@ public class ProjectCreationFromSystemInstructionChain extends ControlledOutboxC
      */
     @Override
     public void compensationStrategy(ProjectCreationFromSystemInstructionEvent event) {
-        String step = event.getInternalData().getCurrentStep();
-        if (!step.equals("project_entity_creation")){
-            // очистка сущности
-            transaction().execute(status -> {
-
-                projectRepository.deleteById(event.getExternalData().getProjectId());
-
-                return null;
-            });
-
-        }
+        compensator.compensation(event);
     }
+
+
 }

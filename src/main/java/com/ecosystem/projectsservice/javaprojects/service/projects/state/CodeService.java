@@ -1,5 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.service.projects.state;
 
+
+
+// инструменты анализа кода
 public interface CodeService {
 
 

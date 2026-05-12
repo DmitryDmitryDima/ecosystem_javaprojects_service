@@ -26,7 +26,8 @@ import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.*;
 
-public abstract class ControlledOutboxChain <E extends DeclarativeChainEvent<? extends ExternalEventContext,
+public abstract class ControlledOutboxChain
+        <E extends DeclarativeChainEvent<? extends ExternalEventContext,
         ? extends ExternalEventData,
         ? extends InternalEventData>> {
 

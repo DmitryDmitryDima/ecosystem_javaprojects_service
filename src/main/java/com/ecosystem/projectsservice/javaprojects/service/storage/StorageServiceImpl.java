@@ -8,13 +8,12 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Service
@@ -57,13 +56,18 @@ public class StorageServiceImpl implements StorageService {
     public void delete(String bucket, String key) {
 
         try {
+
+
             DeleteObjectRequest deleteObjectRequest
                     = DeleteObjectRequest.builder()
                     .bucket(bucket)
                     .key(key)
                     .build();
 
-            storageClient.deleteObject(deleteObjectRequest);
+            storageClient
+                    .deleteObject(deleteObjectRequest);
+
+
         }
 
         catch (Exception e){
@@ -72,6 +76,86 @@ public class StorageServiceImpl implements StorageService {
 
 
 
+    }
+
+
+
+    private void deleteCurrentPortion(String bucket, List<ObjectIdentifier> portion){
+        DeleteObjectsRequest deleteObjectsRequest =
+
+                DeleteObjectsRequest.builder()
+                        .bucket(bucket)
+                        .delete(Delete.builder()
+                                .objects(portion)
+                                .build())
+
+                        .build();
+
+        DeleteObjectsResponse response
+                = storageClient.deleteObjects(deleteObjectsRequest);
+
+        if (response.hasErrors()){
+            throw new StorageException("Ошибка порционного удаления: "+response
+                    .errors()
+                    .getFirst()
+                    .message()
+            );
+        }
+    }
+
+
+    // todo запрос может содержать не более тысячи файлов
+    @Override
+    public void deleteBatch(String bucket, List<String> keys) {
+        try {
+
+
+
+            int size = keys.size();
+
+            int current = 1;
+
+            int limit = 1000;
+
+
+            List<ObjectIdentifier> currentList = new ArrayList<>();
+
+
+            while (current<=size){
+
+                var objId = ObjectIdentifier.builder().key(keys.get(current-1)).build();
+
+                currentList.add(objId);
+
+                if (current%limit == 0){
+
+
+                    deleteCurrentPortion(bucket, currentList);
+
+                    currentList = new ArrayList<>();
+                }
+
+                current++;
+            }
+
+
+            if (!currentList.isEmpty()){
+                deleteCurrentPortion(bucket, currentList);
+            }
+
+
+
+
+
+
+
+
+
+        }
+
+        catch (Exception e){
+            throw new StorageException("Ошибка удаления объектов: "+e.getMessage());
+        }
     }
 
     @Override

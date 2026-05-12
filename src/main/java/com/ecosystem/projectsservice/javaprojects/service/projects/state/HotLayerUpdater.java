@@ -4,8 +4,8 @@ package com.ecosystem.projectsservice.javaprojects.service.projects.state;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
 
-// хуки для внесения изменений и уведомления о них внещних систем
-public interface ContentStateUpdater {
+// хуки, вносящие изменения в "горячий слой"
+public interface HotLayerUpdater {
 
 
     // при быстром сохранении - запись в поле кеша + уведомление
