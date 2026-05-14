@@ -1,10 +1,14 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_removal;
 
 
+import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
+import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
@@ -31,6 +35,7 @@ import java.util.UUID;
 
 // TODO инвалидация кешей
 
+
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_REMOVAL)
 public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEvent> {
@@ -39,6 +44,18 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private ProjectRemovalCompensator compensator;
+
+    @Autowired
+    private StorageService storageService;
+
+    @Autowired
+    private StorageExternals storageExternals;
+
+    @Autowired
+    private SnapshotService snapshotService;
 
 
     @Override
@@ -55,7 +72,7 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
     @Override
     public void compensationStrategy(ProjectRemovalEvent event) {
-
+        compensator.compensation(event);
     }
 
     @Override
@@ -70,11 +87,73 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
 
     @OpeningStep(name = "blockProject")
-    @Next(name = "clearDisk")
+    @Next(name = "clearStorage")
     @Message
-    public ProjectRemovalEvent blockProject(ProjectRemovalEvent event){
+    public void blockProject(ProjectRemovalEvent event){
 
         event.setMessage("блокируем проект");
+
+
+        // проверяем права и блокируем проект
+        Project entity = transaction().execute(status -> {
+
+            // pessimistic write
+            Optional<Project> existenceCheck = projectRepository.findByIdForUpdate(event.getExternalData().getProjectId());
+
+            if (existenceCheck.isEmpty()){
+
+                throw new IllegalStateException("проект не найден");
+
+            }
+            Project project = existenceCheck.get();
+
+
+            if (!project.getUserUUID().equals(event.getContext().getUserUUID())){
+
+                throw new IllegalStateException("ошибка доступа. Вы не можете удалить этот проект");
+            }
+
+            if (project.getStatus()!= ProjectStatus.AVAILABLE){
+
+
+                throw new IllegalStateException("ошибка статуса проекта. Возможно. он запущен?");
+            }
+
+            // блокировка специальным статусом
+            project.setStatus(ProjectStatus.REMOVING);
+
+            return project;
+
+        });
+
+        // модифицируем стратегию рассылки
+
+        // вставляем необходимые дополнения в контекст
+        // событие удаления проекта рассылается персонально участникам проекта и его автору, либо открытый, либо закрытый канал
+        NotificationStrategy notificationStrategy = new NotificationStrategy();
+        List<UUID> toNotify = new ArrayList<>();
+        toNotify.add(entity.getUserUUID());
+        toNotify.addAll(entity.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList());
+
+        if (entity.getPrivacyLevel() == ProjectPrivacyLevel.OPEN) {
+            notificationStrategy.setPublicChannel(toNotify);
+        } else {
+            notificationStrategy.setPrivateChannel(toNotify);
+        }
+
+
+        event.getContext().setNotificationStrategy(notificationStrategy);
+
+
+
+
+
+
+
+
+
+
+        /*
 
         String fullPath = transaction().execute(status -> {
 
@@ -133,28 +212,76 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
         event.getInternalData().setProjectPath(fullPath);
 
+         */
 
 
 
-
-        return event;
     }
 
-    @Step(name = "clearDisk")
-    @Message
-    @Next(name = "dbRemove")
-    public ProjectRemovalEvent clearDisk(ProjectRemovalEvent event) throws Exception{
 
-        event.setMessage("чистим диск");
+
+    /*
+    для удаления файлов в хранилище сначала нужно извлечь список всех сопряженных с проектом файлов
+     */
+    @Step(name = "clearStorage")
+    @Message
+    @MaxRetry(maxCount = 2)
+    @Next(name = "dbRemove")
+    public void clearStorage(ProjectRemovalEvent event) throws Exception{
+
+
+        event.setMessage("чистим хранилище");
+
+        UUID rootId = transaction().execute(status -> {
+
+            Optional<Project> existenceCheck = projectRepository
+                    .findById(event.getExternalData().getProjectId());
+
+
+            if (existenceCheck.isEmpty()) throw new IllegalStateException("несогласованность процесса" +
+                    " - сущность проекта не найдена");
+
+            Project project = existenceCheck.get();
+
+            Directory root = project.getRoot();
+
+            if (root == null){
+                throw new IllegalStateException("несогласованность процесса " +
+                        "- отсутствует корневая директория");
+            }
+
+
+            return root.getId();
+
+
+
+
+        });
+
+        // рекурсивный запрос всех файлов проекта
+        List<String> keys = snapshotService.getAllFilesBelowDirectory(rootId)
+                .stream().map(fileReadOnly -> fileReadOnly.getId().toString()).toList();
+
+        storageService.deleteBatch(storageExternals.getStorageUserBucket(), keys);
+
+        /*
+
+
+
+
 
         FileSystemUtils.deleteRecursively(Path.of(event.getInternalData().getProjectPath()));
 
+         */
 
-        return event;
+
+
+
+
     }
 
     @EndingStep(name = "dbRemove")
-    public ProjectRemovalEvent dbRemove(ProjectRemovalEvent event){
+    public void dbRemove(ProjectRemovalEvent event){
 
 
 
@@ -163,7 +290,7 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
             Optional<Project> projectCheck = projectRepository.findById(event.getExternalData().getProjectId());
             if (projectCheck.isEmpty()){
 
-                throw new IllegalStateException("Ошибка удаления. Не найден id проекта");
+                throw new IllegalStateException("Несогласованность процесса - отсутствует сущность проекта");
             }
 
             projectRepository.delete(projectCheck.get());
@@ -172,7 +299,7 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
            return null;
         });
 
-        return event;
+
     }
 
 

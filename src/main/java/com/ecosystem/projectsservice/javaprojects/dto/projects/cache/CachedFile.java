@@ -37,5 +37,7 @@ public class CachedFile {
 
     private long version;
 
+    // todo выжимка из ast
+
 
 }

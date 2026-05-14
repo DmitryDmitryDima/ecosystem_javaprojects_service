@@ -83,6 +83,8 @@ public class MavenPreparer {
         main.setParent(com);
         com.getFiles().add(main);
 
+        properties.getProject().setEntryPoint(main);
+
         FileTemplateEnvelope fileTemplateEnvelope = new FileTemplateEnvelope(main, mainTemplate);
 
         templates.add(fileTemplateEnvelope);

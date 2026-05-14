@@ -7,6 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.model.Project;
 
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
+import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
 import com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_creation_from_template.*;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.NotificationStrategy;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
@@ -97,6 +98,8 @@ public class ProjectLifecycleService {
 
                 .filter(authorProject->{
 
+                    if (authorProject.getStatus()== ProjectStatus.REMOVING) return false;
+
                     if (authorProject.getPrivacyLevel()== ProjectPrivacyLevel.OPEN) return true;
 
                     // если отличается тот. кто смотрит, и тот, кого смотрят
@@ -118,9 +121,16 @@ public class ProjectLifecycleService {
 
         // извлекаем проекты, где target uuid является участником. Если это приватный проект,
         // то он отображает только в том случае, если caller тоже участник
-        List<Project> targetAsParticipantProjects = callerUUID.equals(targetUUID)?projectRepository.readAllProjectsByParticipant(targetUUID)
+        List<Project> targetAsParticipantProjects = callerUUID.equals(targetUUID)?projectRepository
+                .readAllProjectsByParticipant(targetUUID)
                 :
-                projectRepository.readAllParticipantProjectsByDifferentTargetAndCaller(targetUUID,securityContext.getUuid());
+                projectRepository.readAllParticipantProjectsByDifferentTargetAndCaller(targetUUID,securityContext.getUuid())
+
+                        .stream().filter(project -> project.getStatus()!=ProjectStatus.REMOVING).toList();
+                ;
+
+
+
 
 
 
@@ -140,7 +150,8 @@ public class ProjectLifecycleService {
                                 .author(thirdParty.getUserUUID())
                                 .privacyLevel(thirdParty.getPrivacyLevel())
                                 .status(thirdParty.getStatus())
-                                .participants(thirdParty.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList())
+                                .participants(thirdParty.getParticipants().stream()
+                                        .map(ProjectParticipant::getUserUUID).toList())
                                 .build()).toList());
 
         projects.setParticipantProjects(
@@ -151,7 +162,8 @@ public class ProjectLifecycleService {
                                 .author(thirdParty.getUserUUID())
                                 .privacyLevel(thirdParty.getPrivacyLevel())
                                 .status(thirdParty.getStatus())
-                                .participants(thirdParty.getParticipants().stream().map(ProjectParticipant::getUserUUID).toList())
+                                .participants(thirdParty.getParticipants().stream()
+                                        .map(ProjectParticipant::getUserUUID).toList())
                                 .build()).toList());
 
 
@@ -208,7 +220,7 @@ public class ProjectLifecycleService {
 
 
         ProjectRemovalInternalData internalData = new ProjectRemovalInternalData();
-        internalData.setProjectPath(Path.of(userStoragePath, securityContext.getUuid().toString(),"projects").toString());
+        //internalData.setProjectPath(Path.of(userStoragePath, securityContext.getUuid().toString(),"projects").toString());
 
 
 

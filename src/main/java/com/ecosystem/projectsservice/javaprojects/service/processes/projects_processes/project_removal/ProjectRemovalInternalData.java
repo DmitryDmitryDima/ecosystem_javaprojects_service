@@ -8,5 +8,5 @@ import lombok.Setter;
 @Setter
 public class ProjectRemovalInternalData extends InternalEventData {
 
-    private String projectPath;
+
 }
