@@ -6,7 +6,6 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
-import com.ecosystem.projectsservice.javaprojects.service.projects.state.ContentStateProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
@@ -46,8 +45,7 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
     @Autowired
     private ProjectActionsUtils actionsUtils;
 
-    @Autowired
-    private ContentStateProcessor contentStateProcessor;
+
 
 
 
@@ -210,19 +208,7 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
         // обновляем запись в кеше - чтобы с этого момента чтение было актуальным
 
 
-        FileDTO fileDTO = FileDTO.builder()
-                .content(fileSaveEvent.getExternalData().getContent())
-                .constructedPath(fileSaveEvent.getExternalData().getPath())
-                .id(fileSaveEvent.getExternalData().getFileId())
-                .extension(fileSaveEvent.getExternalData().getExtension())
-                .name(fileSaveEvent.getExternalData().getName())
-                .projectId(fileSaveEvent.getContext().getProjectId())
-                .ownerUUID(fileSaveEvent.getExternalData().getFileOwner())
-                .build();
 
-        contentStateProcessor.onForcedSave(ForcedSave.builder()
-                .fileDTO(fileDTO)
-                .build());
 
 
 

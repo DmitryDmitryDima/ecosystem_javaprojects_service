@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.projects.state;
+package com.ecosystem.projectsservice.javaprojects.service.projects.state.update;
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
@@ -12,7 +12,7 @@ public interface HotLayerUpdater {
     void onAutosave(Autosave autosave);
 
     // при форсированном сохранении - обновление dto полностью
-    void inForcedSave(ForcedSave save);
+    void onForcedSave(ForcedSave save);
 
 
 }

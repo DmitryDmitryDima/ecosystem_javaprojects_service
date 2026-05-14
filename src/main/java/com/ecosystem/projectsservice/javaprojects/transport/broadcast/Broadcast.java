@@ -9,6 +9,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.data
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
@@ -55,7 +56,8 @@ public class Broadcast {
             publisher.publishEvent(externalEvent);
         }
         catch (Exception e){
-            throw new BroadcastException("Ошибка рассылки: "+e.getMessage());
+            throw new BroadcastException("Ошибка рассылки: "+e.getMessage(), "BROADCAST_EXCEPTION",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

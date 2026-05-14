@@ -81,6 +81,19 @@ public class SnapshotService {
         return directoryJDBCRepository.loadAWholeStructureAboveRootWithLevel(root, level);
     }
 
+    // метаданные всех файлов в проекте
+    public List<FileReadOnly> getProjectFiles(UUID project){
+        return directoryJDBCRepository.loadAllProjectFiles(project);
+    }
+
+    // поиск конкретного файла в проекте
+    public Optional<FileReadOnly> getProjectFile(UUID project, UUID file){
+
+        System.out.println("called "+project+" and "+file);
+
+        return directoryJDBCRepository.loadProjectFile(project, file);
+    }
+
 
 
 

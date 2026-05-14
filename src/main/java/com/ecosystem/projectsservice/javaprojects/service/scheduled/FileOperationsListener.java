@@ -73,14 +73,14 @@ public class FileOperationsListener {
         fileCache.scan().forEach(file->{
 
 
-            performDiskWriting(file);
 
-            performBroadcast(file);
 
 
         });
     }
 
+
+    /*
     private void performBroadcast(FileDTO file){
         try {
             broadcast.sendSync(new Broadcast.EventBuilder()
@@ -106,6 +106,10 @@ public class FileOperationsListener {
         }
     }
 
+     */
+
+
+    /*
     private void performDiskWriting(FileDTO file) {
         Path filePath = Path.of(externalValues.getUserStoragePath(),
                 file.getOwnerUUID().toString(),
@@ -121,6 +125,8 @@ public class FileOperationsListener {
 
 
     }
+
+     */
 
     /*
     private boolean shouldWriteFile(CacheValueWrapper<FileDTO> entry){

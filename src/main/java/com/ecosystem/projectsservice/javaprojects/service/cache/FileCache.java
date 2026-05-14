@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.service.cache;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,9 +11,9 @@ public interface FileCache {
 
 
 
-    void saveOrUpdate(FileDTO fileDTO);
+    void saveOrUpdate(CachedFile cachedFile);
 
-    Optional<FileDTO> get(UUID id);
+    Optional<CachedFile> get(UUID id);
 
     boolean delete(UUID id);
 
@@ -20,7 +21,7 @@ public interface FileCache {
     boolean updateContent(UUID id, String content);
 
 
-    List<FileDTO> scan();
+    List<CachedFile> scan();
 
 
 

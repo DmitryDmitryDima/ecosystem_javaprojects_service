@@ -1,8 +1,12 @@
 package com.ecosystem.projectsservice.javaprojects.transport.broadcast;
 
-public class BroadcastException extends Exception{
+import com.ecosystem.projectsservice.javaprojects.exceptions.BaseException;
+import org.springframework.http.HttpStatus;
 
-    public BroadcastException(String message){
-        super(message);
+public class BroadcastException extends BaseException {
+
+
+    public BroadcastException(String message, String errorCode, HttpStatus httpStatus) {
+        super(message, errorCode, httpStatus);
     }
 }

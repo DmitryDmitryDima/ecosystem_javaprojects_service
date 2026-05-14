@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.service.cache;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,15 +51,16 @@ public class FileCacheService implements FileCache{
 
 
     @Override
-    public void saveOrUpdate(FileDTO fileDTO) {
+    public void saveOrUpdate(CachedFile cachedFile) {
 
 
 
-        if (fileDTO.getId() == null){
+        if (cachedFile.getId() == null){
             throw new IllegalStateException("missing file id");
         }
 
-        redisTemplate.opsForHash().putAll(createKey(fileDTO.getId()), mapper.convertValue(fileDTO,
+        redisTemplate.opsForHash().putAll(createKey(cachedFile.getId()),
+                mapper.convertValue(cachedFile,
 
 
                 new TypeReference<Map<String, String>>() {}));
@@ -67,7 +69,8 @@ public class FileCacheService implements FileCache{
 
 
         // период устаревания кеша
-        redisTemplate.expire(createKey(fileDTO.getId()), expirationTimeInSec, TimeUnit.SECONDS);
+        redisTemplate.expire(createKey(cachedFile.getId()),
+                expirationTimeInSec, TimeUnit.SECONDS);
 
 
 
@@ -77,17 +80,19 @@ public class FileCacheService implements FileCache{
     }
 
     @Override
-    public Optional<FileDTO> get(UUID id) {
+    public Optional<CachedFile> get(UUID id) {
 
 
 
         Map<Object, Object> hash = redisTemplate.opsForHash().entries(createKey(id));
 
+
+
         if (hash.isEmpty()){
             return Optional.empty();
         }
         else {
-            return Optional.of(mapper.convertValue(hash, FileDTO.class));
+            return Optional.of(mapper.convertValue(hash, CachedFile.class));
         }
 
 
@@ -137,7 +142,7 @@ public class FileCacheService implements FileCache{
      */
 
     @Override
-    public List<FileDTO> scan() {
+    public List<CachedFile> scan() {
 
         System.out.println("scan operation starts in cache");
 
@@ -178,7 +183,8 @@ public class FileCacheService implements FileCache{
 
 
         // шаг 2 - извлекаем по полученным ключам hash values
-        return result.stream().map(obj->mapper.convertValue(obj, FileDTO.class)).toList();
+        return result.stream()
+                .map(obj->mapper.convertValue(obj, CachedFile.class)).toList();
 
 
     }

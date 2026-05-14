@@ -14,16 +14,16 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
 import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveChain;
 import com.ecosystem.projectsservice.javaprojects.service.projects.access_validation.ProjectAccessValidator;
-import com.ecosystem.projectsservice.javaprojects.service.projects.state.ContentStateProcessor;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal.DirectoryRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_add.FileAddChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move.FileMoveChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal.FileRemovalChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveChain;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.HotLayerReader;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggersAggregator;
-import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,12 +104,16 @@ public class ProjectActionsService {
 
 
 
+    @Autowired
+    private HotLayerReader reader;
 
     @Autowired
-    private ExternalValues externalValues;
+    private HotLayerUpdater updater;
 
-    @Autowired
-    private ContentStateProcessor contentStateProcessor;
+
+
+
+
 
 
 
@@ -180,7 +184,11 @@ public class ProjectActionsService {
                 .validateAccessUsingCache(securityContext, requestContext, projectId);
 
 
-        contentStateProcessor.onAutosave(Autosave
+
+
+
+
+        updater.onAutosave(Autosave
 
                 .builder()
                         .projectId(projectId)
@@ -410,13 +418,28 @@ public class ProjectActionsService {
 
 
 
+
+
+    // TODO введение кеширования предполагает, что поле updated at обновляется только при фоновой записи
+    // Исходя из этого, CachedFile должен иметь поле last_update
+
     @Transactional
-    public List<SimpleFileInfo> getRecentFiles(SecurityContext securityContext, RequestContext requestContext, UUID projectId) throws Exception {
+    public List<SimpleFileInfo> getRecentFiles(SecurityContext securityContext,
+
+                                               RequestContext requestContext, UUID projectId) throws Exception {
+
+
+        /*
         ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
         StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot());
 
         return utils.getRecentFiles(snapshot);
+
+
+         */
+
+        return List.of();
 
 
 
@@ -438,7 +461,7 @@ public class ProjectActionsService {
         ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
 
-        return contentStateProcessor.readFile(fileId, project);
+        return reader.readFile(project.getId(), fileId);
 
 
 

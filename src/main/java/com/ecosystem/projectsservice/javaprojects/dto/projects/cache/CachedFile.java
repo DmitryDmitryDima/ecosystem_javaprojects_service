@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Instant;
 import java.util.UUID;
 
 
@@ -23,10 +24,12 @@ public class CachedFile {
     private String constructedPath;
     private UUID id;
 
-    // кешируем uuid владельца файла
-    private UUID ownerUUID;
+
 
     private UUID projectId;
+
+
+    private Instant lastUpdate;
 
 
 

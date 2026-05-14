@@ -19,8 +19,7 @@ public class FileDTO {
     private String constructedPath;
     private UUID id;
 
-    // кешируем uuid владельца файла
-    private UUID ownerUUID;
+
 
     private UUID projectId;
 
