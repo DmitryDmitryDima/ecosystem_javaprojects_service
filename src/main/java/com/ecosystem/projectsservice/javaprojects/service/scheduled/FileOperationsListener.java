@@ -1,8 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
+import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.BroadcastException;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
@@ -20,6 +23,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 // фоновые процессы, ассоциированные с файлами в проектах
 @Service
@@ -42,17 +48,12 @@ public class FileOperationsListener {
 
 
 
-    @Autowired
-    private FileRepository fileRepository;
 
-    @Autowired
-    private TransactionTemplate transactionTemplate;
 
     @Autowired
     private FileCache fileCache;
 
-    @Autowired
-    private ExternalValues externalValues;
+
 
 
 
@@ -61,6 +62,15 @@ public class FileOperationsListener {
     @Autowired
     private Broadcast broadcast;
 
+    @Autowired
+    private StorageService storageService;
+
+    @Autowired
+    private StorageExternals storageExternals;
+
+
+    private final ExecutorService uploadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
 
 
 
@@ -68,15 +78,52 @@ public class FileOperationsListener {
 
     // todo после записи в диск мы должны изменить флаг written в кеше с проверкой version
 
+
+    // todo выходит так, что мы каждый раз выгружаем контент в память, что не есть хорошо
     @Scheduled(fixedDelay = 30000)
     public void writeFileContentToDisk(){
         fileCache.scan().forEach(file->{
+
+
+            CompletableFuture.runAsync(()->uploadFileContent(file), uploadExecutor);
 
 
 
 
 
         });
+    }
+
+
+    private void uploadFileContent(CachedFile file){
+        storageService.saveOrUpdate(storageExternals.getStorageUserBucket(),
+                file.getId().toString(),
+                file.getContent());
+
+
+
+        broadcast.sendSync(new Broadcast.EventBuilder()
+                .useEvent(ProjectEventFromSystem::new)
+                .withContext(()->ProjectEventFromSystemContext.builder().correlationId(UUID.randomUUID())
+                        .origin("background disk writer process")
+                        .timestamp(Instant.now())
+                        .projectId(file.getProjectId()).build())
+                .withData(()->{
+                    FileSaveExternalData data = new FileSaveExternalData();
+                    data.setFileId(file.getId());
+                    data.setPath(file.getConstructedPath());
+                    data.setName(file.getName());
+                    data.setExtension(file.getExtension());
+                    return data;
+                })
+                .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
+                .withMessage("Данные сохранены на диск")
+                .build());
+
+
+
+
+
     }
 
 

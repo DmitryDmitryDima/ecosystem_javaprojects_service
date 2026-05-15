@@ -35,6 +35,7 @@ public class SnapshotService {
         List<FileReadOnly> files = directoryJDBCRepository.loadFilesAssosiatedWithDirectories(
                 directories.stream().map(DirectoryReadOnly::getId).toList()
         );
+        System.out.println(files);
         return StructureSnapshot.builder()
                 .directories(directories)
                 .files(files)

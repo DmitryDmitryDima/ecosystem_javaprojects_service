@@ -31,9 +31,9 @@ public class DirectoryJDBCRepository {
         String query = """
                 
                 with recursive children as (
-                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
-                union
-                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1
+                select d.*, 0 as depth from directories d where d.id = ?
+                union all
+                select d.*, c.depth+1
                  from directories d join children c on d.parent_id = c.id and c.depth<?
                 )
                 select * from children;
@@ -50,9 +50,9 @@ public class DirectoryJDBCRepository {
         String query = """
                 
                 with recursive children as (
-                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
-                union
-                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1
+                select d.*, 0 as depth from directories d where d.id = ?
+                union all
+                select d.*, c.depth+1
                  from directories d join children c on d.id = c.parent_id and c.depth<?
                 )
                 select * from children;
@@ -71,9 +71,9 @@ public class DirectoryJDBCRepository {
         String query = """
                 
                 with recursive children as (
-                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
-                union
-                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1 from directories d join children c on d.parent_id = c.id
+                select d.*,  0 as depth from directories d where d.id = ?
+                union all
+                select d.*, c.depth+1 from directories d join children c on d.parent_id = c.id
                 )
                 select * from children;
                 
@@ -89,9 +89,9 @@ public class DirectoryJDBCRepository {
         String query = """
                 
                 with recursive children as (
-                select id, parent_id, name, constructed_path, created_at, hidden, immutable, status, version, 0 as depth from directories where id = ?
-                union
-                select d.id, d.parent_id, d.name, d.constructed_path, d.created_at, d.hidden, d.immutable, d.status, d.version, c.depth+1 from directories d join children c on d.id = c.parent_id
+                select d.*, 0 as depth from directories d where d.id = ?
+                union all
+                select d.*, c.depth+1 from directories d join children c on d.id = c.parent_id
                 )
                 select * from children;
                 
@@ -108,7 +108,7 @@ public class DirectoryJDBCRepository {
     public List<FileReadOnly> loadFilesAssosiatedWithDirectories(List<UUID> directories){
         String inSql = String.join(",", Collections.nCopies(directories.size(), "?"));
         String query = String
-                .format("select parent_id, name,id, constructed_path, created_at, updated_at, hidden, immutable,extension, status, version from files where files.parent_id in (%s)",
+                .format("select * from files where files.parent_id in (%s)",
                         inSql);
 
 
@@ -127,7 +127,7 @@ public class DirectoryJDBCRepository {
                 select * from files where files.parent_id in ( with recursive children as (
                                 select id, parent_id, 0 as depth
                                  from directories where id = ?
-                                union
+                                union all
                                 select d.id, d.parent_id, c.depth+1 
                                 from directories d join children c
                 				on d.parent_id = c.id
@@ -153,7 +153,7 @@ public class DirectoryJDBCRepository {
                 select * from files where files.parent_id in ( with recursive children as (
                                 select id, parent_id, 0 as depth
                                  from directories where id = ?
-                                union
+                                union all
                                 select d.id, d.parent_id, c.depth+1 
                                 from directories d join children c
                 				on d.parent_id = c.id
@@ -175,7 +175,7 @@ public class DirectoryJDBCRepository {
                 select * from files where files.parent_id in ( with recursive children as (
                                                 select id, parent_id, 0 as depth
                                                  from directories where id = (select java_projects.root_id from java_projects where java_projects.id = ? )
-                                                union
+                                                union all
                                                 select d.id, d.parent_id,c.depth+1
                                                 from directories d join children c
                                 				on d.parent_id = c.id
@@ -197,7 +197,7 @@ public class DirectoryJDBCRepository {
                 select * from files where files.parent_id in ( with recursive children as (
                                                 select id, parent_id, 0 as depth
                                                  from directories where id = (select java_projects.root_id from java_projects where java_projects.id = ? )
-                                                union
+                                                union all
                                                 select d.id, d.parent_id,c.depth+1
                                                 from directories d join children c
                                 				on d.parent_id = c.id

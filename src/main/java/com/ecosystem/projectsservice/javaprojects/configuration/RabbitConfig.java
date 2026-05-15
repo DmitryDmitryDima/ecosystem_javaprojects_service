@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.configuration;
 
 import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.MessageQueueExternals;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -11,7 +12,7 @@ public class RabbitConfig {
 
 
     @Autowired
-    private ExternalValues externalValues;
+    private MessageQueueExternals externalValues;
 
 
 

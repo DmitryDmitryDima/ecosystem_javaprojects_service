@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.transport;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 
+import com.ecosystem.projectsservice.javaprojects.service.external_values.MessageQueueExternals;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromSystem;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.UserPersonalEvent;
@@ -54,7 +55,7 @@ public class ExternalQueueBridge {
 
 
     @Autowired
-    private ExternalValues externalValues;
+    private MessageQueueExternals externalValues;
 
 
     // точка регистрации категорий
