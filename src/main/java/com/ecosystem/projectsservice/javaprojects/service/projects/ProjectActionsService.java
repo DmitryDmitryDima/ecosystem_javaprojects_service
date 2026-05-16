@@ -209,60 +209,7 @@ public class ProjectActionsService {
 
 
 
-        /*
 
-        // безопасно читаем файл из снимка бд - при статусе available его можно писать в кеш
-
-
-        StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(hash.getRoot());
-
-        // извлекаем файл из снимка, если он есть
-        Optional<FileReadOnly> check = utils.findAvailableFile(snapshot, request.getFileId());
-
-
-
-        if (check.isEmpty()){
-            throw new IllegalStateException("Файл отсутствует, недоступен или не принадлежит проекту");
-        }
-
-        FileReadOnly dbFile = check.get();
-
-        // готовим dto. при операции чтения это dto будет прочтено из файлового кеша
-        FileDTO fileDTO = FileDTO.builder()
-                .content(request.getContent())
-                .constructedPath(dbFile.getConstructed_path())
-                .id(dbFile.getId())
-                .extension(dbFile.getExtension())
-                .name(dbFile.getName())
-                .projectId(projectId)
-                .ownerUUID(hash.getProjectOwner())
-                        .build();
-
-
-
-
-
-
-        // ивент пересылается только подписчикам проекта
-
-
-        fileContentCache.save(request.getFileId(), fileDTO);
-
-
-
-        broadcast.sendSync(
-                new Broadcast.EventBuilder().useEvent(ProjectEventFromUser::new)
-                .withContext(()->ProjectEventFromUserContext
-                        .from(securityContext, requestContext,
-                                projectId, null, null))
-                .withData(()->{
-                    FileSaveExternalData externalData = new FileSaveExternalData();
-                    externalData.setContent(request.getContent());
-                    externalData.setFileId(request.getFileId());
-                    return externalData;}).withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE)
-                .withMessage("Файл сохранен").build());
-
-         */
 
 
 

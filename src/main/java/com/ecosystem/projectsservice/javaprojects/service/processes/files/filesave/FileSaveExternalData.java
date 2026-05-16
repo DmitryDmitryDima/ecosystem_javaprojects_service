@@ -16,7 +16,7 @@ public class FileSaveExternalData implements ExternalEventData {
     private String name;
     private String extension;
     private String content;
-    private String path;
+
     private UUID fileOwner;
 
 

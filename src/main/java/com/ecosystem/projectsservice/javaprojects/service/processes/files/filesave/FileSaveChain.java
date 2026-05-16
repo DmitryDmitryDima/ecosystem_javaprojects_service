@@ -2,10 +2,14 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.files.files
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
+import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
@@ -42,8 +46,21 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
     @Autowired
     private SnapshotService snapshotService;
 
+
     @Autowired
-    private ProjectActionsUtils actionsUtils;
+    private HotLayerUpdater hotLayerUpdater;
+
+    @Autowired
+    private StorageService storageService;
+
+    @Autowired
+    private StorageExternals externals;
+
+
+
+
+    @Autowired
+    private FileSaveChainCompensator compensator;
 
 
 
@@ -71,20 +88,7 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
     @Override
     public void compensationStrategy(FileSaveEvent event) {
-        // Шаг, после которого произошла ошибка
-        String step = event.getInternalData().getCurrentStep();
-        System.out.println("compensation for "+step);
-
-        // нужно освободить файл. Примечание - файл не может быть изменен. если какой либо процесс занимает лок
-        if (!step.equals("lockFile")){
-            transaction().execute(status -> {
-                Optional<File> fileCheck = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
-
-                fileCheck.ifPresent(file -> file.setStatus(FileStatus.AVAILABLE));
-
-                return null;
-            });
-        }
+        compensator.compensation(event);
     }
 
     // связываем цепочку с конкретным типом выходного ивента
@@ -104,11 +108,11 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
     @OpeningStep(name = "lockFile")
     @Message
-    @Next(name="writeFileToDisk")
+    @Next(name="writeFileToStorage")
     @MaxDuration(time = 5)
     public void lockFile(FileSaveEvent fileSaveEvent){
 
-        System.out.println("perform - lock file");
+
 
 
 
@@ -135,14 +139,12 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
             if (presence.isEmpty()) throw new IllegalStateException("файл недоступен или не является частью проекта");
 
-            // конструируем путь для записи в диск
-            fileSaveEvent.getInternalData().setFilePath(Path.of(fileSaveEvent.getInternalData().getProjectsPath(),
-                    fileEntity.getConstructedPath()).normalize().toString());
+
 
             // дополняем необходимые поля
             fileSaveEvent.getExternalData().setExtension(fileEntity.getExtension());
             fileSaveEvent.getExternalData().setName(fileEntity.getName());
-            fileSaveEvent.getExternalData().setPath(fileEntity.getConstructedPath());
+
 
             // на выходе из пессимистично заблокированной транзакции файл будет иметь статус writing -
             // это автоматически защитит его от параллельного удаления или от удаления директории, в которой он находится
@@ -154,6 +156,11 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
 
 
+        // инвалидируем кеш
+        hotLayerUpdater.onFileInvalidate(new CachedFileInvalidation(file.getId()));
+
+
+
 
 
 
@@ -164,23 +171,28 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
     }
 
-    @Step(name = "writeFileToDisk")
+    @Step(name = "writeFileToStorage")
     @Message
     @MaxRetry(maxCount = 3)
     @Next(name = "releaseFile")
-    public void writeFileToDisk(FileSaveEvent fileSaveEvent) throws IOException {
+    public void writeFileToStorage(FileSaveEvent fileSaveEvent)  {
 
-        System.out.println("perform - write to disk");
+
         fileSaveEvent.setMessage("выполняем запись в диск");
 
+        storageService.saveOrUpdate(externals.getStorageUserBucket(),
+                fileSaveEvent.getExternalData().getFileId().toString(),
+                fileSaveEvent.getExternalData().getContent());
 
 
 
 
-        Files.writeString(Path.of(fileSaveEvent.getInternalData().getFilePath()),
-                fileSaveEvent.getExternalData().getContent(),
-                StandardOpenOption.TRUNCATE_EXISTING
-        );
+
+
+
+
+
+
 
 
 
@@ -192,21 +204,34 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
     @EndingStep(name = "releaseFile")
     public void releaseFile(FileSaveEvent fileSaveEvent){
-        System.out.println("perform - release file");
+
         fileSaveEvent.setMessage("освобождаем файл");
 
 
 
-        transaction().execute(status -> {
+        File saved = transaction().execute(status -> {
             Optional<File> fileCheck = fileRepository.findByIdForUpdate(fileSaveEvent.getExternalData().getFileId());
 
-            fileCheck.ifPresent(file -> file.setStatus(FileStatus.AVAILABLE));
+            if (fileCheck.isEmpty()) throw new IllegalStateException("сущности нет");
+            File file = fileCheck.get();
 
-            return null;
+            file.setStatus(FileStatus.AVAILABLE);
+
+            return file;
+
+
+
         });
 
         // обновляем запись в кеше - чтобы с этого момента чтение было актуальным
-
+        hotLayerUpdater.onForcedSave(new ForcedSave(FileDTO.builder()
+                .id(saved.getId())
+                .content(fileSaveEvent.getExternalData().getContent())
+                .constructedPath(saved.getConstructedPath())
+                .extension(saved.getExtension())
+                .projectId(fileSaveEvent.getContext().getProjectId())
+                .name(saved.getName())
+                .build()));
 
 
 

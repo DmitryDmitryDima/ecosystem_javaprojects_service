@@ -1,8 +1,10 @@
 package com.ecosystem.projectsservice.javaprojects.service.projects.state.update;
 
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
@@ -127,6 +129,24 @@ public class HotLayerUpdaterService implements HotLayerUpdater {
 
     @Override
     public void onForcedSave(ForcedSave save) {
+        FileDTO file = save.getFileDTO();
 
+        CachedFile cachedFile = CachedFile.builder()
+                .id(file.getId())
+                .name(file.getName())
+                .lastUpdate(Instant.now())
+                .constructedPath(file.getConstructedPath())
+                .version(0)
+                .content(file.getContent())
+                .extension(file.getExtension())
+                .projectId(file.getProjectId())
+                .build();
+
+        fileCache.saveOrUpdate(cachedFile);
+    }
+
+    @Override
+    public void onFileInvalidate(CachedFileInvalidation fileInvalidation) {
+        fileCache.delete(fileInvalidation.getFileId());
     }
 }

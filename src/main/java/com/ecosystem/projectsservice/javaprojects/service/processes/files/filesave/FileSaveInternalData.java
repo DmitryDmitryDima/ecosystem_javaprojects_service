@@ -10,8 +10,8 @@ import java.util.UUID;
 @Setter
 public class FileSaveInternalData extends InternalEventData {
 
-    private String filePath;
-    private String projectsPath;
+    //private String filePath;
+    //private String projectsPath;
     private UUID projectRoot;
 
 }

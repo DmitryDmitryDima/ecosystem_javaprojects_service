@@ -277,9 +277,7 @@ public class ProjectActionsEventBuilder {
 
 
         internalData.setProjectRoot(project.getRoot());
-        internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getAuthor().toString(),
-                "projects").normalize().toString());
+
 
 
 

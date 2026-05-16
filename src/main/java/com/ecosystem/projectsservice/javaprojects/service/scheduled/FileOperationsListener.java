@@ -39,10 +39,7 @@ public class FileOperationsListener {
 
 
 
-    private final long FILE_WRITE_PERIOD_OF_INACTIVITY_IN_SECONDS = 20;
 
-    // время, через которое файловая запись в кеше считается просроченной
-    private final static long FILE_CACHE_EXPIRATION_PERIOD_IN_SEC = 60*60;
 
 
 
@@ -111,7 +108,7 @@ public class FileOperationsListener {
                 .withData(()->{
                     FileSaveExternalData data = new FileSaveExternalData();
                     data.setFileId(file.getId());
-                    data.setPath(file.getConstructedPath());
+
                     data.setName(file.getName());
                     data.setExtension(file.getExtension());
                     return data;
