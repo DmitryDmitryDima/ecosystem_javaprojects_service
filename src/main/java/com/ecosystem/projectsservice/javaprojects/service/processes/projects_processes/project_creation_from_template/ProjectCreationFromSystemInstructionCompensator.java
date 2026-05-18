@@ -2,10 +2,9 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.projects_pr
 
 
 import com.ecosystem.projectsservice.javaprojects.model.Project;
-import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.Compensator;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -19,6 +19,7 @@ import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventReposito
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.GenericTypeResolver;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
@@ -238,7 +239,8 @@ public abstract class ControlledOutboxChain
         };
     }
 
-    public void init(E event) throws Exception{
+    public void init(E event)
+            throws Exception{
         // пробуем следующий подход - вычисляем следующий шаг перед публикацией outbox ивента, а не перед выполнением шага
 
         // проставляем начальный шаг
@@ -284,7 +286,9 @@ public abstract class ControlledOutboxChain
                 setProcessAssociations(event);
             }
             catch (Exception e){
-                throw new ChainInitiationException("chain is not initiated. Reason "+e.getCause().getMessage());
+                throw new ChainInitiationException("Ошибка запуска процесса. Причина " +
+                        e.getCause().getMessage(),
+                        "CHAIN_INITIATION_EXCEPTION", HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return null;
         });
@@ -503,6 +507,7 @@ public abstract class ControlledOutboxChain
     private void successStepScenario(E event, CachedMethod executed, ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.WAITING);
 
+        // todo по идее тут не должно быть ошибки, если ввести предварительный анализ цепочки
         CachedMethod nextMethod = findMethodByName(executed.next);
 
         // НЕ ЗАБЫВАЕМ СБРОСИТЬ КОМПЕНСАЦИОННЫЙ СЧЕТЧИК ДЛЯ СЛЕДУЮЩЕГО ШАГА
@@ -545,11 +550,7 @@ public abstract class ControlledOutboxChain
             Long maxDuration = convertToMillis(nextMethod.maxDuration, nextMethod.maxDurationUnit);
             Long waitingFor = convertToMillis(nextMethod.waitingFor, nextMethod.waitingForUnit);
 
-            /* todo не актуально. убрать в дальнейшем
-            next.setExpiredAt(Instant.now()
-                    .plusSeconds(Objects.requireNonNullElse(nextMethod.maxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS)));
 
-             */
 
             // записываем максимальный период выполнения
             next.setPerformanceExpirationPeriod(
@@ -584,7 +585,8 @@ public abstract class ControlledOutboxChain
             });
 
             if (waitingFor!=null){
-                // работа с триггером ЮЗЕР ДОЛЖЕН ЯВНО СОЗДАТЬ ТРИГГЕР ВНУТРИ ОЧЕРЕДИ, ЕСЛИ ЕГО НЕТ - НИКАКОГО ДЕЙСТВИЯ С ИВЕНТОМ НЕ ПРОИСХОДИТ
+                // работа с триггером ЮЗЕР ДОЛЖЕН ЯВНО СОЗДАТЬ ТРИГГЕР
+                // ВНУТРИ ОЧЕРЕДИ, ЕСЛИ ЕГО НЕТ - НИКАКОГО ДЕЙСТВИЯ С ИВЕНТОМ НЕ ПРОИСХОДИТ
                 try {
 
 
@@ -593,6 +595,7 @@ public abstract class ControlledOutboxChain
                 }
                 catch (Exception e){
                     System.out.println("trigger system exception");
+
                     e.printStackTrace();
                 }
             }
@@ -683,6 +686,7 @@ public abstract class ControlledOutboxChain
         }
         catch (Exception e){
             // todo сценарий сбоя компенсации - требует отдельной обработки
+            // todo с введением компенсаторов обработка переносится в обязанность компенсатора?
             e.printStackTrace();
         }
         finally {

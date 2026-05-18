@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.projects;
+package com.ecosystem.projectsservice.javaprojects.service.projects.participants;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;

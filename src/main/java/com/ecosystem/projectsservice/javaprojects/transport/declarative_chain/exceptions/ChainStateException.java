@@ -3,10 +3,9 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.e
 import com.ecosystem.projectsservice.javaprojects.exceptions.BaseException;
 import org.springframework.http.HttpStatus;
 
-public class ChainInitiationException extends BaseException {
+public class ChainStateException extends BaseException {
 
-
-    public ChainInitiationException(String message, String errorCode, HttpStatus httpStatus) {
+    public ChainStateException(String message, String errorCode, HttpStatus httpStatus) {
         super(message, errorCode, httpStatus);
     }
 }

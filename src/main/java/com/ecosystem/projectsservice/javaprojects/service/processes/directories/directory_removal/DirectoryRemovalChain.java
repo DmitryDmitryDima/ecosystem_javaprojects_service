@@ -17,7 +17,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.process_control.trig
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerType;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;

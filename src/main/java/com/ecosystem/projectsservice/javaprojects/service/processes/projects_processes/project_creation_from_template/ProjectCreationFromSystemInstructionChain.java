@@ -6,13 +6,9 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.constru
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
-import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
-import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.service.projects.constructors.ProjectYamlConstructor;
-import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
@@ -23,9 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.util.FileSystemUtils;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

@@ -17,17 +17,12 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Optional;
 
 // указывается state event, проходящий через всю очередь, и ивент результат

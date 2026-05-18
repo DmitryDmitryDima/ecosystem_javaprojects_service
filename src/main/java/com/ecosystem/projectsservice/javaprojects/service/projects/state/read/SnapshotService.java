@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.projects;
+package com.ecosystem.projectsservice.javaprojects.service.projects.state.read;
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;

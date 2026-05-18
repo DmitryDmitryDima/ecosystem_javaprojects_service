@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.projects;
+package com.ecosystem.projectsservice.javaprojects.service.projects.actions;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
@@ -13,6 +13,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
 import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveChain;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.service.projects.access_validation.ProjectAccessValidator;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal.DirectoryRemovalChain;

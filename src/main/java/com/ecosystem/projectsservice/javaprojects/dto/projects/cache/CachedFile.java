@@ -21,6 +21,9 @@ public class CachedFile {
     private String content;
     private String extension;
     private String name;
+
+
+    // TODO СТОИТ ЛИ КЕШИРОВАТЬ ПУТЬ ФАЙЛА ПРИ НАЛИЧИИ КЕШИРОВАННОЙ СТРУКТУРЫ?
     private String constructedPath;
     private UUID id;
 

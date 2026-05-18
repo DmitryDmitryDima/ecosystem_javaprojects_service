@@ -19,5 +19,5 @@ public class FileMoveExternalData implements ExternalEventData {
     private String extension;
     private UUID parent; // кому
 
-    private String constructedPath;
+    //private String constructedPath;
 }

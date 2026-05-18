@@ -1,6 +1,5 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
@@ -8,7 +7,6 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.CodeService;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -18,8 +16,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.cont
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -27,23 +24,20 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
+
+// TODO инвалидация кеша
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_MOVE)
 public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
 
+
+
     @Autowired
-    private Broadcast broadcast;
-
-    @Autowired
-    private CodeService codeService;
-
-
+    private FileMoveChainCompensator compensator;
 
     @Autowired
     private FileRepository fileRepository;
@@ -77,27 +71,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
     // todo для цепей подобной сложности может понадобится система enum или даже отдельный error объект для фиксации конкретной причины ошибки
     @Override
     public void compensationStrategy(FileMoveEvent event) {
-        if (event.getInternalData().getCurrentStep().equals("preparing") || event.getInternalData().getCurrentStep().equals("block_entities") ||
-        event.getInternalData().getCurrentStep().equals("db_parent_switch")
-        ){
-            transaction().execute(status -> {
-
-                Optional<File> fileCheck = fileRepository.findById(event.getExternalData().getFileId());
-
-                if (fileCheck.isEmpty()) throw new IllegalStateException("Файла не существует");
-
-                fileCheck.get().setStatus(FileStatus.AVAILABLE);
-
-                Optional<Directory> directory =directoryRepository.findById(event.getExternalData().getParent());
-                if (directory.isEmpty()) throw new IllegalStateException("Директории не существует");
-
-                directory.get().setStatus(DirectoryStatus.AVAILABLE);
-
-
-
-                return null;
-            });
-        };
+        compensator.compensation(event);
     }
 
 
@@ -113,16 +87,22 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
         fileMoveEvent.setMessage("Выполняем подготовку сущностей");
         transaction().execute(status -> {
 
-            Optional<File> fileCheck = fileRepository.findByIdForUpdate(fileMoveEvent.getExternalData().getFileId());
+            Optional<File> fileCheck = fileRepository
+                    .findByIdForUpdate(fileMoveEvent.getExternalData().getFileId());
 
-            if (fileCheck.isEmpty()) throw new IllegalStateException("файла больше не существует");
-            if (fileCheck.get().getStatus()!=FileStatus.AVAILABLE) throw new IllegalStateException("Неподходящий статус файла на стадии preparing");
-            if (fileCheck.get().isHidden() || fileCheck.get().isImmutable()) throw new IllegalStateException("Файл не может быть перемещен");
+            if (fileCheck.isEmpty())
+                throw new IllegalStateException("файла больше не существует");
+            if (fileCheck.get().getStatus()!=FileStatus.AVAILABLE)
+                throw new IllegalStateException("Неподходящий статус файла на стадии preparing");
+            if (fileCheck.get().isHidden() || fileCheck.get().isImmutable())
+                throw new IllegalStateException("Файл не может быть перемещен");
 
 
-            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(fileMoveEvent.getExternalData().getParent());
+            Optional<Directory> directoryCheck
+                    = directoryRepository.findByIdForUpdate(fileMoveEvent.getExternalData().getParent());
 
-            if (directoryCheck.isEmpty()) throw new IllegalStateException("директории больше не существует");
+            if (directoryCheck.isEmpty())
+                throw new IllegalStateException("директории больше не существует");
             if (directoryCheck.get().getStatus()!=DirectoryStatus.AVAILABLE)
                 throw new IllegalStateException("неподходящий статус директории на стадии preparing");
 
@@ -138,28 +118,33 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
     @Step(name = "block_entities")
     @Message
     @Next(name = "db_parent_switch")
-
     // todo добавить проверку на принадлежность файла и его нового родителя проекту
     public void blockEntities(FileMoveEvent event){
         event.setMessage("блокируем сущности");
 
         transaction().execute(status -> {
 
-            Optional<File> fileCheck = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
+            Optional<File> fileCheck
+                    = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
 
-            if (fileCheck.isEmpty()) throw new IllegalStateException("файла больше не существует");
-            if (fileCheck.get().getStatus()!=FileStatus.PREPARING_FOR_MIGRATING) throw new IllegalStateException("Неподходящий статус файла на стадии block");
+            if (fileCheck.isEmpty())
+                throw new IllegalStateException("файла больше не существует");
+            if (fileCheck.get().getStatus()!=FileStatus.PREPARING_FOR_MIGRATING)
+                throw new IllegalStateException("Неподходящий статус файла на стадии block");
 
-            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
+            Optional<Directory> directoryCheck
+                    = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
 
-            if (directoryCheck.isEmpty()) throw new IllegalStateException("директории больше не существует");
+            if (directoryCheck.isEmpty())
+                throw new IllegalStateException("директории больше не существует");
             if (directoryCheck.get().getStatus()!=DirectoryStatus.PREPARING_FOR_GENERATING)
                 throw new IllegalStateException("неподходящий статус директории на стадии blocking");
 
 
             // политика анализа снимков.
             // У файла мы должны проверить все директории его родителя - нет ли среди них, кто собирается мигрировать или удаляться
-            List<DirectoryReadOnly> fileParents = snapshotService.getParentsSnapshotDirectoriesOnly(fileCheck.get().getParent().getId());
+            List<DirectoryReadOnly> fileParents
+                    = snapshotService.getParentsSnapshotDirectoriesOnly(fileCheck.get().getParent().getId());
 
             boolean containsRoot = false;
             boolean containsDirectory = false;
@@ -208,7 +193,8 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
                         || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING
                         || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL
                         || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_MIGRATING){
-                    throw new IllegalStateException("Папка для перемещения или ее родитель заблокированы сторонним процессом");
+                    throw new IllegalStateException("Папка для перемещения или" +
+                            " ее родитель заблокированы сторонним процессом");
                 }
 
 
@@ -217,7 +203,8 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
 
             }
-            if (!(containsDirectory && containsRoot)) throw new IllegalStateException("Папка, в которую вы кидаете, не в проекте");
+            if (!(containsDirectory && containsRoot))
+                throw new IllegalStateException("Папка, в которую вы кидаете, не в проекте");
 
 
 
@@ -249,7 +236,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
     // мы меняем родителя у файла
     @Step(name = "db_parent_switch")
     @Message
-    @Next(name="disk_transfer")
+    @Next(name="release")
     public void parentSwitch(FileMoveEvent event){
         event.setMessage("Перестраиваем базу данных");
         transaction().execute(status -> {
@@ -259,11 +246,14 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
             if (fileCheck.isEmpty()) throw new IllegalStateException("файла больше не существует");
 
             File file = fileCheck.get();
-            if (file.getStatus()!=FileStatus.MIGRATING) throw new IllegalStateException("Неподходящий статус файла на стадии parent switch");
+            if (file.getStatus()!=FileStatus.MIGRATING)
+                throw new IllegalStateException("Неподходящий статус файла на стадии parent switch");
 
-            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
+            Optional<Directory> directoryCheck = directoryRepository
+                    .findByIdForUpdate(event.getExternalData().getParent());
 
-            if (directoryCheck.isEmpty()) throw new IllegalStateException("директории больше не существует");
+            if (directoryCheck.isEmpty())
+                throw new IllegalStateException("директории больше не существует");
             Directory directory = directoryCheck.get();
             if (directory.getStatus()!=DirectoryStatus.GENERATING)
                 throw new IllegalStateException("неподходящий статус директории на стадии parent switch");
@@ -273,12 +263,11 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
             directory.getFiles().add(file);
 
             // не забываем переписать путь у файла
-            event.getInternalData().setOldPath(file.getConstructedPath());
-            file.setConstructedPath(Path.of(directory.getConstructedPath(), file.getName()+"."+file.getExtension())
+            file
+                    .setConstructedPath(Path
+                            .of(directory.getConstructedPath(), file.getName()+"."+file.getExtension())
                     .normalize().toString());
 
-            event.getExternalData().setConstructedPath(Path.of(directory.getConstructedPath(), file.getName()+"."+file.getExtension())
-                    .normalize().toString());
 
 
 
@@ -288,45 +277,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
         });
     }
 
-    @Step(name="disk_transfer")
-    @Message
-    @Next(name = "release")
-    public void diskTransfer(FileMoveEvent event){
 
-        event.setMessage("согласуем с диском");
-        // тут необходима проверка, что связь действительно существует в бд
-        File transferedFile = transaction().execute(status -> {
-
-            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
-
-            if (directoryCheck.isEmpty()) throw new IllegalStateException("директории больше не существует");
-            Directory directory = directoryCheck.get();
-
-            Optional<File> newChild = directory.getFiles().stream().filter(file -> file.getId().equals(event.getExternalData().getFileId())).findFirst();
-            if (newChild.isEmpty()) throw new IllegalStateException("Ошибка перемещения. Состояние бд не было обновлено");
-
-
-            return newChild.get();
-        });
-
-        // сейчас файл физически хранится тут
-        Path oldPath = Path.of(event.getInternalData().getProjectsPath(), event.getInternalData().getOldPath());
-        // его нужно переместить сюда
-        Path newPath = Path.of(event.getInternalData().getProjectsPath(), transferedFile.getConstructedPath());
-
-        try {
-            Files.move(oldPath, newPath);
-        }
-        catch (Exception e){
-            throw new IllegalStateException("Ошибка перемещения файла на диске "+e.getMessage());
-        }
-
-
-
-
-
-
-    }
     // сброс статусов
     @EndingStep(name = "release")
     public void release(FileMoveEvent event){

@@ -1,9 +1,13 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.HotLayerReader;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
+import com.ecosystem.projectsservice.javaprojects.service.storage.UserContentStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -13,15 +17,13 @@ import com.ecosystem.projectsservice.javaprojects.transport.process_control.trig
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +45,17 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
     @Autowired
     private ProjectActionsUtils actionsUtils;
+
+
+    @Autowired
+    private UserContentStorage storage;
+
+    @Autowired
+    private FileRemovalChainCompensator compensator;
+
+
+    @Autowired
+    private HotLayerUpdater updater;
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
@@ -78,7 +91,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
 
 
-        System.out.println("polling phase - file removal");
+
 
         event.setMessage("Запрос на удаление файла от: "+event.getContext().getUsername());
 
@@ -178,14 +191,14 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
             }
             File file = fileBlock.get();
 
-           StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(event.getInternalData().getProjectRoot());
+           StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(event
+                   .getInternalData().getProjectRoot());
            Optional<FileReadOnly> presence = actionsUtils.findAvailableFile(snapshot, file.getId());
 
-           if (presence.isEmpty()) throw new IllegalStateException("файл недоступен или больше не является частью проекта");
+           if (presence.isEmpty())
+               throw new IllegalStateException("файл недоступен или больше не является частью проекта");
 
-           // конструируем путь для записи в диск
-           event.getInternalData().setFilePath(Path.of(event.getInternalData().getProjectsPath(),
-                   file.getConstructedPath()).normalize().toString());
+
 
            // дополняем необходимые поля
 
@@ -203,6 +216,17 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
 
 
+       // инвалидируем кеш структуры и самого файла
+
+        updater.onFileInvalidate(new CachedFileInvalidation(event.getExternalData().getFileId()));
+
+
+
+
+
+
+
+
 
 
 
@@ -210,7 +234,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
     }
 
     @Step(name = "removeFileFromDb")
-    @Next(name = "removeFileFromDisk")
+    @Next(name = "removeFileFromStorage")
     public void removeFileFromDb(FileRemovalEvent event){
 
 
@@ -229,17 +253,12 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
     }
 
-    @EndingStep(name = "removeFileFromDisk")
+    @EndingStep(name = "removeFileFromStorage")
     @MaxRetry(maxCount = 3)
-    public void removeFileFromDisk(FileRemovalEvent event){
+    public void removeFileFromStorage(FileRemovalEvent event){
 
 
-        try {
-            Files.delete(Path.of(event.getInternalData().getFilePath()));
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new IllegalStateException("ошибка удаления файла с диска");
-        }
+        storage.delete(event.getExternalData().getFileId().toString());
 
 
     }
@@ -250,6 +269,6 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
     @Override
     public void compensationStrategy(FileRemovalEvent event) {
-        System.out.println("compensation for file removal phase = > "+event.getInternalData().getCurrentStep());
+        compensator.compensation(event);
     }
 }

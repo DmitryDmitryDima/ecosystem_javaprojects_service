@@ -1,8 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects;
 
 
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
-import com.ecosystem.projectsservice.javaprojects.service.projects.lifecycle.ProjectLifecycleService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

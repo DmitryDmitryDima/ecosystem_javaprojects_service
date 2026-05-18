@@ -13,6 +13,7 @@ import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventReposito
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.GenericTypeResolver;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
@@ -200,7 +201,9 @@ public abstract class OutboxDeclarativeChain<E extends DeclarativeChainEvent<? e
 
             }
             catch (Exception e){
-                throw new ChainInitiationException("chain is not initiated. Reason "+e.getCause().getMessage());
+                throw new ChainInitiationException("chain is not initiated. Reason "+e.getCause().getMessage(),
+                        "CHAIN_INIT_ERROR", HttpStatus.INTERNAL_SERVER_ERROR
+                        );
             }
             return null;
         });

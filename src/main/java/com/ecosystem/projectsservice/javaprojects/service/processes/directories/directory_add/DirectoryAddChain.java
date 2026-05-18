@@ -10,7 +10,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -34,7 +34,9 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
     private SnapshotService snapshotService;
 
     @Autowired
-    private ProjectActionsUtils actionsUtils;
+    private DirectoryAddChainCompensator compensator;
+
+
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
@@ -55,19 +57,7 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
 
     @Override
     public void compensationStrategy(DirectoryAddEvent event) {
-        transaction().execute(status -> {
-            Optional<Directory> parent = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
-            if (parent.isEmpty()) throw new IllegalStateException("missing parent");
-            parent.get().setStatus(DirectoryStatus.AVAILABLE);
-
-
-
-            if (event.getInternalData().getCurrentStep().equals("write_to_disk")){
-                directoryRepository.deleteById(event.getExternalData().getId());
-            }
-
-            return null;
-        });
+        compensator.compensation(event);
 
 
     }

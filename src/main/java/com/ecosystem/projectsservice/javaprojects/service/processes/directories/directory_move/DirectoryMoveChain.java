@@ -1,26 +1,21 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.CodeService;
-import com.ecosystem.projectsservice.javaprojects.service.processes.broadcastable_events.BatchedFileSaveData;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcast.BroadcastException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;

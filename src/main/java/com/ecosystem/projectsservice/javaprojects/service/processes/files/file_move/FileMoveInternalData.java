@@ -10,8 +10,8 @@ import java.util.UUID;
 @Getter
 @Setter
 public class FileMoveInternalData extends InternalEventData {
-    private String projectsPath;
+    //private String projectsPath;
     private UUID projectRoot;
-    private String oldPath;
-    private UUID projectOwner;
+    //private String oldPath;
+    //private UUID projectOwner;
 }

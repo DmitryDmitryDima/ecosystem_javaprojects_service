@@ -7,7 +7,6 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.service.storage.StorageException;
 import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;

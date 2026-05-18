@@ -11,8 +11,7 @@ import java.util.UUID;
 @Setter
 public class FileAddInternalData extends InternalEventData {
 
-    private String projectsPath;
-    private String filepath;
+
 
     private UUID projectRoot;
 }

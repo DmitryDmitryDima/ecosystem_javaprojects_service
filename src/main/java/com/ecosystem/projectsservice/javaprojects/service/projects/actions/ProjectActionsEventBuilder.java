@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.service.projects;
+package com.ecosystem.projectsservice.javaprojects.service.projects.actions;
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
@@ -97,11 +97,7 @@ public class ProjectActionsEventBuilder {
 
         FileMoveInternalData internalData = new FileMoveInternalData();
         internalData.setProjectRoot(project.getRoot());
-        internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getAuthor().toString(),
-                "projects").normalize().toString());
 
-        internalData.setProjectOwner(project.getAuthor());
 
         FileMoveExternalData externalData = new FileMoveExternalData();
 
@@ -171,9 +167,7 @@ public class ProjectActionsEventBuilder {
 
 
         internalData.setProjectRoot(project.getRoot());
-        internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getAuthor().toString(),
-                "projects").normalize().toString());
+
 
 
 
@@ -185,8 +179,7 @@ public class ProjectActionsEventBuilder {
 
         externalData.setFileId(request.getFileId());
 
-        // не путать с uuid того, кто выполняет запрос - это могут быть разные люди
-        externalData.setFileOwner(project.getAuthor());
+
 
         mainEvent.setExternalData(externalData);
 
@@ -211,9 +204,7 @@ public class ProjectActionsEventBuilder {
 
         DirectoryAddInternalData internalData = new DirectoryAddInternalData();
         internalData.setProjectRoot(project.getRoot());
-        internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getAuthor().toString(),
-                "projects").normalize().toString());
+
 
         event.setContext(context);
         event.setInternalData(internalData);
@@ -244,9 +235,7 @@ public class ProjectActionsEventBuilder {
         externalData.setParentId(request.getParentId());
 
         FileAddInternalData internalData = new FileAddInternalData();
-        internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getAuthor().toString(),
-                "projects").normalize().toString());
+
 
         internalData.setProjectRoot(project.getRoot());
 

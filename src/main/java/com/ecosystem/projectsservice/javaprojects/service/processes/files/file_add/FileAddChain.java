@@ -7,6 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.CodeService;
+import com.ecosystem.projectsservice.javaprojects.service.storage.UserContentStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -14,18 +15,13 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.Exte
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromUser;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
-import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
-import com.ecosystem.projectsservice.javaprojects.service.projects.SnapshotService;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -41,14 +37,20 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
     @Autowired
     private DirectoryRepository directoryRepository;
 
-    @Autowired
-    private FileRepository fileRepository;
+
 
     @Autowired
     private SnapshotService snapshotService;
 
+
     @Autowired
-    private ProjectActionsUtils actionsUtils;
+    private FileAddChainCompensator compensator;
+
+
+    @Autowired
+    private UserContentStorage storage;
+
+
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
@@ -69,26 +71,7 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
     @Override
     public void compensationStrategy(FileAddEvent event) {
-        if (!event.getInternalData().getCurrentStep().equals("block_directory")){
-            transaction().execute(status -> {
-
-                Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
-                if (directoryCheck.isEmpty()) throw new IllegalStateException("директории не существует");
-                directoryCheck.get().setStatus(DirectoryStatus.AVAILABLE);
-
-                return null;
-            });
-            if (event.getExternalData().getId()!=null){
-                // удаляем созданную сущность, если она есть
-                transaction().execute(status -> {
-                    fileRepository.deleteById(event.getExternalData().getId());
-                    return null;
-                });
-            }
-
-
-
-        }
+        compensator.compensation(event);
     }
 
     @OpeningStep(name = "prepare_directory")
@@ -98,7 +81,8 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
         fileAddEvent.setMessage("резервируем родительскую директорию");
         transaction().execute(status -> {
 
-            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(fileAddEvent.getExternalData().getParentId());
+            Optional<Directory> directoryCheck =
+                    directoryRepository.findByIdForUpdate(fileAddEvent.getExternalData().getParentId());
             if (directoryCheck.isEmpty() || directoryCheck.get().isHidden())
                 throw new IllegalStateException("директории не существует");
             if (directoryCheck.get().getStatus()!=DirectoryStatus.AVAILABLE)
@@ -120,7 +104,8 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
         transaction().execute(status -> {
 
-            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(fileAddEvent.getExternalData().getParentId());
+            Optional<Directory> directoryCheck = directoryRepository
+                    .findByIdForUpdate(fileAddEvent.getExternalData().getParentId());
             if (directoryCheck.isEmpty()) throw new IllegalStateException("директории не существует");
 
             Directory directory = directoryCheck.get();
@@ -134,9 +119,11 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
             проверяем также список существующих папок и файлов
             */
 
-            List<DirectoryReadOnly> parents = snapshotService.getParentsSnapshotDirectoriesOnly(fileAddEvent.getExternalData().getParentId());
+            List<DirectoryReadOnly> parents
+                    = snapshotService
+                    .getParentsSnapshotDirectoriesOnly(fileAddEvent.getExternalData().getParentId());
 
-            System.out.println(parents);
+
 
 
             boolean parentContains = false;
@@ -176,9 +163,14 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
                 throw new IllegalStateException("директория не принадлежит проекту");
             }
 
-            List<FileReadOnly> files = snapshotService.getFilesForDirectory(fileAddEvent.getExternalData().getParentId());
+            List<FileReadOnly> files
+                    = snapshotService
+                    .getFilesForDirectory(fileAddEvent.getExternalData().getParentId());
 
-            if (files.stream().anyMatch(fileReadOnly -> fileReadOnly.getExtension().equals(fileAddEvent.getExternalData().getExtension())
+            if (files.stream()
+                    .anyMatch(fileReadOnly
+                            -> fileReadOnly.getExtension()
+                            .equals(fileAddEvent.getExternalData().getExtension())
                             && fileReadOnly.getName().equals(fileAddEvent.getExternalData().getFilename())
 
                     )){
@@ -196,7 +188,7 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
     }
 
     @Step(name="create_db_entity")
-    @Next(name = "write_file_to_disk")
+    @Next(name = "write_file_to_storage")
     @Message
     public void createDbEntity(FileAddEvent event){
         event.setMessage("Создаем файл");
@@ -225,30 +217,21 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
         }
         );
 
-        System.out.println(created.getId()+" created");
 
-        event.getInternalData()
-                .setFilepath(Path.of(event.getInternalData().getProjectsPath(),
-                        created.getConstructedPath()).normalize().toString());
         event.getExternalData().setId(created.getId());
         event.getExternalData().setConstructedPath(created.getConstructedPath());
     }
 
-    @Step(name = "write_file_to_disk")
+    @Step(name = "write_file_to_storage")
     @Next(name = "release_directory")
     @MaxRetry(maxCount = 3)
-    public void writeFileToDisk(FileAddEvent event){
+    public void writeFileToStorage(FileAddEvent event){
         String initialContent = resolveInitialContent(event);
 
 
 
 
-        try {
-            Files.writeString(Path.of(event.getInternalData().getFilepath()), initialContent, StandardOpenOption.CREATE_NEW);
-            //Files.createFile(Path.of(event.getInternalData().getFilepath()));
-        } catch (IOException e) {
-            throw new IllegalStateException("Ошибка записи файла в диск "+e.getMessage());
-        }
+        storage.save(event.getExternalData().getId().toString(), initialContent);
 
 
     }
@@ -291,7 +274,8 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
                 }
             }
 
-            return codeService.createEmptyPublicClass(newPackageName.toString(), event.getExternalData().getFilename());
+            return codeService
+                    .createEmptyPublicClass(newPackageName.toString(), event.getExternalData().getFilename());
 
 
         }
@@ -312,7 +296,8 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
         transaction().execute(status -> {
 
-            Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
+            Optional<Directory> directoryCheck
+                    = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
             if (directoryCheck.isEmpty()) throw new IllegalStateException("директории не существует");
             directoryCheck.get().setStatus(DirectoryStatus.AVAILABLE);
 
