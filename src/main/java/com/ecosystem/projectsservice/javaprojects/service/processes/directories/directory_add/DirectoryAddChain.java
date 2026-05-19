@@ -162,7 +162,7 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
     }
 
     @Step(name = "create_db_entity")
-    @Next(name = "write_to_disk")
+    @Next(name = "release_parent")
     public void createDbEntity(DirectoryAddEvent event){
         Directory created = transaction().execute(status -> {
 
@@ -188,22 +188,12 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
         );
 
 
-        event.getInternalData().setFullPath(Path.of(event.getInternalData().getProjectsPath(),
-                created.getConstructedPath()).normalize().toString());
+
 
         event.getExternalData().setId(created.getId());
     }
 
-    @Step(name = "write_to_disk")
-    @Next(name = "release_parent")
-    public void writeToDisk(DirectoryAddEvent event){
-        try {
-            Files.createDirectory(Path.of(event.getInternalData().getFullPath()));
-        }
-        catch (Exception e){
-            throw new IllegalStateException("Ошибка записи в диск "+e.getMessage());
-        }
-    }
+
 
     @EndingStep(name = "release_parent")
     @MaxRetry(maxCount = 3)

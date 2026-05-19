@@ -11,10 +11,9 @@ import java.util.UUID;
 @Setter
 public class DirectoryMoveInternalData extends InternalEventData {
 
-    private String projectsPath;
-    private UUID projectRoot;
-    private String oldPath;
 
-    // так как затрагивается кеш
-    private UUID projectOwner;
+    private UUID projectRoot;
+
+
+
 }

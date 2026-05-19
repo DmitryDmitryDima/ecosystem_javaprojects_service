@@ -10,7 +10,7 @@ import java.util.UUID;
 @Setter
 public class DirectoryRemovalInternalData extends InternalEventData {
 
-    private String projectsPath;
+
     private UUID projectRoot;
-    private String fullPath;
+
 }

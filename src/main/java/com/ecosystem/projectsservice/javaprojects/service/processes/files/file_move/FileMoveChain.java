@@ -138,11 +138,12 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
             if (directoryCheck.isEmpty())
                 throw new IllegalStateException("директории больше не существует");
             if (directoryCheck.get().getStatus()!=DirectoryStatus.PREPARING_FOR_GENERATING)
-                throw new IllegalStateException("неподходящий статус директории на стадии blocking");
+                throw new IllegalStateException("неподходящий статус директории на стадии block");
 
 
             // политика анализа снимков.
-            // У файла мы должны проверить все директории его родителя - нет ли среди них, кто собирается мигрировать или удаляться
+            // У файла мы должны проверить все директории его родителя
+            // - нет ли среди них, кто собирается мигрировать или удаляться
             List<DirectoryReadOnly> fileParents
                     = snapshotService.getParentsSnapshotDirectoriesOnly(fileCheck.get().getParent().getId());
 
@@ -159,9 +160,9 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
                 }
 
                 if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING
-                        || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING
+
                         || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL
-                        || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_MIGRATING){
+                        ){
 
                     throw new IllegalStateException("Кто то из родителей занят другим процессом");
                 }
@@ -173,8 +174,10 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
 
 
-            // у папки, в которую мы собираемся перемещать, мы должны проверить родителей на migrating и removing. Среди детей не должно быть одноименных
-            List<DirectoryReadOnly> parentParents = snapshotService.getParentsSnapshotDirectoriesOnly(directoryCheck.get().getId());
+            // у папки, в которую мы собираемся перемещать,
+            // мы должны проверить родителей на migrating и removing. Среди детей не должно быть одноименных
+            List<DirectoryReadOnly> parentParents
+                    = snapshotService.getParentsSnapshotDirectoriesOnly(directoryCheck.get().getId());
 
             containsDirectory = false;
             containsRoot = false;
@@ -190,9 +193,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
                 }
 
                 if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING
-                        || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING
-                        || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL
-                        || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_MIGRATING){
+                        || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL){
                     throw new IllegalStateException("Папка для перемещения или" +
                             " ее родитель заблокированы сторонним процессом");
                 }
@@ -204,13 +205,14 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
             }
             if (!(containsDirectory && containsRoot))
-                throw new IllegalStateException("Папка, в которую вы кидаете, не в проекте");
+                throw new IllegalStateException("Папка, в которую перемещают файл, не относится к проекту");
 
 
 
 
 
-            List<FileReadOnly> parentFiles = snapshotService.getFilesForDirectory(directoryCheck.get().getId());
+            List<FileReadOnly> parentFiles
+                    = snapshotService.getFilesForDirectory(directoryCheck.get().getId());
             if (parentFiles.stream()
                     .anyMatch(file->file.getName().equals(fileCheck.get().getName())
                             && file.getExtension().equals(fileCheck.get().getExtension()))){
@@ -285,12 +287,14 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
             Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
 
-            if (directoryCheck.isEmpty()) throw new IllegalStateException("директории больше не существует");
+            if (directoryCheck.isEmpty())
+                throw new IllegalStateException("директории больше не существует");
 
             Directory directory = directoryCheck.get();
 
             Optional<File> newChild = directory.getFiles().stream().filter(file -> file.getId().equals(event.getExternalData().getFileId())).findFirst();
-            if (newChild.isEmpty()) throw new IllegalStateException("Ошибка перемещения на этапе release. Состояние бд не было обновлено");
+            if (newChild.isEmpty())
+                throw new IllegalStateException("Ошибка перемещения на этапе release. Состояние бд не было обновлено");
 
             newChild.get().setStatus(FileStatus.AVAILABLE);
             directory.setStatus(DirectoryStatus.AVAILABLE);

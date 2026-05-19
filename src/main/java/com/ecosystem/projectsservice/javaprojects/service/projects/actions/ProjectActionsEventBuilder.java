@@ -42,8 +42,7 @@ import java.nio.file.Path;
 public class ProjectActionsEventBuilder {
 
 
-    @Autowired
-    private ExternalValues externalValues;
+
 
 
     public DirectoryMoveEvent buildDirectoryMoveEvent(SecurityContext securityContext,
@@ -62,11 +61,9 @@ public class ProjectActionsEventBuilder {
                 null, null);
 
         DirectoryMoveInternalData internalData = new DirectoryMoveInternalData();
-        internalData.setProjectOwner(project.getAuthor());
+
         internalData.setProjectRoot(project.getRoot());
-        internalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getAuthor().toString(),
-                "projects").normalize().toString());
+
 
         DirectoryMoveExternalData externalData = new DirectoryMoveExternalData();
 
@@ -132,9 +129,7 @@ public class ProjectActionsEventBuilder {
 
         DirectoryRemovalInternalData directoryRemovalInternalData = new DirectoryRemovalInternalData();
         directoryRemovalInternalData.setProjectRoot(project.getRoot());
-        directoryRemovalInternalData.setProjectsPath(Path.of(externalValues.getUserStoragePath(),
-                project.getAuthor().toString(),
-                "projects").normalize().toString());
+
 
         DirectoryRemovalExternalData externalData = new DirectoryRemovalExternalData();
         externalData.setId(request.getDirectoryId());

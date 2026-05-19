@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects;
 
 import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
 import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -22,7 +23,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 public class Starter implements CommandLineRunner {
 
     @Autowired
-    private ExternalValues externalValues;
+    private StorageExternals externalValues;
 
 
     @Autowired
@@ -43,7 +44,7 @@ public class Starter implements CommandLineRunner {
 
     }
 
-
+    // todo временная логика, использующая локальный диск
     class SystemVisitor implements FileVisitor<Path>{
 
         @Override

@@ -95,7 +95,7 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
         });
     }
 
-    // директория блокируется на операции удаления и перемещения - статус generating
+    // директория блокируется на операции удаления  - статус generating
     @Step(name = "block_directory")
     @Next(name="create_db_entity")
     @Message
@@ -138,15 +138,17 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
                 else {
 
-                    if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING
+                    if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING
                     || directoryReadOnly.getStatus()==DirectoryStatus.PREPARING_FOR_REMOVAL
-                            || directoryReadOnly.getStatus()==DirectoryStatus.PREPARING_FOR_MIGRATING
+
                     ){
-                        throw new IllegalStateException("используемая папка заблокирована другим процессом");
+                        throw new IllegalStateException("используемая папка " +
+                                "или ее родители заблокирована другим процессом");
                     }
 
                     // root
-                    if (directoryReadOnly.getId().equals(fileAddEvent.getInternalData().getProjectRoot())){
+                    if (directoryReadOnly.getId()
+                            .equals(fileAddEvent.getInternalData().getProjectRoot())){
                         rootContains = true;
                     }
                 }
@@ -196,7 +198,8 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
             Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());
 
-            if (directoryCheck.isEmpty()) throw new IllegalStateException("директории не существует");
+            if (directoryCheck.isEmpty())
+                throw new IllegalStateException("директории не существует");
             Directory directory = directoryCheck.get();
 
             File file = new File();

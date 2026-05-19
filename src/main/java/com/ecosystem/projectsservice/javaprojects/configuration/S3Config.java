@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.configuration;
 
 
 import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
+import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +18,7 @@ import java.net.URI;
 public class S3Config {
 
     @Autowired
-    private ExternalValues externalValues;
+    private StorageExternals externalValues;
 
 
     private String accessKey = "any";

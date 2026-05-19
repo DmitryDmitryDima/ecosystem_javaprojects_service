@@ -4,6 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.service.projects.state.update
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 
 // хуки, вносящие изменения в "горячий слой"
 public interface HotLayerUpdater {
@@ -18,6 +19,9 @@ public interface HotLayerUpdater {
 
     // инвалидация файловой записи
     void onFileInvalidate(CachedFileInvalidation fileInvalidation);
+
+
+    void onProjectStructureInvalidate(ProjectStructureInvalidation structureInvalidation);
 
 
 }

@@ -3,7 +3,9 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.File;
+import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.HotLayerReader;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
@@ -25,14 +27,18 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
 
 /*
-todo инвалидация кеша предложек?
+todo я не могу удалить файл из папки, помеченной на удаление.
+  При это перемещение в теории не препятствует удалению файла
  */
+
+
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_REMOVAL)
 public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
@@ -77,7 +83,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
     }
 
     @OpeningStep(name = "polling")
-    @Next(name = "blockFile")
+    @Next(name = "prepareFile")
     public void checkAndPolling(FileRemovalEvent event){
 
         // данный запрос не блокирует файл, так как фаза опроса - долгая? либо же можно ввести статус polling для файла, но это кажется избыточным
@@ -179,33 +185,90 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
     права на выполнение операции проверяются в верхнем уровне
      */
 
-    @Step(name = "blockFile")
-    @WaitingFor(time = 20)
-    @Next(name = "removeFileFromDb")
-    public void blockFile(FileRemovalEvent event){
 
-       transaction().execute(status -> {
-            Optional<File> fileBlock = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
+    @Step(name = "prepareFile")
+    @WaitingFor(time = 20)
+    @Next(name = "blockFile")
+    public void prepareFile(FileRemovalEvent event){
+        transaction().execute(status -> {
+            Optional<File> fileBlock
+                    = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
             if (fileBlock.isEmpty()){
                 throw new IllegalStateException("файла не существует");
             }
+
+
+
+
+
             File file = fileBlock.get();
 
-           StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(event
-                   .getInternalData().getProjectRoot());
-           Optional<FileReadOnly> presence = actionsUtils.findAvailableFile(snapshot, file.getId());
+            if (file.getStatus()!=FileStatus.AVAILABLE)
+                throw new IllegalStateException("файл сейчас недоступен");
 
-           if (presence.isEmpty())
-               throw new IllegalStateException("файл недоступен или больше не является частью проекта");
+            if (file.isHidden() || file.isImmutable()){
+                throw new IllegalStateException("этот файл нельзя удалить");
+            }
 
+            file.setStatus(FileStatus.PREPARING_FOR_REMOVING);
 
-
-           // дополняем необходимые поля
-
-           event.getExternalData().setPath(file.getConstructedPath());
+            return null;
 
 
 
+
+        });
+    }
+
+    @Step(name = "blockFile")
+    @Next(name = "removeFileFromStorage")
+    public void blockFile(FileRemovalEvent event){
+
+       transaction().execute(status -> {
+            Optional<File> fileBlock
+                    = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
+            if (fileBlock.isEmpty()){
+                throw new IllegalStateException("файла больше не существует");
+            }
+            File file = fileBlock.get();
+
+            if (file.getStatus()!=FileStatus.PREPARING_FOR_REMOVING)
+                throw new IllegalStateException("неподходящий статус для шага block");
+
+
+            // мы должны проверить, есть ли у родителей статус removing
+           // одновременно проверяем, является ли родитель файла частью проекта
+
+           boolean containsRoot = false;
+
+
+           List<DirectoryReadOnly> directoriesAbove = snapshotService
+                   .getParentsSnapshotDirectoriesOnly(file.getParent().getId());
+
+
+           for (var dir:directoriesAbove){
+
+               if (dir.getId().equals(event.getInternalData().getProjectRoot())){
+                   containsRoot = true;
+               }
+               if (dir.getStatus()== DirectoryStatus.REMOVING
+                       || dir.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL){
+                   throw new IllegalStateException("родительские директории заняты другим процессом");
+               }
+           }
+
+
+
+
+           if (!containsRoot) throw new IllegalStateException("файл не принадлежит проекту");
+
+
+
+
+
+
+
+           // проставляем окончательный блокирующий статус
            file.setStatus(FileStatus.REMOVING);
 
 
@@ -233,32 +296,30 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
     }
 
-    @Step(name = "removeFileFromDb")
-    @Next(name = "removeFileFromStorage")
-    public void removeFileFromDb(FileRemovalEvent event){
 
 
-
-        transaction().execute(status -> {
-            try {
-                fileRepository.deleteById(event.getExternalData().getFileId());
-            }
-            catch (Exception e){
-                throw new IllegalStateException("Ошибка удаления файла. Причина: "+e.getMessage());
-            }
-
-            return null;
-        });
-
-
-    }
-
-    @EndingStep(name = "removeFileFromStorage")
+    @Step(name = "removeFileFromStorage")
+    @Next(name = "removeFileFromDb")
     @MaxRetry(maxCount = 3)
     public void removeFileFromStorage(FileRemovalEvent event){
 
 
         storage.delete(event.getExternalData().getFileId().toString());
+
+
+    }
+
+    @EndingStep(name = "removeFileFromDb")
+    public void removeFileFromDb(FileRemovalEvent event){
+
+
+
+        transaction().execute(status -> {
+
+            fileRepository.deleteById(event.getExternalData().getFileId());
+
+            return null;
+        });
 
 
     }

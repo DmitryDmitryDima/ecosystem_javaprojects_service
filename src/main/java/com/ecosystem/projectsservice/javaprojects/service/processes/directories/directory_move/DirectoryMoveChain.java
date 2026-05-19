@@ -31,8 +31,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
 
 
-    @Autowired
-    private CodeService codeService;
+
 
 
 
@@ -45,8 +44,11 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
     @Autowired
     private SnapshotService snapshotService;
 
+
     @Autowired
-    private Broadcast broadcast;
+    private DirectoryMoveChainCompensator compensator;
+
+
 
 
 
@@ -74,27 +76,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
     @Override
     public void compensationStrategy(DirectoryMoveEvent event) {
-        String step = event.getInternalData().getCurrentStep();
-
-        if (!step.equals("preparing")){
-            transaction().execute(status -> {
-
-                Optional<Directory> childCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
-                if (childCheck.isEmpty()) throw new IllegalStateException("Директории, которую вы собираетесь перемещать, нет");
-
-                childCheck.get().setStatus(DirectoryStatus.AVAILABLE);
-
-                Optional<Directory> parentCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
-                if (parentCheck.isEmpty()) throw new IllegalStateException("Директории, которую в которую вы собираетесь перемещать, нет");
-
-                Directory parent = parentCheck.get();
-
-                parent.setStatus(DirectoryStatus.AVAILABLE);
-
-
-                return null;
-            });
-        }
+        compensator.compensation(event);
     }
 
 
@@ -115,25 +97,35 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
 
 
-            Optional<Directory> childCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
-            if (childCheck.isEmpty()) throw new IllegalStateException("Директории, которую вы собираетесь перемещать, нет");
+            Optional<Directory> childCheck
+                    = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
+            if (childCheck.isEmpty())
+                throw new IllegalStateException("Директории, которую вы собираетесь перемещать, нет");
 
             Directory child = childCheck.get();
 
-            if (child.isImmutable() || child.isHidden()) throw new IllegalStateException("Директорию нельзя переместить");
-            if (child.getStatus()!= DirectoryStatus.AVAILABLE) throw new IllegalStateException("Директория недоступна в данный момент");
+            if (child.isImmutable() || child.isHidden())
+                throw new IllegalStateException("Директорию нельзя переместить");
+            if (child.getStatus()!= DirectoryStatus.AVAILABLE)
+                throw new IllegalStateException("Директория недоступна в данный момент");
             checkResult.child = child;
 
 
-            Optional<Directory> parentCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
-            if (parentCheck.isEmpty()) throw new IllegalStateException("Директории, которую в которую вы собираетесь перемещать, нет");
+            Optional<Directory> parentCheck
+                    = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
+
+            if (parentCheck.isEmpty())
+                throw new IllegalStateException("Директории, которую в которую вы собираетесь перемещать, нет");
 
             Directory parent = parentCheck.get();
 
-            if (child.getParent().getId().equals(parent.getId())) throw new IllegalStateException("Директория уже является прямым родителем");
+            if (child.getParent().getId().equals(parent.getId()))
+                throw new IllegalStateException("Директория уже является прямым родителем");
 
-            if (parent.isHidden()) throw new IllegalStateException("В директорию нельзя переместить");
-            if (parent.getStatus()!= DirectoryStatus.AVAILABLE) throw new IllegalStateException("Директория," +
+            if (parent.isHidden())
+                throw new IllegalStateException("В директорию нельзя переместить");
+            if (parent.getStatus()!= DirectoryStatus.AVAILABLE)
+                throw new IllegalStateException("Директория," +
                     " в которую вы перемещаете, недоступна в данный момент");
             checkResult.parent = parent;
 
@@ -159,8 +151,10 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
         transaction().execute(status -> {
 
-            Optional<Directory> childCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
-            if (childCheck.isEmpty()) throw new IllegalStateException("Директории, которую вы собираетесь перемещать, нет");
+            Optional<Directory> childCheck
+                    = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
+            if (childCheck.isEmpty())
+                throw new IllegalStateException("Директории, которую вы собираетесь перемещать, нет");
 
             Directory child = childCheck.get();
 
@@ -168,12 +162,15 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
             if (child.getStatus()!= DirectoryStatus.PREPARING_FOR_MIGRATING)
                 throw new IllegalStateException("Неподходящий статус для шага blocking");
 
-            Optional<Directory> parentCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
-            if (parentCheck.isEmpty()) throw new IllegalStateException("директории, в которую вы собираетесь перемещать, больше нет");
+            Optional<Directory> parentCheck
+                    = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
+            if (parentCheck.isEmpty())
+                throw new IllegalStateException("директории, в которую вы собираетесь перемещать, больше нет");
 
             Directory parent = parentCheck.get();
 
-            if (parent.getStatus()!=DirectoryStatus.PREPARING_FOR_GENERATING) throw new IllegalStateException("Неподходящий статус для шага blocking");
+            if (parent.getStatus()!=DirectoryStatus.PREPARING_FOR_GENERATING)
+                throw new IllegalStateException("Неподходящий статус для шага blocking");
 
 
             // у ребенка проверяем верхних родителей. Не забываем проверить принадлежность к проекту
@@ -181,7 +178,8 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
             boolean directoryFound = false;
             boolean rootFound = false;
 
-            List<DirectoryReadOnly> childParents = snapshotService.getParentsSnapshotDirectoriesOnly(child.getId());
+            List<DirectoryReadOnly> childParents
+                    = snapshotService.getParentsSnapshotDirectoriesOnly(child.getId());
 
             for (DirectoryReadOnly directoryReadOnly:childParents){
                 if (directoryReadOnly.getId().equals(child.getId())){
@@ -207,7 +205,8 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
 
             // у ребенка проверяем детей - нельзя, чтобы среди них оказался новый родитель - верх иерархии не может быть перемещен к себе же вниз
-            List<DirectoryReadOnly> childChildren = snapshotService.getChildrenSnapshotDirectoriesOnly(child.getId());
+            List<DirectoryReadOnly> childChildren
+                    = snapshotService.getChildrenSnapshotDirectoriesOnly(child.getId());
 
             for (DirectoryReadOnly directoryReadOnly:childChildren){
                 if (directoryReadOnly.getId().equals(parent.getId()))
@@ -218,7 +217,8 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
             }
 
             // у нового родителя проверяем родителей - проверяем принадлежность к проекту + статусы предков
-            List<DirectoryReadOnly> parentParents = snapshotService.getParentsSnapshotDirectoriesOnly(parent.getId());
+            List<DirectoryReadOnly> parentParents
+                    = snapshotService.getParentsSnapshotDirectoriesOnly(parent.getId());
 
             directoryFound = false;
             rootFound = false;
@@ -265,15 +265,17 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
     @Step(name = "parent_switch")
     @Message
-    @Next(name = "disk_save_and_content_change")
+    @Next(name = "release")
     public void parentSwitch(DirectoryMoveEvent event){
 
         event.setMessage("Перестраиваем базу данных");
 
         transaction().execute(status -> {
 
-            Optional<Directory> childCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
-            if (childCheck.isEmpty()) throw new IllegalStateException("Директории, которую вы собираетесь перемещать, нет");
+            Optional<Directory> childCheck = directoryRepository
+                    .findByIdForUpdate(event.getExternalData().getDirectoryId());
+            if (childCheck.isEmpty())
+                throw new IllegalStateException("Директории, которую вы собираетесь перемещать, нет");
 
             Directory child = childCheck.get();
 
@@ -281,23 +283,27 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
             if (child.getStatus()!= DirectoryStatus.MIGRATING)
                 throw new IllegalStateException("Неподходящий статус для шага parent_switch");
 
-            Optional<Directory> parentCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
-            if (parentCheck.isEmpty()) throw new IllegalStateException("директории, в которую вы собираетесь перемещать, больше нет");
+            Optional<Directory> parentCheck
+                    = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
+            if (parentCheck.isEmpty())
+                throw new IllegalStateException("директории, в которую вы собираетесь перемещать, больше нет");
 
             Directory parent = parentCheck.get();
 
-            if (parent.getStatus()!=DirectoryStatus.GENERATING) throw new IllegalStateException("Неподходящий статус для шага parent_switch");
+            if (parent.getStatus()!=DirectoryStatus.GENERATING)
+                throw new IllegalStateException("Неподходящий статус для шага parent_switch");
 
             // меняем родителя
             child.setParent(parent);
             parent.getChildren().add(child);
 
-            event.getInternalData().setOldPath(child.getConstructedPath());
+
 
 
             // мы должны перестроить constructed path для всех детей child, а также ему самому child
 
-            StructureSnapshot belowChild = snapshotService.getFullChildrenSnapshot(child.getId());
+            StructureSnapshot belowChild
+                    = snapshotService.getFullChildrenSnapshot(child.getId());
 
 
             Map<UUID, String> directoryConstructedPaths = new HashMap<>();
@@ -359,68 +365,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
     }
 
-    @Step(name = "disk_save_and_content_change")
-    @Message
-    @Next(name = "release")
-    public void diskAndContent(DirectoryMoveEvent event){
 
-        event.setMessage("Согласуем перемещение с диском и кешем");
-
-        Directory detachedChild = transaction().execute(status -> {
-
-            Optional<Directory> check = directoryRepository.findById(event.getExternalData().getDirectoryId());
-
-            if (check.isEmpty() || !check.get().getParent().getId().equals(event.getExternalData().getParent())){
-                throw new IllegalStateException("обнаружена несогласованность данных в бд");
-            }
-
-
-            return check.get();
-        });
-
-
-        try {
-            Path old = Path.of(event.getInternalData().getProjectsPath(), event.getInternalData().getOldPath());
-            Path newPath = Path.of(event.getInternalData().getProjectsPath(), detachedChild.getConstructedPath());
-            Files.move(old, newPath);
-        }
-        catch (Exception e){
-            throw new IllegalStateException("ошибка записи в диск. "+e.getMessage());
-        }
-
-
-
-        /*
-
-
-        // перестройка контента
-        // нам необходимо извлечь все файлы внутри child, после чего обновить каждому из них его dto
-
-        // todo по дизайну ошибка в кеше не должна обрывать весь процесс. Думаю, что разумнее просто инвалидировать кеш
-        try {
-
-
-            List<FileReadOnly> belowFiles = transaction().execute(status ->
-                    snapshotService.getAllFilesBelowDirectory(event.getExternalData().getDirectoryId()));
-
-
-
-
-            processAndBroadcastMovedJavaFiles(belowFiles, event);
-
-
-
-
-        }
-        catch (Exception e){
-
-        }
-
-         */
-
-
-
-    }
 
 
     @EndingStep(name="release")
@@ -429,7 +374,8 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
         transaction().execute(status -> {
 
                     Optional<Directory> childCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
-                    if (childCheck.isEmpty()) throw new IllegalStateException("Директории-потомка не существует");
+                    if (childCheck.isEmpty())
+                        throw new IllegalStateException("Директории-потомка не существует");
 
                     Directory child = childCheck.get();
 

@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
@@ -36,8 +37,7 @@ public class HotLayerUpdaterService implements HotLayerUpdater {
     @Autowired
     private FileCache fileCache;
 
-    @Autowired
-    private StorageService storageService;
+
 
     @Autowired
     private SnapshotService snapshotService;
@@ -146,5 +146,10 @@ public class HotLayerUpdaterService implements HotLayerUpdater {
     @Override
     public void onFileInvalidate(CachedFileInvalidation fileInvalidation) {
         fileCache.delete(fileInvalidation.getFileId());
+    }
+
+    @Override
+    public void onProjectStructureInvalidate(ProjectStructureInvalidation structureInvalidation) {
+
     }
 }

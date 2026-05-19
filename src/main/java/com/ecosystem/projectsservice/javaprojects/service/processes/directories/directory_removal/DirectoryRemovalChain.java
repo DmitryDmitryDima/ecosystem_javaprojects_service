@@ -5,6 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.service.storage.UserContentStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -47,6 +48,12 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     @Autowired
     private SnapshotService snapshotService;
 
+    @Autowired
+    private UserContentStorage storage;
+
+    @Autowired
+    private DirectoryRemovalChainCompensator compensator;
+
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
         return new ProjectEventFromUser();
@@ -67,25 +74,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     @Override
     public void compensationStrategy(DirectoryRemovalEvent event) {
 
-        // todo в идеале мы должны копировать удаляемый контент на диске в случае,
-        //  если удаление диска провалилось.
-        String step = event.getInternalData().getCurrentStep();
 
-        if (step.equals("prepare_directory")
-                || step.equals("block_directory")
-                || step.equals("remove_from_db")){
-            transaction().execute(status -> {
-                Optional<Directory> directoryCheck = directoryRepository
-                        .findByIdForUpdate(event.getExternalData().getId());
-                if (directoryCheck.isEmpty()){
-                    throw new IllegalStateException("Директории нет");
-
-                }
-
-                directoryCheck.get().setStatus(DirectoryStatus.AVAILABLE);
-                return null;
-            });
-        }
+        compensator.compensation(event);
 
     }
 
@@ -97,7 +87,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
 
         // проверка доступности директории на момент опроса
         Directory directory = transaction().execute(status -> {
-            Optional<Directory> initialCheck = directoryRepository.findById(event.getExternalData().getId());
+            Optional<Directory> initialCheck
+                    = directoryRepository.findById(event.getExternalData().getId());
             if (initialCheck.isEmpty() || initialCheck.get().isHidden())
                 throw new IllegalStateException("директории не существует");
 
@@ -151,7 +142,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
 
         // конечная фаза - тут необходимо принять решение о том,
         // продолжать ли цепочку - на основании полученных ответов
-        Function<Map<String, TriggerAnswer>, Boolean> finalDecisionPhaseStrategy = (answers)->{
+        Function<Map<String, TriggerAnswer>, Boolean> finalDecisionPhaseStrategy
+                = (answers)->{
 
             System.out.println("finalDecision "+answers);
             for (TriggerAnswer answer:answers.values()){
@@ -214,13 +206,14 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
     // блокировка директории по статусу - защищает от некоторых параллельных действий
     // над родительскими и дочерними структурами
     @Step(name = "block_directory")
-    @Next(name = "remove_from_db")
+    @Next(name = "remove_from_storage")
     @Message
     public void blockDirectory(DirectoryRemovalEvent event){
         event.setMessage("Изолируем директорию");
         transaction().execute(status -> {
 
-            Optional<Directory> check = directoryRepository.findByIdForUpdate(event.getExternalData().getId());
+            Optional<Directory> check
+                    = directoryRepository.findByIdForUpdate(event.getExternalData().getId());
             if (check.isEmpty()) throw new IllegalStateException("директории не существует");
 
 
@@ -229,11 +222,10 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             Directory directory = check.get();
 
 
-            // сразу конструируем полный путь
-            event.getInternalData()
-                    .setFullPath(Path.of(event.getInternalData().getProjectsPath(), directory.getConstructedPath()).normalize().toString());
 
-            List<DirectoryReadOnly> parents = snapshotService.getParentsSnapshotDirectoriesOnly(event.getExternalData().getId());
+
+            List<DirectoryReadOnly> parents
+                    = snapshotService.getParentsSnapshotDirectoriesOnly(event.getExternalData().getId());
 
             boolean parentContains = false;
             boolean rootContains = false;
@@ -281,7 +273,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             }
 
             // смотрим детей - при удалении они не могут быть затронуты никем
-            StructureSnapshot children = snapshotService.getFullChildrenSnapshot(event.getExternalData().getId());
+            StructureSnapshot children
+                    = snapshotService.getFullChildrenSnapshot(event.getExternalData().getId());
             children.getDirectories().forEach(directoryReadOnly -> {
                 if (!directoryReadOnly.getId().equals(event.getExternalData().getId()) && directoryReadOnly.getStatus()!=DirectoryStatus.AVAILABLE){
                     throw new IllegalStateException("Внутренняя часть директории затронута другим процессом");
@@ -291,7 +284,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
 
             children.getFiles().forEach(fileReadOnly -> {
                 System.out.println(fileReadOnly.getStatus()+" "+fileReadOnly.getName());
-                if (fileReadOnly.getStatus()!= FileStatus.AVAILABLE){
+                if (fileReadOnly.getStatus()
+                        != FileStatus.AVAILABLE){
                     throw new IllegalStateException("Какой то из файлов внутри директории в данный момент затронут другим процессом");
                 }
             });
@@ -302,27 +296,37 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
         });
     }
 
-    @Step(name = "remove_from_db")
+
+
+    //
+
+    @Step(name = "remove_from_storage")
     @Message
-    @Next(name = "remove_from_disk")
+    @Next(name = "remove_from_db")
+    public void removeFromStorage(DirectoryRemovalEvent directoryRemovalEvent){
+        directoryRemovalEvent.setMessage("очищаем хранилище и кеши");
+        var toDelete = transaction().execute(status -> snapshotService
+                .getAllFilesBelowDirectory(directoryRemovalEvent
+                        .getInternalData().getProjectRoot()));
+
+
+
+        storage.deleteBatch(toDelete.stream().map(file->file.getId().toString()).toList());
+
+
+
+    }
+
+    @EndingStep(name = "remove_from_db")
     public void removeFromDb(DirectoryRemovalEvent directoryRemovalEvent){
         directoryRemovalEvent.setMessage("очищаем базу данных");
+
+        // каскадное удаление
         transaction().execute(status -> {
 
             directoryRepository.deleteById(directoryRemovalEvent.getExternalData().getId());
 
-           return null;
+            return null;
         });
-    }
-
-    @EndingStep(name = "remove_from_disk")
-    public void removeFromDisk(DirectoryRemovalEvent directoryRemovalEvent){
-        directoryRemovalEvent.setMessage("подчищаем диск");
-        try {
-            FileSystemUtils.deleteRecursively(Path.of(directoryRemovalEvent.getInternalData().getFullPath()));
-        }
-        catch (Exception e){
-            throw new IllegalStateException("ошибка очистки диска");
-        }
     }
 }
