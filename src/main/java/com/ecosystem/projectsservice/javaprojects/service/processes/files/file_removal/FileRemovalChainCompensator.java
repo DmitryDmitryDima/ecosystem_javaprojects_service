@@ -1,7 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.Compensator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,6 +18,9 @@ public class FileRemovalChainCompensator implements Compensator<FileRemovalEvent
 
     @Autowired
     private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private HotLayerUpdater hotLayer;
 
 
     @Override
@@ -33,6 +38,17 @@ public class FileRemovalChainCompensator implements Compensator<FileRemovalEvent
 
                 return null;
             });
+        }
+
+        // мы должны инвалидировать структуру, чтобы она снова учитывала файл, снова ставший видимым
+        // кеш операции не означают остановки всего процесса
+        try {
+            hotLayer.projectStructureInvalidation(new ProjectStructureInvalidation(
+                    event.getContext().getProjectId()
+            ));
+        }
+        catch (Exception e){
+            e.printStackTrace();
         }
 
     }

@@ -5,8 +5,9 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.F
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
 import com.ecosystem.projectsservice.javaprojects.model.File;
+import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
-import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
@@ -23,9 +24,17 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
-// указывается state event, проходящий через всю очередь, и ивент результат
+
+/*
+
+Политика - никто из родителей не должен удаляться в моменте
+
+сайд эффекты - полное обновление записи файла в кеше
+
+ */
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_SAVE)
 public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
@@ -98,27 +107,56 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
     }
 
 
+    @OpeningStep(name = "prepareFile")
+    @Next(name = "lockFile")
+    public void prepareFile(FileSaveEvent event){
+
+        event.setMessage("готовим файл к записи");
+
+        transaction().execute(status -> {
+
+
+            Optional<File> fileCheck
+                    = fileRepository.findByIdForUpdate(event.getExternalData().getFileId());
+
+            if (fileCheck.isEmpty()) throw new IllegalArgumentException("файл отсутствует");
+
+            File file = fileCheck.get();
+
+            if (file.isHidden()) throw new IllegalStateException("вы не можете редактировать этот файл");
+
+            if (file.getStatus()!=FileStatus.AVAILABLE)
+                throw new IllegalStateException("Файл занят другим процессом");
+
+
+            return null;
+        });
+
+
+    }
 
 
 
-    @OpeningStep(name = "lockFile")
+
+
+    @Step(name = "lockFile")
     @Message
     @Next(name="writeFileToStorage")
-    @MaxDuration(time = 5)
     public void lockFile(FileSaveEvent fileSaveEvent){
 
 
 
 
 
-        fileSaveEvent.setMessage("готовим файл к записи - проверяем зависимости");
+        fileSaveEvent.setMessage("блокируем файл");
 
         // транзакция осуществляет пессимистичную блокировку
         File file = transaction().execute((status -> {
 
 
             // проверка существования в базе
-            Optional<File> fileCheck = fileRepository.findByIdForUpdate(fileSaveEvent.getExternalData().getFileId());
+            Optional<File> fileCheck
+                    = fileRepository.findByIdForUpdate(fileSaveEvent.getExternalData().getFileId());
 
             if (fileCheck.isEmpty()) throw new IllegalArgumentException("файл отсутствует");
 
@@ -126,13 +164,38 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
 
 
+
+
+
             File fileEntity = fileCheck.get();
 
+            if (fileEntity.getStatus()!=FileStatus.PREPARING_FOR_WRITING){
+                throw new IllegalStateException("неподходящий статус для стадии блокировки");
+            }
 
-            Optional<FileReadOnly> presence = snapshotService
-                    .getFileBelowDirectory(fileSaveEvent.getInternalData().getProjectRoot(), fileEntity.getId());
 
-            if (presence.isEmpty()) throw new IllegalStateException("файл недоступен или не является частью проекта");
+            List<DirectoryReadOnly> parents = snapshotService
+                    .getParentsSnapshotDirectoriesOnly(fileEntity.getParent().getId());
+
+
+            boolean containsRoot = false;
+
+            for (var dir:parents){
+                if (dir.getId().equals(fileSaveEvent.getInternalData().getProjectRoot())){
+                    containsRoot = true;
+                }
+
+                if (dir.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL
+                        || dir.getStatus() == DirectoryStatus.REMOVING){
+
+                    throw new IllegalStateException("одна из родительских директорий помечена на удаление");
+
+                }
+            }
+
+            if (!containsRoot){
+                throw new IllegalStateException("файл не принадлежит проекту");
+            }
 
 
 
@@ -152,7 +215,7 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
 
         // инвалидируем кеш
-        hotLayerUpdater.onFileInvalidate(new CachedFileInvalidation(file.getId()));
+        hotLayerUpdater.fileInvalidation(new CachedFileInvalidation(file.getId()));
 
 
 
@@ -218,15 +281,23 @@ public class FileSaveChain extends ControlledOutboxChain<FileSaveEvent> {
 
         });
 
-        // обновляем запись в кеше - чтобы с этого момента чтение было актуальным
-        hotLayerUpdater.onForcedSave(new ForcedSave(FileDTO.builder()
-                .id(saved.getId())
-                .content(fileSaveEvent.getExternalData().getContent())
-                .constructedPath(saved.getConstructedPath())
-                .extension(saved.getExtension())
-                .projectId(fileSaveEvent.getContext().getProjectId())
-                .name(saved.getName())
-                .build()));
+
+        try {
+            // обновляем запись в кеше - чтобы с этого момента чтение было актуальным
+            hotLayerUpdater.onForcedSave(new ForcedSave(FileDTO.builder()
+                    .id(saved.getId())
+                    .content(fileSaveEvent.getExternalData().getContent())
+                    .constructedPath(saved.getConstructedPath())
+                    .extension(saved.getExtension())
+                    .projectId(fileSaveEvent.getContext().getProjectId())
+                    .name(saved.getName())
+                    .build()));
+        }
+        catch (Exception e){
+
+        }
+
+
 
 
 

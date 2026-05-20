@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
@@ -34,8 +35,15 @@ import java.util.function.Function;
 
 
 /*
-todo я не могу удалить файл из папки, помеченной на удаление.
-  При это перемещение в теории не препятствует удалению файла
+политика:
+
+удаление файла возможно, если никто из его родителей не удаляется в данный момент
+
+
+сайд эффекты:
+- Инвалидация структуры в начале
+- Инвалидация структуры при компенсации (если произошло возвращение в available)
+- Инвалидация кеша при удалении из storage
  */
 
 
@@ -61,7 +69,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
 
     @Autowired
-    private HotLayerUpdater updater;
+    private HotLayerUpdater hotLayer;
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
@@ -218,6 +226,11 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
 
         });
+
+
+
+
+
     }
 
     @Step(name = "blockFile")
@@ -279,9 +292,22 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
 
 
 
-       // инвалидируем кеш структуры и самого файла
 
-        updater.onFileInvalidate(new CachedFileInvalidation(event.getExternalData().getFileId()));
+       try {
+           // инвалидируем кеш файла и кеш структуры
+           hotLayer.fileInvalidation(new CachedFileInvalidation(event.getExternalData().getFileId()));
+           // - в статусе кандидата на удаления он исчезнет из предложек
+           hotLayer.projectStructureInvalidation(
+                   new ProjectStructureInvalidation(event.getContext().getProjectId())
+           );
+       }
+
+       catch (Exception e){
+           e.printStackTrace();
+       }
+
+
+
 
 
 

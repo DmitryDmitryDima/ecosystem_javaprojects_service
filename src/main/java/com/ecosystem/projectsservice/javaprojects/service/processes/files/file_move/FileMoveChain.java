@@ -1,13 +1,15 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.FileMove;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
-import com.ecosystem.projectsservice.javaprojects.service.projects.state.CodeService;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
@@ -22,13 +24,27 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
 
-// TODO инвалидация кеша
+
+/*
+политика:
+
+новый родитель - статус пара generating
+файл - статус пара migrating
+
+другие процессы обязаны проверять файлы
+
+
+сайд- эффекты:
+- обновление кеша файла (полное, так как обновляется constructed path)
+- инвалидация структуры - компенсация, подготовка и завершение
+
+ */
+
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_MOVE)
 public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
@@ -47,6 +63,10 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
     @Autowired
     private SnapshotService snapshotService;
+
+
+    @Autowired
+    private HotLayerUpdater hotLayer;
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
@@ -97,7 +117,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
             if (fileCheck.get().isHidden() || fileCheck.get().isImmutable())
                 throw new IllegalStateException("Файл не может быть перемещен");
 
-
+            // директория нового родителя
             Optional<Directory> directoryCheck
                     = directoryRepository.findByIdForUpdate(fileMoveEvent.getExternalData().getParent());
 
@@ -106,19 +126,29 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
             if (directoryCheck.get().getStatus()!=DirectoryStatus.AVAILABLE)
                 throw new IllegalStateException("неподходящий статус директории на стадии preparing");
 
-            // СТАВИМ СТАТУСЫ, ЗАЩИЩАЮЩИЕ ОТ ДРУГИМ ПРОЦЕССОВ. ЕСЛИ ДАННЫЕ СТАТУСЫ НЕ СОХРАНЯЮТСЯ В СЛЕДУЮЩЕМ ШАГЕ, ЭТО ОЗНАЧАЕТ, ЧТО ПРОЦЕСС НАРУШЕН
+            // СТАВИМ СТАТУСЫ, ЗАЩИЩАЮЩИЕ ОТ ДРУГИХ ПРОЦЕССОВ. ЕСЛИ ДАННЫЕ СТАТУСЫ НЕ СОХРАНЯЮТСЯ В СЛЕДУЮЩЕМ ШАГЕ, ЭТО ОЗНАЧАЕТ, ЧТО ПРОЦЕСС НАРУШЕН
             directoryCheck.get().setStatus(DirectoryStatus.PREPARING_FOR_GENERATING);
             fileCheck.get().setStatus(FileStatus.PREPARING_FOR_MIGRATING);
 
 
             return null;
         });
+
+        // инвалидируем кеш структуры
+        // кеш операции не означают остановки всего процесса
+        try {
+            hotLayer.projectStructureInvalidation(new ProjectStructureInvalidation(
+                    fileMoveEvent.getContext().getProjectId()
+            ));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Step(name = "block_entities")
     @Message
     @Next(name = "db_parent_switch")
-    // todo добавить проверку на принадлежность файла и его нового родителя проекту
     public void blockEntities(FileMoveEvent event){
         event.setMessage("блокируем сущности");
 
@@ -148,45 +178,44 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
                     = snapshotService.getParentsSnapshotDirectoriesOnly(fileCheck.get().getParent().getId());
 
             boolean containsRoot = false;
-            boolean containsDirectory = false;
+
 
             for (DirectoryReadOnly directoryReadOnly:fileParents){
                 if (directoryReadOnly.getId().equals(event.getInternalData().getProjectRoot())){
                     containsRoot = true;
                 }
 
-                if (directoryReadOnly.getId().equals(fileCheck.get().getParent().getId())){
-                    containsDirectory = true;
-                }
 
+                // тут миграция не допускается - нелогично перемещать ту папку,
+                // чей ребенок одновременно меняет положение
                 if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING
 
                         || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_REMOVAL
+
+                        || directoryReadOnly.getStatus() == DirectoryStatus.MIGRATING
+                        || directoryReadOnly.getStatus() == DirectoryStatus.PREPARING_FOR_MIGRATING
                         ){
 
                     throw new IllegalStateException("Кто то из родителей занят другим процессом");
                 }
             }
 
-            if (!(containsDirectory && containsRoot)){
+            if (!containsRoot){
                 throw new IllegalStateException("Файл не принадлежит проекту");
             }
 
 
 
             // у папки, в которую мы собираемся перемещать,
-            // мы должны проверить родителей на migrating и removing. Среди детей не должно быть одноименных
+            // мы должны проверить родителей на  removing. Среди детей не должно быть одноименных
             List<DirectoryReadOnly> parentParents
                     = snapshotService.getParentsSnapshotDirectoriesOnly(directoryCheck.get().getId());
 
-            containsDirectory = false;
+
             containsRoot = false;
 
             for (DirectoryReadOnly directoryReadOnly:parentParents){
-                if (directoryReadOnly.getId().equals(directoryCheck.get().getId())){
-                    containsDirectory = true;
 
-                }
 
                 if (directoryReadOnly.getId().equals(event.getInternalData().getProjectRoot())){
                     containsRoot = true;
@@ -204,7 +233,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
 
             }
-            if (!(containsDirectory && containsRoot))
+            if (!containsRoot)
                 throw new IllegalStateException("Папка, в которую перемещают файл, не относится к проекту");
 
 
@@ -221,6 +250,7 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
             }
 
 
+            // блокирующие статусы
             fileCheck.get().setStatus(FileStatus.MIGRATING);
 
             directoryCheck.get().setStatus(DirectoryStatus.GENERATING);
@@ -277,13 +307,21 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
             return null;
         });
+
+
+
+
+
+
+
+
     }
 
 
     // сброс статусов
     @EndingStep(name = "release")
     public void release(FileMoveEvent event){
-        transaction().execute(status -> {
+        File updated = transaction().execute(status -> {
 
             Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
 
@@ -301,15 +339,40 @@ public class FileMoveChain extends ControlledOutboxChain<FileMoveEvent> {
 
 
 
-            return null;
+            return newChild.get();
         });
 
+
+        // кеш операции не означают остановки всего процесса
         try {
-            //cacheOperations(event);
+
+            // инвалидация структуры проекта
+            hotLayer.projectStructureInvalidation(new ProjectStructureInvalidation(
+                    event.getContext().getProjectId()
+            ));
+
+            // сайд эффекты для файлового контента
+            hotLayer.onFileMove(
+                    FileMove.builder()
+                            .fileDTO(FileDTO.builder()
+                                    .id(updated.getId())
+                                    .constructedPath(updated.getConstructedPath())
+                                    .extension(updated.getExtension())
+                                    .projectId(event.getContext().getProjectId())
+                                    .name(updated.getName())
+                                    .build())
+
+                            .userId(event.getContext().getUserUUID())
+                            .username(event.getContext().getUsername())
+                            .correlationId(event.getContext().getCorrelationId())
+
+                            .build()
+            );
         }
         catch (Exception e){
             e.printStackTrace();
         }
+
 
 
     }

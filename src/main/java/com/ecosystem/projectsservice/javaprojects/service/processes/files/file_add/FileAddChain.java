@@ -1,12 +1,14 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_add;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
-import com.ecosystem.projectsservice.javaprojects.service.projects.state.CodeService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.code.CodeService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.service.storage.UserContentStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
@@ -26,6 +28,19 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+
+/*
+
+Политика - parent директория имеет статус-пару generating
+
+Все директории выше ветки проверяются на статусы удаления
+
+
+
+Сайд эффекты:
+- Инвалидация структуры в самом конце (требование к перестраиванию)
+
+ */
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_FILE_ADD)
 public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
@@ -49,6 +64,9 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
     @Autowired
     private UserContentStorage storage;
+
+    @Autowired
+    private HotLayerUpdater hotLayer;
 
 
 
@@ -112,11 +130,12 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
 
 
+
+
             /*
-            Анализируем снимок верхних уровней иерархии - мы должны проверить, есть ли в ответе одновременно parent id и project root
-            Если нет - это означает, что директория не принадлежит проекту
-            Помимо этого - проверяем статусы на самой директории и на родителях. Статус Removing или migrating - автоматически отмена
-            проверяем также список существующих папок и файлов
+            Анализируем снимок верхних уровней иерархии - мы должны проверить,
+             есть ли в ответе одновременно parent id и project root
+
             */
 
             List<DirectoryReadOnly> parents
@@ -126,20 +145,22 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
 
 
-            boolean parentContains = false;
+
+
             boolean rootContains = false;
 
             for (DirectoryReadOnly directoryReadOnly:parents){
 
-
-                if (directoryReadOnly.getId().equals(fileAddEvent.getExternalData().getParentId())){
-                    parentContains = true;
+                // если это сам родитель
+                if (directoryReadOnly.getId().equals(fileAddEvent.getExternalData().getId())){
+                    if (directoryReadOnly.getStatus()!=DirectoryStatus.PREPARING_FOR_GENERATING){
+                        throw new IllegalStateException("Неподходящий статус родителя на стадии подготовки");
+                    }
                 }
 
                 else {
-
                     if (directoryReadOnly.getStatus()==DirectoryStatus.REMOVING
-                    || directoryReadOnly.getStatus()==DirectoryStatus.PREPARING_FOR_REMOVAL
+                            || directoryReadOnly.getStatus()==DirectoryStatus.PREPARING_FOR_REMOVAL
 
                     ){
                         throw new IllegalStateException("используемая папка " +
@@ -157,11 +178,17 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
 
 
-
-
             }
 
-            if (!(parentContains && rootContains)){
+
+
+
+
+
+
+
+
+            if (!rootContains){
                 throw new IllegalStateException("директория не принадлежит проекту");
             }
 
@@ -202,6 +229,9 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
                 throw new IllegalStateException("директории не существует");
             Directory directory = directoryCheck.get();
 
+            if (directory.getStatus()!=DirectoryStatus.GENERATING)
+                 throw new IllegalStateException("Неподходящий статус директории для этапа создания сущности файла");
+
             File file = new File();
             file.setStatus(FileStatus.AVAILABLE);
             file.setName(event.getExternalData().getFilename());
@@ -235,6 +265,18 @@ public class FileAddChain extends ControlledOutboxChain<FileAddEvent> {
 
 
         storage.save(event.getExternalData().getId().toString(), initialContent);
+
+
+        // инвалидируем структуру, заставляя ее пересобраться (лениво) с учетом нового файла
+        // кеш операции не означают остановки всего процесса
+        try {
+            hotLayer.projectStructureInvalidation(new ProjectStructureInvalidation(
+                    event.getContext().getProjectId()
+            ));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
 
 
     }

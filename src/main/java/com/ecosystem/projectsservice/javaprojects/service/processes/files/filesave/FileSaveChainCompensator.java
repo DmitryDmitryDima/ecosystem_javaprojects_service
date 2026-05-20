@@ -26,7 +26,7 @@ public class FileSaveChainCompensator implements Compensator<FileSaveEvent> {
 
 
         // нужно освободить файл. Примечание - файл не может быть изменен. если какой либо процесс занимает лок
-        if (!step.equals("lockFile")){
+        if (!step.equals("prepareFile")){
             transactionTemplate.execute(status -> {
                 Optional<File> fileCheck = fileRepository
                         .findByIdForUpdate(event.getExternalData().getFileId());

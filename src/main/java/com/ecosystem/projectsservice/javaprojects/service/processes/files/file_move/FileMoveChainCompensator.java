@@ -1,11 +1,13 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.Compensator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,6 +27,9 @@ public class FileMoveChainCompensator implements Compensator<FileMoveEvent> {
 
     @Autowired
     private DirectoryRepository directoryRepository;
+
+    @Autowired
+    private HotLayerUpdater hotLayer;
 
     @Override
     public void compensation(FileMoveEvent event) {
@@ -51,5 +56,15 @@ public class FileMoveChainCompensator implements Compensator<FileMoveEvent> {
                 return null;
             });
         };
+
+        // кеш операции не означают остановки всего процесса
+        try {
+            hotLayer.projectStructureInvalidation(new ProjectStructureInvalidation(
+                    event.getContext().getProjectId()
+            ));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }
