@@ -22,6 +22,9 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 // хуки для процессов, а также точечные операции
@@ -50,6 +53,10 @@ public class HotLayerUpdaterService implements HotLayerUpdater {
 
     @Autowired
     private SnapshotService snapshotService;
+
+
+
+    private final ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
 
     @Override
@@ -127,43 +134,8 @@ public class HotLayerUpdaterService implements HotLayerUpdater {
 
 
 
-        CachedFile cachedFile;
-        String content;
+        CachedFile cachedFile = updatePathContentAndSave(dto);
 
-        Optional<CachedFile> cacheCheck = fileCache.get(dto.getId());
-
-        if (cacheCheck.isPresent()){
-            cachedFile = cacheCheck.get();
-            cachedFile.setConstructedPath(dto.getConstructedPath()); // обновляем путь
-            content = cachedFile.getContent();
-        }
-
-        else {
-            content = coldContentLoad(dto.getId());
-            cachedFile = CachedFile
-                    .builder()
-                    .constructedPath(dto.getConstructedPath())
-                    .projectId(dto.getProjectId())
-                    .extension(dto.getExtension())
-                    .id(dto.getId())
-                    .build();
-        }
-
-        if (dto.getExtension().equals("java")){
-            String newPackageName
-                    = codeService.transformFileConstructedPathToPackage(dto.getConstructedPath());
-
-            System.out.println(newPackageName);
-
-            content = codeService.transformPackage(content, newPackageName);
-        }
-
-
-
-        // собираем новый кеш
-        cachedFile.setContent(content);
-
-        fileCache.saveOrUpdate(cachedFile);
 
 
         // делаем рассылку
@@ -210,13 +182,129 @@ public class HotLayerUpdaterService implements HotLayerUpdater {
     }
 
     @Override
+    public void onDirectoryRemoval(DirectoryRemoval directoryRemoval) {
+
+
+        // todo редактируем ссылки на удаленные файлы
+
+
+        // удаляем все ключи
+        fileCache.deleteCollection(directoryRemoval.getFiles());
+
+
+
+
+
+
+
+    }
+
+    @Override
+    public void onDirectoryMove(DirectoryMove directoryMove) {
+
+        // todo виртуальные потоки?
+        for (var file:directoryMove.getTouchedFiles()){
+
+
+            CompletableFuture.runAsync(()->{
+
+                CachedFile cachedFile = updatePathContentAndSave(file);
+
+                broadcast.sendSync(new Broadcast.EventBuilder()
+                        .useEvent(ProjectEventFromUser::new)
+                        .withContext(()-> ProjectEventFromUserContext.builder()
+                                .projectId(cachedFile.getProjectId())
+                                .correlationId(directoryMove.getCorrelationId())
+                                .alarmStrategy(null)
+                                .notificationStrategy(null)
+                                .userUUID(directoryMove.getUserId())
+                                .username(directoryMove.getUsername())
+                                .timestamp(Instant.now())
+                                .build())
+                        .withData(()->{
+
+                            FileSaveExternalData data = new FileSaveExternalData();
+                            data.setContent(cachedFile.getContent());
+                            data.setFileId(cachedFile.getId());
+                            data.setExtension(cachedFile.getExtension());
+                            data.setName(cachedFile.getName());
+
+                            return data;
+                        })
+                        .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE)
+                        .withMessage("Файл сохранен")
+                        .build()
+
+                );
+            }, virtualExecutor);
+
+
+
+
+
+
+        }
+    }
+
+    @Override
     public void fileInvalidation(CachedFileInvalidation fileInvalidation) {
         fileCache.delete(fileInvalidation.getFileId());
     }
 
     @Override
+    public void filesInvalidation(CachedFilesInvalidation filesInvalidation) {
+
+        fileCache.deleteCollection(filesInvalidation.getKeys());
+    }
+
+    @Override
     public void projectStructureInvalidation(ProjectStructureInvalidation structureInvalidation) {
 
+    }
+
+
+    // возвращаем измененный контент
+    private CachedFile updatePathContentAndSave(FileDTO dto){
+
+        CachedFile cachedFile;
+        String content;
+
+        Optional<CachedFile> cacheCheck = fileCache.get(dto.getId());
+
+        if (cacheCheck.isPresent()){
+            cachedFile = cacheCheck.get();
+            cachedFile.setConstructedPath(dto.getConstructedPath()); // обновляем путь
+            content = cachedFile.getContent();
+        }
+
+        else {
+            content = coldContentLoad(dto.getId());
+            cachedFile = CachedFile
+                    .builder()
+                    .constructedPath(dto.getConstructedPath())
+                    .projectId(dto.getProjectId())
+                    .extension(dto.getExtension())
+                    .id(dto.getId())
+                    .build();
+        }
+
+        if (dto.getExtension().equals("java")){
+            String newPackageName
+                    = codeService.transformFileConstructedPathToPackage(dto.getConstructedPath());
+
+            System.out.println(newPackageName);
+
+            content = codeService.transformPackage(content, newPackageName);
+        }
+
+
+
+        // собираем новый кеш
+        cachedFile.setContent(content);
+
+        fileCache.saveOrUpdate(cachedFile);
+
+        return cachedFile;
     }
 
 

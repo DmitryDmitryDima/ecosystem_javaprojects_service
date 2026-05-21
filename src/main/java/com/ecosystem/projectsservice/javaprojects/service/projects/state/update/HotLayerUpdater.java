@@ -15,9 +15,15 @@ public interface HotLayerUpdater {
 
     void onFileMove(FileMove fileMove);
 
+    void onDirectoryRemoval(DirectoryRemoval directoryRemoval);
+
+    void onDirectoryMove(DirectoryMove directoryMove);
+
 
     // инвалидация файловой записи
     void fileInvalidation(CachedFileInvalidation fileInvalidation);
+
+    void filesInvalidation(CachedFilesInvalidation filesInvalidation);
 
 
     void projectStructureInvalidation(ProjectStructureInvalidation structureInvalidation);

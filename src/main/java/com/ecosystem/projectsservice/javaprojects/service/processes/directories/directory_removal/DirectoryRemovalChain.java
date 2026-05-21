@@ -1,10 +1,14 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.DirectoryRemoval;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.service.storage.UserContentStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
@@ -29,13 +33,16 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
 // todo polling фаза в данном случае требует более сложной обработки на фронтенде
 // фронтенд должен понять - сидит ли пользователь в каком либо из детей удаляемой директории
 // в теории мы можем сформировать и послать список файлов, которые можно считать удаляемыми
 
-// todo ИНВАЛИДАЦИЯ КЕША - В ОСОБЕННОСТИ ВНИМАНИЕ НА БУДУЩИЙ КЕШ ПРЕДЛОЖЕК
+/*
+сайд эффекты - инвалидация структуры, инвалидация файлового кеша, в будущем - удаление ссылок
+ */
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_REMOVE_DIRECTORY)
 public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemovalEvent> {
@@ -53,6 +60,10 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
 
     @Autowired
     private DirectoryRemovalChainCompensator compensator;
+
+
+    @Autowired
+    private HotLayerUpdater hotLayer;
 
     @Override
     protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent() {
@@ -200,6 +211,20 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
             directoryCheck.get().setStatus(DirectoryStatus.PREPARING_FOR_REMOVAL);
             return null;
         });
+
+
+
+        try {
+            // инвалидируем структуру
+            hotLayer.projectStructureInvalidation(
+                    new ProjectStructureInvalidation(event.getContext().getProjectId()));
+        }
+
+        catch (Exception e){
+
+        }
+
+
     }
 
 
@@ -307,11 +332,15 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
         directoryRemovalEvent.setMessage("очищаем хранилище и кеши");
         var toDelete = transaction().execute(status -> snapshotService
                 .getAllFilesBelowDirectory(directoryRemovalEvent
-                        .getInternalData().getProjectRoot()));
+                        .getInternalData().getProjectRoot())).stream().map(file->file.getId().toString())
+                .toList();
+
+
+        // очищаем холодное хранилище
+        storage.deleteBatch(toDelete);
 
 
 
-        storage.deleteBatch(toDelete.stream().map(file->file.getId().toString()).toList());
 
 
 
@@ -322,11 +351,43 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
         directoryRemovalEvent.setMessage("очищаем базу данных");
 
         // каскадное удаление
-        transaction().execute(status -> {
+        var toClear = transaction().execute(status -> {
+
+
+            List<FileReadOnly> files = snapshotService
+                    .getAllFilesBelowDirectory(directoryRemovalEvent
+                                    .getInternalData().getProjectRoot());
 
             directoryRepository.deleteById(directoryRemovalEvent.getExternalData().getId());
 
-            return null;
-        });
+            return files;
+        }).stream().map(FileReadOnly::getId).toList();
+
+
+
+
+        try {
+            // инвалидация кеша файлов и редактирование файлов, содержащих ссылки
+            hotLayer.onDirectoryRemoval(
+
+                    DirectoryRemoval.builder()
+                            .files(toClear)
+                            .build()
+            );
+
+
+            // инвалидируем структуру
+            hotLayer.projectStructureInvalidation(
+                    new ProjectStructureInvalidation(directoryRemovalEvent.getContext().getProjectId()));
+
+
+        }
+
+        catch (Exception e){
+
+        }
+
+
+
     }
 }

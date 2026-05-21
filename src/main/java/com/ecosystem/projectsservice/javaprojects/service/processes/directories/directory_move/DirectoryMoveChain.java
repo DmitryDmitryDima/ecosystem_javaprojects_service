@@ -1,6 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.DirectoryMove;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
@@ -8,6 +11,7 @@ import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadO
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
@@ -44,6 +48,10 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
     @Autowired
     private DirectoryMoveChainCompensator compensator;
+
+
+    @Autowired
+    private HotLayerUpdater hotLayer;
 
 
 
@@ -135,6 +143,21 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
 
             return checkResult;
         });
+
+
+
+        // инвалидация кеша структуры
+
+        try {
+            hotLayer.projectStructureInvalidation(
+                    new ProjectStructureInvalidation(event.getContext().getProjectId())
+            );
+        }
+
+
+        catch (Exception e){
+
+        }
 
 
     }
@@ -368,7 +391,7 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
     @EndingStep(name="release")
     public void release(DirectoryMoveEvent event){
 
-        transaction().execute(status -> {
+        var movedFiles = transaction().execute(status -> {
 
                     Optional<Directory> childCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
                     if (childCheck.isEmpty())
@@ -394,15 +417,60 @@ public class DirectoryMoveChain extends ControlledOutboxChain<DirectoryMoveEvent
                     parent.setStatus(DirectoryStatus.AVAILABLE);
                     child.setStatus(DirectoryStatus.AVAILABLE);
 
-                    return null;
+
+
+                    // извлекаем список файлов, чей путь изменился
+
+                    return snapshotService.getAllFilesBelowDirectory(child.getId());
 
                 });
 
 
 
+        try {
+            // инвалидация кеша структуры проекта
+            hotLayer.projectStructureInvalidation(
+                    new ProjectStructureInvalidation(event.getContext().getProjectId())
+            );
+
+
+            // сайд эффекты
+            List<FileDTO> touchedFiles = movedFiles.stream().map(file->
+
+                    FileDTO.builder()
+                            .extension(file.getExtension())
+                            .name(file.getName())
+                            .constructedPath(file.getConstructed_path())
+                            .id(file.getId())
+                            .projectId(event.getContext().getProjectId())
+                            .build()
+
+                    ).toList();
+
+            hotLayer.onDirectoryMove(
+                    DirectoryMove.builder()
+                            .correlationId(event.getContext().getCorrelationId())
+                            .userId(event.getContext().getUserUUID())
+                            .username(event.getContext().getUsername())
+                            .touchedFiles(touchedFiles).build()
+            );
+
+        }
+
+
+        catch (Exception e){
+
+        }
+
 
         event.setMessage("Освобождаем сущности");
+
+
+
     }
+
+
+
 
 
 

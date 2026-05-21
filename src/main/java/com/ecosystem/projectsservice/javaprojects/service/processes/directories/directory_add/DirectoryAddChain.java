@@ -1,8 +1,10 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -23,6 +25,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+
+/*
+
+сайд эффекты - инвалидация структуры в случае успеха
+ */
 @Service
 @ExternalResultType(event = ExternalEventType.JAVA_PROJECT_ADD_DIRECTORY)
 public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> {
@@ -35,6 +42,10 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
 
     @Autowired
     private DirectoryAddChainCompensator compensator;
+
+
+    @Autowired
+    private HotLayerUpdater hotLayer;
 
 
 
@@ -204,6 +215,16 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
             parent.get().setStatus(DirectoryStatus.AVAILABLE);
            return null;
         });
+
+
+        try {
+            hotLayer.projectStructureInvalidation(
+                    new ProjectStructureInvalidation(event.getContext().getProjectId())
+            );
+        }
+        catch (Exception e){
+
+        }
     }
 
 

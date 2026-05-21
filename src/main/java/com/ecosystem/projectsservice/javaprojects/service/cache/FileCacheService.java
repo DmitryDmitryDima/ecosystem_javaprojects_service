@@ -105,6 +105,8 @@ public class FileCacheService implements FileCache{
     public boolean delete(UUID id) {
 
         return redisTemplate.delete(createKey(id));
+
+
     }
 
 
@@ -186,6 +188,14 @@ public class FileCacheService implements FileCache{
         return result.stream()
                 .map(obj->mapper.convertValue(obj, CachedFile.class)).toList();
 
+
+    }
+
+    @Override
+    public Long deleteCollection(List<UUID> keys) {
+
+        return redisTemplate
+                .unlink(keys.stream().map(this::createKey).toList());
 
     }
 

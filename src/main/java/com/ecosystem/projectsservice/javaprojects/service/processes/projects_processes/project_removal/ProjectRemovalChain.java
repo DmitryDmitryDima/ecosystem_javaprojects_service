@@ -1,12 +1,17 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.projects_processes.project_removal;
 
 
+
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFilesInvalidation;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectPrivacyLevel;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.service.storage.UserContentStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
@@ -45,6 +50,10 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
     @Autowired
     private UserContentStorage storageService;
+
+
+    @Autowired
+    private HotLayerUpdater hotLayer;
 
 
 
@@ -140,6 +149,19 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
 
 
+        // инвалидируем структуру проекта в кеше
+        try {
+            hotLayer.projectStructureInvalidation(
+                    new ProjectStructureInvalidation(event.getContext().getProjectId())
+            );
+        }
+
+        catch (Exception e){
+
+        }
+
+
+
 
 
 
@@ -160,7 +182,7 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
 
         event.setMessage("чистим хранилище");
 
-        UUID rootId = transaction().execute(status -> {
+        List<UUID> files = transaction().execute(status -> {
 
             Optional<Project> existenceCheck = projectRepository
                     .findById(event.getExternalData().getProjectId());
@@ -179,28 +201,33 @@ public class ProjectRemovalChain extends ControlledOutboxChain<ProjectRemovalEve
             }
 
 
-            return root.getId();
+
+            return snapshotService.getAllFilesBelowDirectory(root.getId())
+                    .stream().map(FileReadOnly::getId).toList();
+
+
+
 
 
 
 
         });
 
-        // рекурсивный запрос всех файлов проекта
-        List<String> keys = snapshotService.getAllFilesBelowDirectory(rootId)
-                .stream().map(fileReadOnly -> fileReadOnly.getId().toString()).toList();
-
-        storageService.deleteBatch(keys);
-
-        /*
 
 
+        storageService.deleteBatch(files.stream().map(UUID::toString).toList());
+
+        // инвалидируем кеш
+        try {
+            hotLayer.filesInvalidation(new CachedFilesInvalidation(files));
+
+        }
+        catch (Exception e){
+
+        }
 
 
 
-        FileSystemUtils.deleteRecursively(Path.of(event.getInternalData().getProjectPath()));
-
-         */
 
 
 

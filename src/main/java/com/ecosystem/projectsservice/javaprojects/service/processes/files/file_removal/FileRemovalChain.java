@@ -57,8 +57,7 @@ public class FileRemovalChain extends ControlledOutboxChain<FileRemovalEvent> {
     @Autowired
     private SnapshotService snapshotService;
 
-    @Autowired
-    private ProjectActionsUtils actionsUtils;
+
 
 
     @Autowired

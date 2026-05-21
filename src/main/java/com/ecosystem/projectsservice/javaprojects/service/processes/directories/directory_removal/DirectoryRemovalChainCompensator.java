@@ -1,8 +1,10 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.Compensator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,6 +24,9 @@ public class DirectoryRemovalChainCompensator
     @Autowired
     private DirectoryRepository directoryRepository;
 
+    @Autowired
+    private HotLayerUpdater hotLayer;
+
 
 
     @Override
@@ -30,8 +35,7 @@ public class DirectoryRemovalChainCompensator
         String step = event.getInternalData().getCurrentStep();
 
         if (step.equals("prepare_directory")
-                || step.equals("block_directory")
-                || step.equals("remove_from_db")){
+                || step.equals("block_directory")){
             transaction.execute(status -> {
                 Optional<Directory> directoryCheck = directoryRepository
                         .findByIdForUpdate(event.getExternalData().getId());
@@ -44,6 +48,19 @@ public class DirectoryRemovalChainCompensator
                 return null;
             });
         }
+
+        try {
+            // инвалидируем структуру
+            hotLayer.projectStructureInvalidation(
+                    new ProjectStructureInvalidation(event.getContext().getProjectId()));
+        }
+
+        catch (Exception e){
+
+        }
+
+
+
 
     }
 }

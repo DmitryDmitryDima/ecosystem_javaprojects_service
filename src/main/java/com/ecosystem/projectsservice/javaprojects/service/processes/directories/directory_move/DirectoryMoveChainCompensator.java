@@ -1,8 +1,10 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move;
 
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository;
+import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.Compensator;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,10 @@ public class DirectoryMoveChainCompensator implements Compensator<DirectoryMoveE
     private DirectoryRepository directoryRepository;
 
 
+    @Autowired
+    private HotLayerUpdater hotLayer;
+
+
     @Override
     public void compensation(DirectoryMoveEvent event) {
         String step = event.getInternalData().getCurrentStep();
@@ -32,14 +38,14 @@ public class DirectoryMoveChainCompensator implements Compensator<DirectoryMoveE
                 Optional<Directory> childCheck
                         = directoryRepository.findByIdForUpdate(event.getExternalData().getDirectoryId());
                 if (childCheck.isEmpty())
-                    throw new IllegalStateException("Директории, которую вы собираетесь перемещать, нет");
+                    throw new IllegalStateException("Директории, которую вы собирались перемещать, нет");
 
                 childCheck.get().setStatus(DirectoryStatus.AVAILABLE);
 
                 Optional<Directory> parentCheck
                         = directoryRepository.findByIdForUpdate(event.getExternalData().getParent());
                 if (parentCheck.isEmpty())
-                    throw new IllegalStateException("Директории, которую в которую вы собираетесь перемещать, нет");
+                    throw new IllegalStateException("Директории, которую в которую вы собирались перемещать, нет");
 
                 Directory parent = parentCheck.get();
 
@@ -48,6 +54,16 @@ public class DirectoryMoveChainCompensator implements Compensator<DirectoryMoveE
 
                 return null;
             });
+        }
+
+
+        try {
+            hotLayer.projectStructureInvalidation(
+                    new ProjectStructureInvalidation(event.getContext().getProjectId())
+            );
+        }
+        catch (Exception e){
+
         }
     }
 }

@@ -23,6 +23,8 @@ public interface FileCache {
 
     List<CachedFile> scan();
 
+    Long deleteCollection(List<UUID> keys);
+
 
 
 }
