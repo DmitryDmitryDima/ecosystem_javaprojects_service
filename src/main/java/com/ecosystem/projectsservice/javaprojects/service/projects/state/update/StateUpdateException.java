@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.service.projects.state.update;
 
-import com.ecosystem.projectsservice.javaprojects.exceptions.BaseException;
+import com.ecosystem.projectsservice.javaprojects.common_exceptions.BaseException;
 import org.springframework.http.HttpStatus;
 
 public class StateUpdateException extends BaseException {

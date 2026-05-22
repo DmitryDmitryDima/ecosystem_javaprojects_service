@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
+import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
@@ -14,6 +15,9 @@ import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesa
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromSystem;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -22,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -51,6 +56,13 @@ public class FileOperationsListener {
     private FileCache fileCache;
 
 
+    @Autowired
+    private FileRepository fileRepository;
+
+
+
+
+
 
 
 
@@ -64,6 +76,11 @@ public class FileOperationsListener {
 
     @Autowired
     private StorageExternals storageExternals;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
+
 
 
     private final ExecutorService uploadExecutor = Executors.newVirtualThreadPerTaskExecutor();
@@ -82,7 +99,16 @@ public class FileOperationsListener {
         fileCache.scan().forEach(file->{
 
 
-            CompletableFuture.runAsync(()->uploadFileContent(file), uploadExecutor);
+            // записываем в хранилище только те файлы, чей written = false
+            // это поможет избежать ситуации,
+            // где файлы записываются в хранилище без каких либо изменений
+            if (!file.isWritten()){
+                System.out.println("cold writing for "+file.getName());
+                CompletableFuture.runAsync(()->uploadFileContent(file), uploadExecutor);
+            }
+
+
+
 
 
 
@@ -93,13 +119,15 @@ public class FileOperationsListener {
 
 
     private void uploadFileContent(CachedFile file){
+
+        // сохраняем в хранилище
         storageService.saveOrUpdate(storageExternals.getStorageUserBucket(),
                 file.getId().toString(),
                 file.getContent());
 
 
-
-        broadcast.sendSync(new Broadcast.EventBuilder()
+        // отправляем уведомление о том, что изменения сохранены
+        broadcast.sendAsync(new Broadcast.EventBuilder()
                 .useEvent(ProjectEventFromSystem::new)
                 .withContext(()->ProjectEventFromSystemContext.builder().correlationId(UUID.randomUUID())
                         .origin("background disk writer process")
@@ -118,176 +146,51 @@ public class FileOperationsListener {
                 .build());
 
 
+        System.out.println(file.getVersion());
 
 
+        fileCache.markAsWritten(file.getId(), file.getVersion());
 
-    }
-
-
-    /*
-    private void performBroadcast(FileDTO file){
-        try {
-            broadcast.sendSync(new Broadcast.EventBuilder()
-                    .useEvent(ProjectEventFromSystem::new)
-                    .withContext(()->ProjectEventFromSystemContext.builder().correlationId(UUID.randomUUID())
-                            .origin("background disk writer process")
-                            .timestamp(Instant.now())
-                            .projectId(file.getProjectId()).build())
-                    .withData(()->{
-                        FileSaveExternalData data = new FileSaveExternalData();
-                        data.setFileOwner(file.getOwnerUUID());
-                        data.setFileId(file.getId());
-                        data.setPath(file.getConstructedPath());
-                        data.setName(file.getName());
-                        data.setExtension(file.getExtension());
-                        return data;
-                    })
-                    .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
-                    .withMessage("Данные сохранены на диск")
-                    .build());
-        } catch (BroadcastException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-     */
+        // время последней записи в кеш
+        Instant lastUpdated = file.getLastUpdate();
 
 
-    /*
-    private void performDiskWriting(FileDTO file) {
-        Path filePath = Path.of(externalValues.getUserStoragePath(),
-                file.getOwnerUUID().toString(),
-                "projects", file.getConstructedPath());
+        transactionTemplate.execute(status -> {
+            Optional<File> entityCheck = fileRepository.findById(file.getId());
 
-        try {
-            Files.writeString(filePath, file.getContent(), StandardOpenOption.TRUNCATE_EXISTING);
-            System.out.println("background write");
-        }
-        catch (Exception e){
+            entityCheck.ifPresent(entity->{
+                entity.setUpdatedAt(lastUpdated);
+            });
 
-        }
-
-
-    }
-
-     */
-
-    /*
-    private boolean shouldWriteFile(CacheValueWrapper<FileDTO> entry){
-        return (
-                Duration.between(entry.getLastUpdate(),
-                        Instant.now()).getSeconds()>FILE_WRITE_PERIOD_OF_INACTIVITY_IN_SECONDS
-                        && Duration.between(entry.getLastUpdate(),
-                        Instant.now()).getSeconds()<3*FILE_WRITE_PERIOD_OF_INACTIVITY_IN_SECONDS
-        );
-    }
-
-    private void performDiskWrite(CacheValueWrapper<FileDTO> file){
-        Path filePath = Path.of(externalValues.getUserStoragePath(),
-                file.getValue().getOwnerUUID().toString(),
-                "projects", file.getValue().getConstructedPath());
-
-
-
-        boolean canWrite = Boolean.TRUE.equals(transactionTemplate.execute(status -> {
-            Optional<File> dbCheck = fileRepository.findById(file.getValue().getId());
-
-            return dbCheck.isPresent() && dbCheck.get().getStatus() == FileStatus.AVAILABLE;
-        }));
-
-        if (canWrite){
-            try {
-                Files.writeString(filePath, file.getValue().getContent(), StandardOpenOption.TRUNCATE_EXISTING);
-                System.out.println("background write");
-            }
-            catch (Exception e){
-
-            }
-        }
-    }
-
-    @Scheduled(fixedDelay = 30, timeUnit = TimeUnit.MINUTES)
-    public void clearFileCache(){
-        fileContentCache.removeExpiredWithPeriodInSec(FILE_CACHE_EXPIRATION_PERIOD_IN_SEC);
-    }
-
-
-     */
-
-
-
-
-    /*
-    периодически записываем в диск данные кеша, при этом определяя, нужно ли это делать
-     */
-
-
-    /*
-    @Scheduled(fixedDelay = 30000)
-    public void fileDiskWriteOperations(){
-
-        //System.out.println("disk write trigger");
-
-
-
-        List<CacheValueWrapper<FileDTO>> files =  fileContentCache.readAllEntries();
-
-
-        files.forEach(file->{
-
-            // если прошло слишком мало или слишком много времени с момента последней активности (чтение или сохранение) - диск не трогаем
-            if (!shouldWriteFile(file)){
-                return;
-            }
-
-
-            try {
-
-
-                performDiskWrite(file);
-
-                broadcast.sendSync(new Broadcast.EventBuilder()
-                        .useEvent(ProjectEventFromSystem::new)
-                        .withContext(()->ProjectEventFromSystemContext.builder().correlationId(UUID.randomUUID())
-                                .origin("background disk writer process")
-                                .timestamp(Instant.now())
-                                .projectId(file.getValue().getProjectId()).build())
-                        .withData(()->{
-                            FileSaveExternalData data = new FileSaveExternalData();
-                            data.setFileOwner(file.getValue().getOwnerUUID());
-                            data.setFileId(file.getValue().getId());
-                            data.setPath(file.getValue().getConstructedPath());
-                            data.setName(file.getValue().getName());
-                            data.setExtension(file.getValue().getExtension());
-                            return data;
-                        })
-                        .withType(ExternalEventType.JAVA_PROJECT_FILE_SAVE_SYSTEM)
-                        .withMessage("Данные сохранены на диск")
-                        .build());
-
-
-
-
-
-
-
-            } catch (Exception e) {
-
-
-            }
-
-
-
-
-
-
-
-
+            return null;
         });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 
-    */
+
+
+
+
+
 
 
 }

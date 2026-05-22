@@ -116,6 +116,7 @@ public class HotLayerUpdaterService implements HotLayerUpdater {
                 .lastUpdate(Instant.now())
                 .constructedPath(file.getConstructedPath())
                 .version(0)
+                .written(true) // в рамках процесса файл был записан в холод
                 .content(file.getContent())
                 .extension(file.getExtension())
                 .projectId(file.getProjectId())
@@ -282,6 +283,9 @@ public class HotLayerUpdaterService implements HotLayerUpdater {
             cachedFile = CachedFile
                     .builder()
                     .constructedPath(dto.getConstructedPath())
+                    .lastUpdate(Instant.now())
+                    .written(false)
+                    .version(0)
                     .projectId(dto.getProjectId())
                     .extension(dto.getExtension())
                     .id(dto.getId())

@@ -96,7 +96,7 @@ public class ProjectsActionsController {
     @GetMapping("/readRecentFiles")
     public ResponseEntity<List<SimpleFileInfo>> readRecentFiles(@PathVariable("id") UUID id,
                                                                 @RequestHeader Map<String, String> headers)
-            throws Exception{
+            {
 
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);

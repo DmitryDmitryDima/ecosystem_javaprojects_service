@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -57,6 +59,9 @@ public class HotLayerReaderService implements HotLayerReader{
         fileCache.saveOrUpdate(cachedFile);
 
 
+        System.out.println(cachedFile.getLastUpdate());
+
+
         return FileDTO.builder()
                 .id(cachedFile.getId())
                 .name(cachedFile.getName())
@@ -67,6 +72,28 @@ public class HotLayerReaderService implements HotLayerReader{
                 .build();
     }
 
+    @Override
+    public List<FileDTO> getAllHotFilesFromList(List<UUID> files) {
+
+        List<FileDTO> answer = new ArrayList<>();
+
+        for (var id:files){
+            Optional<CachedFile> cachedFileCheck = fileCache.get(id);
+            cachedFileCheck.ifPresent(cachedFile -> answer.add(FileDTO.builder()
+                    .content(cachedFile.getContent())
+                    .extension(cachedFile.getExtension())
+                    .name(cachedFile.getName())
+                    .constructedPath(cachedFile.getConstructedPath())
+                    .id(cachedFile.getId())
+                    .projectId(cachedFile.getProjectId())
+                    .lastUpdate(cachedFile.getLastUpdate())
+                    .build()));
+        }
+
+
+
+        return answer;
+    }
 
 
     private CachedFile loadFromCold(UUID projectId, UUID fileId){

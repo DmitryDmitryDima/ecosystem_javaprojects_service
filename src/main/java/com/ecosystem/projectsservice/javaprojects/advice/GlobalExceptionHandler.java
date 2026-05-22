@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.advice;
 
 
-import com.ecosystem.projectsservice.javaprojects.exceptions.AccessDeniedException;
+import com.ecosystem.projectsservice.javaprojects.common_exceptions.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;

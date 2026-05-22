@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.service.projects.state.read;
 
-import com.ecosystem.projectsservice.javaprojects.exceptions.BaseException;
+import com.ecosystem.projectsservice.javaprojects.common_exceptions.BaseException;
 import org.springframework.http.HttpStatus;
 
 public class StateReadException extends BaseException {

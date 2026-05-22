@@ -10,8 +10,11 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
 import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
+import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
+import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_move.DirectoryMoveChain;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
 import com.ecosystem.projectsservice.javaprojects.service.projects.access_validation.ProjectAccessValidator;
@@ -30,10 +33,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.UUID;
-
-
+import java.util.*;
 
 
 // ответственность внешнего сервиса - проверка прав. ответственность асинхронных внутренних цепочек - внутренние операции с бд, диском и кешем
@@ -374,7 +374,7 @@ public class ProjectActionsService {
     @Transactional
     public List<SimpleFileInfo> getRecentFiles(SecurityContext securityContext,
 
-                                               RequestContext requestContext, UUID projectId) throws Exception {
+                                               RequestContext requestContext, UUID projectId)  {
 
 
         /*
@@ -387,7 +387,71 @@ public class ProjectActionsService {
 
          */
 
-        return List.of();
+        ProjectDTO project = accessValidator
+                .validateAccessUsingDb(securityContext, requestContext, projectId);
+
+        // получаем из базы данных список файлов (первые 5), отсортированный по времени
+
+        List<FileReadOnly> dbFiles =
+                snapshotService.getAllFilesBelowDirectory(project.getRoot()).stream()
+
+                        .filter(file->!file.isHidden() && file.getStatus()
+                                != FileStatus.REMOVING)
+                        .sorted(Comparator.comparing(FileReadOnly::getUpdated_at))
+                        .toList();
+
+        List<FileDTO> cachedFiles = reader.getAllHotFilesFromList(dbFiles.stream()
+                .map(FileReadOnly::getId).toList());
+
+
+
+        // сохраняем id кешированных файлов в set, чтобы при дополнении ответа
+        // из базы данных не возникло дублирования
+
+        Set<UUID> inserted = new HashSet<>();
+
+
+        // добавляем все самые свежие файлы из кеша
+        List<SimpleFileInfo> answer
+                = new ArrayList<>(cachedFiles.stream().limit(5)
+                .sorted(Comparator.comparing(FileDTO::getLastUpdate))
+                .map(
+                        cached -> SimpleFileInfo.builder()
+                .name(cached.getName()).id(cached.getId())
+                .path(cached.getConstructedPath()).extension(cached.getExtension()).build()
+                )
+                .peek(file->{
+                    inserted.add(file.getId());
+                })
+                .toList());
+
+
+        for (var dbFile:dbFiles){
+            if (answer.size()<5 && !inserted.contains(dbFile.getId())){
+                answer.add(
+                  SimpleFileInfo.builder().name(dbFile
+                          .getName())
+                          .id(dbFile.getId()).path(dbFile.getConstructed_path())
+                          .extension(dbFile.getExtension()).build()
+                );
+            }
+            else {
+                break;
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        return answer;
 
 
 

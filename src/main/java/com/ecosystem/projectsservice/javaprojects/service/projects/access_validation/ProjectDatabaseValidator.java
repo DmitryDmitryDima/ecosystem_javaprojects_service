@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.service.projects.access_validation;
 
 
+import com.ecosystem.projectsservice.javaprojects.common_exceptions.ProjectNotFoundException;
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;
 import com.ecosystem.projectsservice.javaprojects.dto.SecurityContext;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.ProjectDTO;
@@ -29,7 +30,8 @@ public class ProjectDatabaseValidator {
 
         Optional<Project> projectCheck = projectRepository.findById(projectId);
 
-        if (projectCheck.isEmpty() || projectCheck.get().getStatus()== ProjectStatus.REMOVING) throw new IllegalStateException("Проекта не существует");
+        if (projectCheck.isEmpty() || projectCheck.get().getStatus()== ProjectStatus.REMOVING)
+            throw new ProjectNotFoundException("Проекта не существует");
 
         Project project = projectCheck.get();
 
@@ -46,7 +48,7 @@ public class ProjectDatabaseValidator {
             }
         }
         if (!existed){
-            throw new IllegalStateException("Пользователь не является участником проекта");
+            throw new AccessValidationException("Пользователь не является участником проекта");
 
         }
 

@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.service.projects.state.code;
 
-import com.ecosystem.projectsservice.javaprojects.exceptions.BaseException;
+import com.ecosystem.projectsservice.javaprojects.common_exceptions.BaseException;
 import org.springframework.http.HttpStatus;
 
 public class CodeProcessingException extends BaseException {

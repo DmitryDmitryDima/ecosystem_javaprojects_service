@@ -37,8 +37,7 @@ public class ProjectAccessValidator {
 
 
 
-    @Autowired
-    private ProjectRepository projectRepository;
+
 
 
     // прямой запрос к db

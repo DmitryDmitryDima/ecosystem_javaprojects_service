@@ -23,5 +23,7 @@ public class FileDTO {
 
     private UUID projectId;
 
+    private Instant lastUpdate;
+
 
 }

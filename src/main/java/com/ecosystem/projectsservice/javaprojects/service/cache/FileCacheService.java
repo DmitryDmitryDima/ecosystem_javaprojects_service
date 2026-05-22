@@ -16,6 +16,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +37,12 @@ public class FileCacheService implements FileCache{
     @Autowired
     @Qualifier("updateFieldIfKeyExists")
     private RedisScript<Boolean> updateIfExistsScript;
+
+
+    @Autowired
+    @Qualifier("updateFileWrittenField")
+    private RedisScript<Boolean> updateFileWrittenField;
+
 
 
 
@@ -132,16 +139,11 @@ public class FileCacheService implements FileCache{
 
 
         return redisTemplate.execute(updateIfExistsScript,
-                List.of(key), contentField, content, Long.toString(expirationTimeInSec));
+                List.of(key), contentField, content, Long.toString(expirationTimeInSec),
+                Instant.now().toString());
     }
 
-    /*
-    todo во избежание гонок необходимо обдумать внедрение комбинации поля written и version
-    первое позволит избежать записи в диск уже записанных до этого данных,
-    второе - позволит корректно проставить written, гарантируя,
-    что во время записи в диск никто не обновил контент в кеше.
-    Если это произошло - written не ставится и ожидается следующая итерация
-     */
+
 
     @Override
     public List<CachedFile> scan() {
@@ -196,6 +198,20 @@ public class FileCacheService implements FileCache{
 
         return redisTemplate
                 .unlink(keys.stream().map(this::createKey).toList());
+
+    }
+
+
+    // чтобы written проставить в true, мы должны убедиться внутри скрипта,
+    // что version остался тем же
+    @Override
+    public boolean markAsWritten(UUID id, long version) {
+        String key = createKey(id);
+
+        return redisTemplate
+                .execute(updateFileWrittenField, List.of(key), Long.toString(version));
+
+
 
     }
 

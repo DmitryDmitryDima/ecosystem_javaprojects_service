@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.exceptions;
+package com.ecosystem.projectsservice.javaprojects.common_exceptions;
 
 /*
 исключение, выбрасываемое в ситуации, когда кто то птыается получить доступ к ресурсу, открытому только для разрешенного пользователем кругу лиц

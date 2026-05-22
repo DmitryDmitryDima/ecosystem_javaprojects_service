@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.exceptions;
 
-import com.ecosystem.projectsservice.javaprojects.exceptions.BaseException;
+import com.ecosystem.projectsservice.javaprojects.common_exceptions.BaseException;
 import org.springframework.http.HttpStatus;
 
 public class ChainStateException extends BaseException {

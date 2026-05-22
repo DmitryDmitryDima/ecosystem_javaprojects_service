@@ -26,5 +26,8 @@ public interface FileCache {
     Long deleteCollection(List<UUID> keys);
 
 
+    boolean markAsWritten(UUID uuid, long version);
+
+
 
 }
