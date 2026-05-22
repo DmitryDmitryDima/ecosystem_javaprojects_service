@@ -377,15 +377,7 @@ public class ProjectActionsService {
                                                RequestContext requestContext, UUID projectId)  {
 
 
-        /*
-        ProjectDTO project = accessValidator.validateAccessUsingDb(securityContext, requestContext, projectId);
 
-        StructureSnapshot snapshot = snapshotService.getFullChildrenSnapshot(project.getRoot());
-
-        return utils.getRecentFiles(snapshot);
-
-
-         */
 
         ProjectDTO project = accessValidator
                 .validateAccessUsingDb(securityContext, requestContext, projectId);
@@ -405,53 +397,20 @@ public class ProjectActionsService {
 
 
 
-        // сохраняем id кешированных файлов в set, чтобы при дополнении ответа
-        // из базы данных не возникло дублирования
 
-        Set<UUID> inserted = new HashSet<>();
 
 
         // добавляем все самые свежие файлы из кеша
-        List<SimpleFileInfo> answer
-                = new ArrayList<>(cachedFiles.stream().limit(5)
-                .sorted(Comparator.comparing(FileDTO::getLastUpdate))
-                .map(
-                        cached -> SimpleFileInfo.builder()
-                .name(cached.getName()).id(cached.getId())
-                .path(cached.getConstructedPath()).extension(cached.getExtension()).build()
-                )
-                .peek(file->{
-                    inserted.add(file.getId());
-                })
-                .toList());
 
 
-        for (var dbFile:dbFiles){
-            if (answer.size()<5 && !inserted.contains(dbFile.getId())){
-                answer.add(
-                  SimpleFileInfo.builder().name(dbFile
-                          .getName())
-                          .id(dbFile.getId()).path(dbFile.getConstructed_path())
-                          .extension(dbFile.getExtension()).build()
-                );
-            }
-            else {
-                break;
-            }
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-        return answer;
+        return new ArrayList<>(cachedFiles.stream().limit(5)
+        .sorted(Comparator.comparing(FileDTO::getLastUpdate))
+        .map(
+                cached -> SimpleFileInfo.builder()
+        .name(cached.getName()).id(cached.getId())
+        .path(cached.getConstructedPath()).extension(cached.getExtension()).build()
+        )
+        .toList());
 
 
 
