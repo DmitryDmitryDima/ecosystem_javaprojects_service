@@ -1,14 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.CachedFileInvalidation;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.DirectoryReadOnly;
-import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
-import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.HotLayerReader;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.update.HotLayerUpdater;
 import com.ecosystem.projectsservice.javaprojects.service.storage.UserContentStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
@@ -21,13 +18,11 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.even
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.*;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.state.read.SnapshotService;
-import com.ecosystem.projectsservice.javaprojects.utils.projects.ProjectActionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

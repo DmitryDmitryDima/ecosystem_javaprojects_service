@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.service.projects.state.update;
 
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.*;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.*;
 
 // хуки, вносящие изменения в "горячий слой"
 public interface HotLayerUpdater {

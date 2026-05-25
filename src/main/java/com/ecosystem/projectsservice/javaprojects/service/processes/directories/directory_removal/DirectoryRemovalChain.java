@@ -1,8 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.StructureSnapshot;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.DirectoryRemoval;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.DirectoryRemoval;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
@@ -27,13 +27,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.util.FileSystemUtils;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 
 // todo polling фаза в данном случае требует более сложной обработки на фронтенде

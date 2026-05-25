@@ -23,6 +23,10 @@ import java.util.UUID;
 @Transactional // внимание - все public методы сервиса - Transactional
 public class SnapshotService {
 
+
+
+
+
     @Autowired
     private DirectoryJDBCRepository directoryJDBCRepository;
 
@@ -66,9 +70,11 @@ public class SnapshotService {
     }
 
     // все файлы вниз по ветке
-    public List<FileReadOnly> getAllFilesBelowDirectory(UUID root){
+    public List<FileReadOnly> getAllFilesBelowDirectory(UUID root ){
         return directoryJDBCRepository.loadFilesBelowRoot(root);
     }
+
+
 
     public Optional<FileReadOnly> getFileBelowDirectory(UUID root, UUID fileId){
         return directoryJDBCRepository.loadFileBelowRoot(root, fileId);

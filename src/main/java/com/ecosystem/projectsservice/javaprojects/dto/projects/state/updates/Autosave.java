@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects.state;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates;
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.RequestContext;

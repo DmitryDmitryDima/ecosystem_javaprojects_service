@@ -2,8 +2,30 @@ package com.ecosystem.projectsservice.javaprojects.dto.projects.cache;
 
 // кешированная структура проекта, с указанием модификатора доступа и id каждого из классов
 // возможно будет кешироваться только то, что находится в java директории
-public class CachedStructure {
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
+import java.util.UUID;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
+public class CachedJavaStructure {
 
 
-    // Map<relative path, List<CachedMember>>
+
+
+
+    private Map<String, CachedStructureJavaFile> structure;
+
+    private UUID id;
+
+
+
+
+
+
 }

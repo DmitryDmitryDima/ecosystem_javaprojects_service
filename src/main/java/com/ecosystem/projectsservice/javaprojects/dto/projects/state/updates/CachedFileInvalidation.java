@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.dto.projects.state;
+package com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates;
 
 
 import lombok.AllArgsConstructor;
@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
-public class ProjectStructureInvalidation {
+public class CachedFileInvalidation {
 
-    private UUID projectId;
+    private UUID fileId;
 }

@@ -2,8 +2,8 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.projects_pr
 
 
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFilesInvalidation;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ProjectStructureInvalidation;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.CachedFilesInvalidation;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.ProjectStructureInvalidation;
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.ProjectParticipant;

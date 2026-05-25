@@ -10,8 +10,7 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.Autosave;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.Autosave;
 import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
@@ -34,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 // ответственность внешнего сервиса - проверка прав. ответственность асинхронных внутренних цепочек - внутренние операции с бд, диском и кешем
@@ -389,7 +389,7 @@ public class ProjectActionsService {
 
                         .filter(file->!file.isHidden() && file.getStatus()
                                 != FileStatus.REMOVING)
-                        .sorted(Comparator.comparing(FileReadOnly::getUpdated_at))
+                        .sorted(Comparator.comparing(FileReadOnly::getUpdated_at).reversed())
                         .toList();
 
         List<FileDTO> cachedFiles = reader.getAllHotFilesFromList(dbFiles.stream()
@@ -400,17 +400,43 @@ public class ProjectActionsService {
 
 
 
+
+
+
         // добавляем все самые свежие файлы из кеша
 
+        Set<UUID> presented = new HashSet<>();
 
-        return new ArrayList<>(cachedFiles.stream().limit(5)
-        .sorted(Comparator.comparing(FileDTO::getLastUpdate))
-        .map(
-                cached -> SimpleFileInfo.builder()
-        .name(cached.getName()).id(cached.getId())
-        .path(cached.getConstructedPath()).extension(cached.getExtension()).build()
-        )
-        .toList());
+        List<SimpleFileInfo> answer =cachedFiles.stream().limit(5)
+                .sorted(Comparator.comparing(FileDTO::getLastUpdate).reversed())
+                .map(
+                        cached -> SimpleFileInfo.builder()
+                                .name(cached.getName()).id(cached.getId())
+                                .path(cached.getConstructedPath()).extension(cached.getExtension()).build()
+                )
+                .peek(cached->presented.add(cached.getId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+
+
+        if (answer.size()<5){
+            for (var dbFile:dbFiles){
+
+                if (!presented.contains(dbFile.getId())){
+                    answer.add(SimpleFileInfo.builder().name(dbFile.getName())
+                            .id(dbFile.getId()).path(dbFile.getConstructed_path())
+                            .extension(dbFile.getExtension())
+                            .build());
+                }
+
+                if (answer.size()==5){
+                    break;
+                }
+            }
+        }
+
+
+        return answer;
 
 
 

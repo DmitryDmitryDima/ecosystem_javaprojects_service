@@ -3,6 +3,8 @@ package com.ecosystem.projectsservice.javaprojects.service.projects.state.read;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestion;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestionRequest;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
@@ -53,13 +55,20 @@ public class HotLayerReaderService implements HotLayerReader{
 
         Optional<CachedFile> cachedFileCheck = fileCache.get(fileId);
 
-        CachedFile cachedFile = cachedFileCheck.orElseGet(() -> loadFromCold(projectId, fileId));
+        CachedFile cachedFile;
 
-        // делаем прогрев
-        fileCache.saveOrUpdate(cachedFile);
+        if (cachedFileCheck.isEmpty()){
+            cachedFile = loadFromCold(projectId, fileId);
+            // делаем прогрев
+            fileCache.saveOrUpdate(cachedFile);
+        }
+        else {
+            cachedFile = cachedFileCheck.get();
+        }
 
 
-        System.out.println(cachedFile.getLastUpdate());
+
+
 
 
         return FileDTO.builder()
@@ -93,6 +102,11 @@ public class HotLayerReaderService implements HotLayerReader{
 
 
         return answer;
+    }
+
+    @Override
+    public BasicSuggestion basicSuggestion(BasicSuggestionRequest request) {
+        return null;
     }
 
 

@@ -2,8 +2,8 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.files.files
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.CachedFileInvalidation;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.ForcedSave;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.CachedFileInvalidation;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.ForcedSave;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.model.enums.DirectoryStatus;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;

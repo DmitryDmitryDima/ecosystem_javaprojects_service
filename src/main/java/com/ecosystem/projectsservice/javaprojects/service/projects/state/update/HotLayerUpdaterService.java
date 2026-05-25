@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.service.projects.state.update
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
-import com.ecosystem.projectsservice.javaprojects.dto.projects.state.*;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.*;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
 import com.ecosystem.projectsservice.javaprojects.model.read_only.FileReadOnly;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
