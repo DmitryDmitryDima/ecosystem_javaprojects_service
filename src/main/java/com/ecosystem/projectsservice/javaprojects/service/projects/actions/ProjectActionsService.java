@@ -10,6 +10,9 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestion;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestionInfo;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestionRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.state.updates.Autosave;
 import com.ecosystem.projectsservice.javaprojects.model.cache.ProjectValidationHash;
 import com.ecosystem.projectsservice.javaprojects.model.enums.FileStatus;
@@ -113,6 +116,25 @@ public class ProjectActionsService {
 
 
 
+    public BasicSuggestion basicSuggestion(SecurityContext securityContext,
+                                           RequestContext requestContext,
+                                           BasicSuggestionRequest request){
+
+        // быстрая валидация
+        ProjectValidationHash hash = accessValidator
+                .validateAccessUsingCache(securityContext, requestContext, request.getProjectId());
+
+
+
+
+        return reader.basicSuggestion(BasicSuggestionInfo.builder()
+                .line(request.getLine()).userText(request.getUserText())
+                .projectId(request.getProjectId()).fileId(request.getFileId())
+                .rootId(hash.getRoot()).build());
+    }
+
+
+
 
 
 
@@ -178,15 +200,8 @@ public class ProjectActionsService {
                          FileSaveRequest request) throws Exception{
 
 
-
-
-
         ProjectValidationHash hash = accessValidator
                 .validateAccessUsingCache(securityContext, requestContext, projectId);
-
-
-
-
 
 
         updater.onAutosave(Autosave
@@ -200,20 +215,6 @@ public class ProjectActionsService {
                         .requestContext(requestContext)
                         .securityContext(securityContext)
                 .build());
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     }
 

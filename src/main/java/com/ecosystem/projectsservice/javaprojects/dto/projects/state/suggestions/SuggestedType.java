@@ -1,29 +1,21 @@
 package com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-
-
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 @Builder
-public class BasicSuggestionRequest {
-
-    private int line;
+public class SuggestedType {
 
 
-    // то, что пользователь ввел
-    private String userText;
+    private String path;
 
+    private String name;
 
-
-    private UUID projectId;
-
-    private UUID fileId;
 
 }

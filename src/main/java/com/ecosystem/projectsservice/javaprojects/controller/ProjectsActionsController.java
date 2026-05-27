@@ -106,7 +106,8 @@ public class ProjectsActionsController {
     }
 
 
-    // чтение файла - viewer id, project id, project author id, file id - все данные для конструирования пути
+    // чтение файла - viewer id, project id, project author id, file id
+    // - все данные для конструирования пути
 
     @GetMapping("/readFile/{file_id}")
     public ResponseEntity<FileDTO> readFile(@PathVariable("id") UUID projectId,
@@ -117,8 +118,14 @@ public class ProjectsActionsController {
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
 
-        return ResponseEntity.ok(actionsService.readFile(securityContext, requestContext, projectId, fileId));
+        return ResponseEntity
+                .ok(actionsService.readFile(securityContext, requestContext, projectId, fileId));
     }
+
+    // базовая подсказка - критерии посылаются в адресной строке
+
+
+
 
 
     // удаление файла - операция предполагает мгновенную инвалидацию некоторых элементов в кеше проекта (предложки)

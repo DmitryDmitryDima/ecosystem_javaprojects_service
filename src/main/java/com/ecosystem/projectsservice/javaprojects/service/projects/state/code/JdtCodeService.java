@@ -23,7 +23,10 @@ public class JdtCodeService implements CodeService {
         Document document = new Document(javaContent);
 
         parser.setSource(document.get().toCharArray());
+
+
         CompilationUnit ast = (CompilationUnit) parser.createAST(null);
+
 
 
         ast.recordModifications();

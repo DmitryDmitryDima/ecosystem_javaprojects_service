@@ -21,6 +21,7 @@ public class CachedStructureJavaFile {
 
     private AccessModifier modifier;
 
+    private String name;
 
 
 
