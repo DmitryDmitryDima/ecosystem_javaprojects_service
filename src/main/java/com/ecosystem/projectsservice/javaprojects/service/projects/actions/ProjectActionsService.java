@@ -450,7 +450,7 @@ public class ProjectActionsService {
     public FileDTO readFile(SecurityContext securityContext,
                             RequestContext requestContext,
                             UUID projectId,
-                            UUID fileId) throws Exception{
+                            UUID fileId){
 
 
 

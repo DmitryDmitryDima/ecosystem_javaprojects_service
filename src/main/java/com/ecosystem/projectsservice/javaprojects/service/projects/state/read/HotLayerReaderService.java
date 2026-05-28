@@ -201,8 +201,7 @@ public class HotLayerReaderService implements HotLayerReader{
         // извлекаем все java файлы проекта
         List<FileReadOnly> javaFiles = transaction.execute(status
                 -> snapshotService.getAllFilesBelowDirectory(rootId)).stream()
-                .filter(fileReadOnly -> fileReadOnly.getExtension()
-                        .equals("java"))
+                .filter(fileReadOnly -> "java".equals(fileReadOnly.getExtension()))
                 .toList();
 
 

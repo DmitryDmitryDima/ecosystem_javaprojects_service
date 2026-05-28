@@ -13,6 +13,10 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.f
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileMoveRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileRemovalRequest;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.writing.files.FileSaveRequest;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestion;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestionCriteria;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestionInfo;
+import com.ecosystem.projectsservice.javaprojects.dto.projects.state.suggestions.BasicSuggestionRequest;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerAnswer;
 import com.ecosystem.projectsservice.javaprojects.service.projects.actions.ProjectActionsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,7 +117,7 @@ public class ProjectsActionsController {
     public ResponseEntity<FileDTO> readFile(@PathVariable("id") UUID projectId,
                                             @PathVariable("file_id") UUID fileId,
                                             @RequestHeader Map<String,
-                                                    String> headers) throws Exception{
+                                                    String> headers)  {
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);
@@ -123,6 +127,36 @@ public class ProjectsActionsController {
     }
 
     // базовая подсказка - критерии посылаются в адресной строке
+
+    @GetMapping("/suggestion/basic/{file_id}")
+    public ResponseEntity<BasicSuggestion> basicSuggestion(@PathVariable("id") UUID projectId,
+                                                           @PathVariable("file_id") UUID fileId,
+                                                           @RequestHeader Map<String,
+                                                                   String> headers,
+                                                           BasicSuggestionCriteria criteria){
+
+
+        SecurityContext securityContext = SecurityContext.generateContext(headers);
+        RequestContext requestContext = RequestContext.generateRequestContext(headers);
+
+        BasicSuggestion suggestion = actionsService.basicSuggestion(securityContext, requestContext,
+                BasicSuggestionRequest.builder()
+                        .line(criteria.getLine())
+                        .userText(criteria.getUserText())
+                        .projectId(projectId).fileId(fileId).build()
+
+                );
+
+
+        return ResponseEntity.ok(suggestion);
+
+
+
+
+
+
+
+    }
 
 
 
