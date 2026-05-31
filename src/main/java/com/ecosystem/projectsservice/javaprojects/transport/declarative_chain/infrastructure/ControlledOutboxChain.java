@@ -1,6 +1,12 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.communication.Message;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.control.MaxDuration;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.control.MaxRetry;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.control.WaitingFor;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.EventQualifier;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.ExternalResultType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.enums.StepTimeUnit;
@@ -10,8 +16,8 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.Even
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.ExternalEventData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.ChainProcess;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.ProcessAggregator;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.processes.ChainProcess;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.processes.ProcessAggregator;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.Trigger;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
@@ -413,9 +419,11 @@ public abstract class ControlledOutboxChain
 
 
 
-    // метод, используемый в цепочках для внутреннего контроля выполнения. В случае с запуском java приложения мы посылаем этот объект во всю обертку
+    // метод, используемый в цепочках для внутреннего контроля выполнения.
+    // В случае с запуском java приложения мы посылаем этот объект во всю обертку
     public ChainProcess getProcessState(UUID uuid){
-        return processAggregator.getChainProcessByCorrelationId(uuid);
+        return processAggregator
+                .getChainProcessByCorrelationId(uuid);
     }
 
     // задача этого сценария - зафиксировать, достигнуто ли состояние компенсации. Шаг сохраняется тот же
@@ -504,7 +512,9 @@ public abstract class ControlledOutboxChain
     // задача этого метода - вычислить следующий шаг и записать его в outbox
     // в зависимости от наличия аннотаций времени необходимо задать соответствующие поля
 
-    private void successStepScenario(E event, CachedMethod executed, ChainProcess chainProcess){
+    private void successStepScenario(E event,
+                                     CachedMethod executed,
+                                     ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.WAITING);
 
         // todo по идее тут не должно быть ошибки, если ввести предварительный анализ цепочки

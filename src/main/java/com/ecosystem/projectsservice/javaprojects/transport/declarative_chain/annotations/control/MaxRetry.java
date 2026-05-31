@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.control;
 
 
 import java.lang.annotation.ElementType;

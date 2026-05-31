@@ -10,6 +10,9 @@ import com.ecosystem.projectsservice.javaprojects.repository.DirectoryRepository
 import com.ecosystem.projectsservice.javaprojects.repository.ProjectRepository;
 import com.ecosystem.projectsservice.javaprojects.service.projects.constructors.ProjectYamlConstructor;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.communication.Message;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.control.MaxDuration;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.ExternalResultType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;

@@ -1,12 +1,12 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.EventQualifier;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.EventQualifier;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.ChainProcess;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.ProcessAggregator;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.processes.ChainProcess;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.processes.ProcessAggregator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;

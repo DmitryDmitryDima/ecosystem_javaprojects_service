@@ -5,6 +5,9 @@ import com.ecosystem.projectsservice.javaprojects.dto.projects.lifecycle.Constru
 import com.ecosystem.projectsservice.javaprojects.model.Directory;
 import com.ecosystem.projectsservice.javaprojects.model.Project;
 import com.ecosystem.projectsservice.javaprojects.model.enums.ProjectStatus;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.communication.Message;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.control.MaxDuration;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.ExternalResultType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.ControlledOutboxChain;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.*;

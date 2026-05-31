@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.transport.process_control;
+package com.ecosystem.projectsservice.javaprojects.transport.process_control.processes;
 
 import org.springframework.stereotype.Service;
 

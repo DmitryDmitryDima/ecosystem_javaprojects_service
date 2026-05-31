@@ -1,6 +1,5 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.order;
 
-// если есть, то отправляется сообщение с Processing статусом
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,5 +8,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Message {
+public @interface Ending {
+
+    String name();
 }

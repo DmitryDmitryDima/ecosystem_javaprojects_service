@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.transport.process_control;
+package com.ecosystem.projectsservice.javaprojects.transport.process_control.processes;
 
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import lombok.Getter;
