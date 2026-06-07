@@ -70,6 +70,10 @@ public class ChainProcess {
         this.processType = type;
     }
 
+    public ChainProcess(UUID correlationId){
+        this.correlationId = correlationId;
+    }
+
 
 
 

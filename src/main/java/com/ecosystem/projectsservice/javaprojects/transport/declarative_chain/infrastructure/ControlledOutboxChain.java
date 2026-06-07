@@ -52,7 +52,8 @@ public abstract class ControlledOutboxChain
 
     // зависимости, необходимые для работы фреймворка
 
-    // канал для работы с outbox таблицей - сюда мы записываем следующие шаги, внешние сообщения и коллбэк для обработанных шагов
+    // канал для работы с outbox таблицей
+    // - сюда мы записываем следующие шаги, внешние сообщения и коллбэк для обработанных шагов
     @Autowired
     private OutboxEventRepository outboxEventRepository;
 
@@ -60,7 +61,8 @@ public abstract class ControlledOutboxChain
     @Autowired
     private ChainManager manager;
 
-    // в цепочках намеренно используется программный путь описания транзакций - в условиях обилия операций, связанных с разными сервисами
+    // в цепочках намеренно используется программный
+    // путь описания транзакций - в условиях обилия операций, связанных с разными сервисами
     @Autowired
     private TransactionTemplate transactionTemplate;
 
@@ -99,7 +101,8 @@ public abstract class ControlledOutboxChain
     private final Map<String, CachedMethod> steps = new HashMap<>();
 
 
-    // связываем процесс с категорией ивента - результата (Project event from system, Project event from user, user personal event)
+    // связываем процесс с категорией ивента - результата
+    // (Project event from system, Project event from user, user personal event)
     protected abstract ExternalEvent<? extends ExternalEventContext> bindResultingEvent();
 
     // дополнительные параметры поиска для процесса, если требуется ассоциация не только с correlation id

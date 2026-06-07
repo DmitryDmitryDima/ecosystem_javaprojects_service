@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.ExternalEventData;
+import jakarta.annotation.PostConstruct;
 
 public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends ExternalEventContext,
         ? extends ExternalEventData,
@@ -27,10 +28,39 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<? extends
     // действия при ошибке. На этом же этапе происходит, при нужной настройке, генерация внешнего сообщения
     protected abstract void compensationStrategy(E event);
 
+
+
+
+
     // хук, срабатывающий при ручной остановке процесса пользователем или внешним событием
-    protected void onStop(E event){
+    protected void onChainStop(E event){
 
     }
+
+
+
+
+    // связываем процесс с категорией ивента - результата
+    // (Project event from system, Project event from user, user personal event)
+    protected ExternalEvent<? extends ExternalEventContext> bindResultingEvent(){
+        return null;
+    }
+
+    // кешируем и анализируем структуру цепочки, проверяем правильность ее конструкции
+    @PostConstruct
+    private void initiation() throws Exception{
+
+    }
+
+
+
+
+
+
+
+
+
+
 
 
 

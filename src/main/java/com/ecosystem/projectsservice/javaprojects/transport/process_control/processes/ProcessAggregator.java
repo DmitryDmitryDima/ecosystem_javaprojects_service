@@ -59,7 +59,9 @@ public class ProcessAggregator {
     }
 
     // атомарная операция чтения и (опционально) создания процесса
-    public ChainProcess getOrRestoreChainProcessByCorrelationId(UUID correlationId, ChainProcess toRestore, Runnable associationsRestore){
+    public ChainProcess getOrRestoreChainProcessByCorrelationId(UUID correlationId,
+                                                                ChainProcess toRestore,
+                                                                Runnable associationsRestore){
         writeLock.lock();
 
         try {
