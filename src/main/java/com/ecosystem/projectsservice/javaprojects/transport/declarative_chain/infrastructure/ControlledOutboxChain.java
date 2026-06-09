@@ -16,8 +16,8 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.Even
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.ExternalEventData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.processes.ChainProcess;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.processes.ProcessAggregator;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ChainProcess;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ProcessAggregator;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.Trigger;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggersAggregator;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
@@ -629,6 +629,8 @@ public abstract class ControlledOutboxChain
 
 
 
+
+    // todo что, если шаг был остановлен из за истечения времени и при этом имеет retry
 
     private void onProcessStop(E event, ChainProcess chainProcess){
         chainProcess.processCleanup(ChainProcess.ProcessStatus.STOPPED);

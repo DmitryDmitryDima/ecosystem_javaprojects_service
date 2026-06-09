@@ -1,0 +1,162 @@
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control;
+
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ChainProcess;
+import lombok.Getter;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+
+@Getter
+public class DeclarativeChainProcess {
+
+
+    public static enum ChainProcessStatus{
+        WAITING, // ожидание следующего шага
+
+        RUNNING, // шаг
+        STOPPED, // процесс остановлен
+        TERMINATED, // процесс остановлен, очищен и может быть выброшен из всех хранилищ
+        PAUSED // в будущем
+    }
+
+
+    // универсальный идентификатор процесса
+    private UUID correlationId;
+
+    // индексы - для реализации поиска процесса по вторичным ключам
+    private List<ProcessIndex> indexes = new ArrayList<>();
+
+    // статус
+    private final AtomicReference<ChainProcess.ProcessStatus> status
+            = new AtomicReference<>(ChainProcess.ProcessStatus.WAITING);
+
+    // тот, кто останавливает или как то взаимодействует с процессом. может оставить сообщение
+    private final AtomicReference<String> externalMessage
+            = new AtomicReference<>(null);
+
+
+    private AtomicReference<Instant> lastModified = new AtomicReference<>(Instant.now());
+
+
+    // если Running, но при
+    private AtomicReference<String> currentStep
+            = new AtomicReference<>(null);
+
+
+    // используем interrupt для остановки текущего потока (аннотация @Duration).
+    // исходя из этого, перед входом в каждый из методов происходит регистрация потока в state (это делаем под капотом)
+    // нужно, чтобы методы, связанные с временем, выбрасывали interrupted exception - нужно дать понять пользователю, что это нужно сделать
+    // актуально на время выполнения шага
+    // null если никакой шаг не выполняется
+    private AtomicReference<Thread> currentThread
+            = new AtomicReference<>(null);
+
+    // если шаг содержит в себе обращение к внешним системам машины через cmd - эти процессы должны быть уничтожены
+    // таким образом, пользуясь аннотацией @Duration, пользователь обязан регистрировать процессы через stateManager
+    // (как его заставить это сделать - отдельный вопрос)
+    // null если никакой из шагов не выполняется
+    private AtomicReference<List<Process>> currentNativeProcesses
+            = new AtomicReference<>(null);
+
+
+
+
+    public DeclarativeChainProcess(UUID correlationId){
+        this.correlationId = correlationId;
+    }
+
+
+    public void addIndexes(List<ProcessIndex> indexes){
+        this.indexes = indexes;
+    }
+
+
+    // заканчиваем шаг
+    public void processCleanup(ChainProcess.ProcessStatus nextStatus){
+        lastModified.set(Instant.now());
+        currentStep.set(null);
+        // устанавливаем имя следующего ивента
+        setStatus(nextStatus);
+        currentNativeProcesses.getAndUpdate((processes -> {
+            if (processes!=null){
+                processes.forEach((process)->{
+                    try {
+                        process.destroyForcibly();
+                    }
+                    catch (Exception e){
+
+                    }
+                });
+
+            }
+
+            return null;
+        }));
+
+        currentThread.set(null);
+
+
+    }
+
+    public void stepOnStart(String step){
+        currentStep.set(step);
+        currentThread.set(Thread.currentThread());
+        status.set(ChainProcess.ProcessStatus.RUNNING);
+        lastModified.set(Instant.now());
+    }
+
+    // регистрация процесса внутри метода шага - должно быть совершенно пользователем
+    public void registerNativeProcess(Process process){
+        currentNativeProcesses.getAndUpdate(list -> {
+            List<Process> processes = list==null?new ArrayList<>():list;
+            processes.add(process);
+            return processes;
+        });
+    }
+
+    public void setStatus(ChainProcess.ProcessStatus newStatus){
+        lastModified.set(Instant.now());
+        if (status.get()== ChainProcess.ProcessStatus.STOPPED
+                && newStatus!= ChainProcess.ProcessStatus.TERMINATED) return; // если был остановлен, замена на другой статус  не происходит
+        status.set(newStatus);
+    }
+
+
+    public void setCurrentStep(String step){
+        currentStep.set(step);
+    }
+
+    public void setCurrentThread(Thread thread){
+        currentThread.set(thread);
+    }
+
+    public void setExternalMessage(String message){
+        externalMessage.set(message);
+    }
+    public void terminate(){
+        lastModified.set(Instant.now());
+        setStatus(ChainProcess.ProcessStatus.TERMINATED);
+    }
+
+    // прежде всего, проставляем флаг running в false
+
+    // может вызываться как снаружи, так и изнутри. Метод cleanup вызывается из цепочки
+    public void stop(){
+        lastModified.set(Instant.now());
+        currentThread.getAndUpdate(thread -> {
+            if (thread!=null) {
+                thread.interrupt();
+            }
+            return thread;
+        });
+        status.set(ChainProcess.ProcessStatus.STOPPED);
+    }
+
+
+
+
+
+}

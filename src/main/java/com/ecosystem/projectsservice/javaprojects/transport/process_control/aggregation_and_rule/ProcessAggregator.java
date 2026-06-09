@@ -1,5 +1,6 @@
-package com.ecosystem.projectsservice.javaprojects.transport.process_control.processes;
+package com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule;
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -19,8 +20,16 @@ public class ProcessAggregator {
     private Map<UUID, ChainProcess> allProcesses = new HashMap<>();
 
 
-    // ассоциация по id проекта
-    private Map<Long, List<ChainProcess>> projectProcesses = new HashMap<>();
+    // пользовательские индексы
+
+    // мы используем имя индекса, как ключ, и вторичный ключ, как ключ к внутренней таблице
+    // допускается, что на один ключ может быть несколько процессов
+    private Map<String, Map<String, List<ChainProcess>>> indexes = new HashMap<>();
+
+
+
+
+
 
     private final ReentrantReadWriteLock globalLock = new ReentrantReadWriteLock();
 
@@ -30,15 +39,45 @@ public class ProcessAggregator {
 
 
 
-
+    // регистрируем процесс, при этом реализую прописанные пользователем индексы, если они есть
     public void registerChainProcess(ChainProcess chainProcess){
         writeLock.lock();
 
 
         try {
             // idempotency guard
-            if (allProcesses.containsKey(chainProcess.getCorrelationId())) throw new IllegalStateException("Process already registered");
+            if (allProcesses.containsKey(chainProcess.getCorrelationId()))
+                throw new IllegalStateException("Process already registered");
             allProcesses.put(chainProcess.getCorrelationId(), chainProcess);
+
+            // читаем индексы
+
+            List<ProcessIndex> userIndexes = chainProcess.getIndexes();
+
+            for (var index:userIndexes){
+
+                // извлекаем структуру, ассоциированную с заданным ключом
+                Map<String, List<ChainProcess>> indexStructure = indexes.get(index.getKey());
+
+                // если структуры нет, создаем новую
+                if (indexStructure == null){
+                    indexStructure = new HashMap<>();
+                    indexes.put(index.getName(),indexStructure);
+                }
+
+                // извлекаем список, ассоциированный со вторичным ключом
+                List<ChainProcess> processes
+                        = indexStructure.computeIfAbsent(index.getKey(), k -> new ArrayList<>());
+
+                // если процессов нет, создаем список и вставляем в структуру
+
+                // добавляем процесс
+                processes.add(chainProcess);
+
+
+            }
+
+
 
 
         }
@@ -46,6 +85,8 @@ public class ProcessAggregator {
             writeLock.unlock();
         }
     }
+
+
 
     public ChainProcess getChainProcessByCorrelationId(UUID correlationId){
         readLock.lock();
@@ -57,6 +98,10 @@ public class ProcessAggregator {
             readLock.unlock();
         }
     }
+
+
+
+    // TODO скоро изменится
 
     // атомарная операция чтения и (опционально) создания процесса
     public ChainProcess getOrRestoreChainProcessByCorrelationId(UUID correlationId,

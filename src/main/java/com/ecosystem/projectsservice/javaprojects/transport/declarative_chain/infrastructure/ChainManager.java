@@ -5,8 +5,8 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.an
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.ExternalEventData;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.processes.ChainProcess;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.processes.ProcessAggregator;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ChainProcess;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ProcessAggregator;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,10 +21,13 @@ import java.util.Map;
 public class ChainManager {
 
 
-    private final Map<String, Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
-                ? extends ExternalEventData, ? extends InternalEventData>>> allInternalEvents = new HashMap<>();
+    private final Map<String,
+            Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
+                ? extends ExternalEventData, ? extends InternalEventData>>> allInternalEvents
+            = new HashMap<>();
 
-    private final Map<String, Class<? extends ExternalEvent<? extends ExternalEventContext>>> allExternalEvents = new HashMap<>();
+    private final Map<String, Class<? extends ExternalEvent<? extends ExternalEventContext>>>
+            allExternalEvents = new HashMap<>();
 
     @Autowired
     private ObjectMapper mapper;
@@ -35,13 +38,16 @@ public class ChainManager {
     @Autowired
     private ProcessAggregator aggregator;
 
-    public void registerInternalEvent(String name, Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
+    public void registerInternalEvent(String name,
+                                      Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
             ? extends ExternalEventData, ? extends InternalEventData>> clazz){
         System.out.println(name+" registered");
         allInternalEvents.put(name, clazz);
     }
 
-    public void registerExternalEvents(List<Class<? extends ExternalEvent<? extends ExternalEventContext>>> classes){
+    // TODO ЧЕКНИ ОТВЕТСТВЕННОСТЬ - ДЛЯ ИВЕНТ ЦЕПЕЙ АННОТАЦИЯ ЧИТАЕТСЯ В ЦЕПИ
+    public void registerExternalEvents(List<Class<? extends ExternalEvent<?
+            extends ExternalEventContext>>> classes){
         for (Class<? extends ExternalEvent<? extends ExternalEventContext>> clazz:classes){
             EventQualifier annotation = clazz.getAnnotation(EventQualifier.class);
             if (annotation==null) throw new IllegalStateException("отсутствует аннотация @EventQualifier");
@@ -73,6 +79,7 @@ public class ChainManager {
 
 
     // todo пока что обрабатываем только зависшие шаги цепочек, без внимания к сообщениям
+    // todo в будущем будет только проставлять timeout флаг, без вызова chain process
     public void processExpiredProcessingEvent(OutboxEvent outboxEvent){
 
         try {
@@ -84,7 +91,8 @@ public class ChainManager {
 
                 deserializedEvent.getInternalData().setOutboxParent(outboxEvent.getId()); // для callback
 
-                ChainProcess chainProcess = aggregator.getChainProcessByCorrelationId(deserializedEvent.getContext().getCorrelationId());
+                ChainProcess chainProcess = aggregator
+                        .getChainProcessByCorrelationId(deserializedEvent.getContext().getCorrelationId());
 
                 // если процесс существует - останавливаем его
                 if (chainProcess!=null){
@@ -138,17 +146,20 @@ public class ChainManager {
                 Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
                         ? extends ExternalEventData, ? extends InternalEventData>> clazz = allInternalEvents.get(outboxEvent.getType());
                 DeclarativeChainEvent<? extends ExternalEventContext,
-                        ? extends ExternalEventData, ? extends InternalEventData> deserializedEvent = mapper.readValue(outboxEvent.getPayload(), clazz);
+                        ? extends ExternalEventData, ? extends InternalEventData> deserializedEvent
+                        = mapper.readValue(outboxEvent.getPayload(), clazz);
 
                 deserializedEvent.getInternalData().setOutboxParent(outboxEvent.getId()); // для callback
                 publisher.publishEvent(deserializedEvent);
 
             }
             if (allExternalEvents.containsKey(outboxEvent.getType())){
-                Class<? extends ExternalEvent<? extends ExternalEventContext>> clazz = allExternalEvents.get(outboxEvent.getType());
+                Class<? extends ExternalEvent<? extends ExternalEventContext>> clazz
+                        = allExternalEvents.get(outboxEvent.getType());
 
 
-                ExternalEvent<? extends ExternalEventContext> deserializedEvent = mapper.readValue(outboxEvent.getPayload(), clazz);
+                ExternalEvent<? extends ExternalEventContext> deserializedEvent
+                        = mapper.readValue(outboxEvent.getPayload(), clazz);
                 deserializedEvent.setOutboxParent(outboxEvent.getId());
                 publisher.publishEvent(deserializedEvent);
 

@@ -25,6 +25,11 @@ public abstract class InternalEventData {
     // явно указываем, что достигнуто и должно быть исполнено состояние компенсации
     private boolean compensationPhase = false;
 
+
+    // если true, то это означает, что при обработке
+    // внутри цепи необходимо учитывать максимально допустимое время между ретраями
+    private boolean stepTimeout = false;
+
     // todo - причина компенсации
 
 

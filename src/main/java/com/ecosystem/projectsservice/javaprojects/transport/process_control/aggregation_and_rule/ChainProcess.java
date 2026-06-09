@@ -1,5 +1,6 @@
-package com.ecosystem.projectsservice.javaprojects.transport.process_control.processes;
+package com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule;
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import lombok.Getter;
 
@@ -20,10 +21,18 @@ public class ChainProcess {
         WAITING, RUNNING, STOPPED, TERMINATED, PAUSED
     }
 
-    private final AtomicReference<ProcessStatus> status = new AtomicReference<>(ProcessStatus.WAITING);
+
+
+    // статус
+    private final AtomicReference<ProcessStatus> status
+            = new AtomicReference<>(ProcessStatus.WAITING);
 
     // тот, кто останавливает или как то взаимодействует с процессом. может оставить сообщение
-    private final AtomicReference<String> externalMessage = new AtomicReference<>(null);
+    private final AtomicReference<String> externalMessage
+            = new AtomicReference<>(null);
+
+
+
 
 
 
@@ -36,7 +45,7 @@ public class ChainProcess {
     private AtomicReference<Instant> lastModified = new AtomicReference<>(Instant.now());
 
 
-    private ExternalEventType processType;
+
 
 
 
@@ -57,13 +66,26 @@ public class ChainProcess {
     // нужно, чтобы методы, связанные с временем, выбрасывали interrupted exception - нужно дать понять пользователю, что это нужно сделать
     // актуально на время выполнения шага
     // null если никакой шаг не выполняется
-    private AtomicReference<Thread> currentThread = new AtomicReference<>(null);
+    private AtomicReference<Thread> currentThread
+            = new AtomicReference<>(null);
 
     // если шаг содержит в себе обращение к внешним системам машины через cmd - эти процессы должны быть уничтожены
     // таким образом, пользуясь аннотацией @Duration, пользователь обязан регистрировать процессы через stateManager
     // (как его заставить это сделать - отдельный вопрос)
     // null если никакой из шагов не выполняется
-    private AtomicReference<List<Process>> currentNativeProcesses = new AtomicReference<>(null);
+    private AtomicReference<List<Process>> currentNativeProcesses
+            = new AtomicReference<>(null);
+
+
+
+
+
+
+    private ExternalEventType processType;
+
+    private List<ProcessIndex> indexes = new ArrayList<>();
+
+
 
     public ChainProcess(UUID correlationId, ExternalEventType type){
         this.correlationId = correlationId;
@@ -72,6 +94,12 @@ public class ChainProcess {
 
     public ChainProcess(UUID correlationId){
         this.correlationId = correlationId;
+    }
+
+
+
+    public void addIndexes(List<ProcessIndex> indexes){
+        this.indexes = indexes;
     }
 
 
@@ -123,7 +151,8 @@ public class ChainProcess {
 
     public void setStatus(ProcessStatus newStatus){
         lastModified.set(Instant.now());
-        if (status.get()==ProcessStatus.STOPPED && newStatus!=ProcessStatus.TERMINATED) return; // если был остановлен, замена на другой статус  не происходит
+        if (status.get()==ProcessStatus.STOPPED
+                && newStatus!=ProcessStatus.TERMINATED) return; // если был остановлен, замена на другой статус  не происходит
         status.set(newStatus);
     }
 
