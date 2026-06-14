@@ -28,7 +28,8 @@ public class OutboxEvent {
      */
 
 
-    public static enum OutboxEventStatus {PROCESSING, PROCESSED, WAITING, WAITING_FOR_EXTERNAL}
+    public static enum OutboxEventStatus {PROCESSING,
+        PROCESSED, WAITING, WAITING_FOR_EXTERNAL}
 
     @Id
     @GeneratedValue
@@ -43,7 +44,9 @@ public class OutboxEvent {
 
 
 
-    // тип ивента - его string форма хранится в каждом из ивентов. Тип + payload => application event для публикации в цепочку после прочтения из outbox
+    // тип ивента
+    // - его string форма хранится в каждом из ивентов.
+    // Тип + payload => application event для публикации в цепочку после прочтения из outbox
     private String type;
 
 

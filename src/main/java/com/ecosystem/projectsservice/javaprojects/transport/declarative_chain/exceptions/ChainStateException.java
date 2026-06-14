@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 
 public class ChainStateException extends BaseException {
 
-    public ChainStateException(String message, String errorCode, HttpStatus httpStatus) {
+    public ChainStateException(String message,
+                               String errorCode,
+                               HttpStatus httpStatus) {
         super(message, errorCode, httpStatus);
     }
 }

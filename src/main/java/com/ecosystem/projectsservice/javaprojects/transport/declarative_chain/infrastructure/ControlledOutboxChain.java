@@ -83,7 +83,8 @@ public abstract class ControlledOutboxChain
 
     // информация о внутренних и внешних ивентах
 
-    // каждая цепочка - процесс предполагает некий результирующий (т.е. предназначенный для внешнего слушателя)
+    // каждая цепочка - процесс предполагает некий результирующий
+    // (т.е. предназначенный для внешнего слушателя)
     // ивент в конце, тип которого указывается в аннотации @ExternalResultType
     private ExternalEventType externalResultType;
 
@@ -138,15 +139,20 @@ public abstract class ControlledOutboxChain
 
     // кешируем значение типа внешнего ивента
     private void cacheResultingEventType() throws Exception{
-        // Название результирующего ивента необходимо как для расшифровки payload, так и для event_type во внешнем ивенте
-        ExternalResultType externalResultTypeAnno = this.getClass().getAnnotation(ExternalResultType.class);
-        if (externalResultTypeAnno==null) throw new IllegalStateException("Не указан тип внешнего ивента для цепи. Используйте @ExternalResultType");
+        // Название результирующего ивента необходимо
+        // как для расшифровки payload, так и для event_type во внешнем ивенте
+        ExternalResultType externalResultTypeAnno
+                = this.getClass().getAnnotation(ExternalResultType.class);
+        if (externalResultTypeAnno==null)
+            throw new IllegalStateException("Не указан тип внешнего ивента для цепи. " +
+                    "Используйте @ExternalResultType");
         externalResultType = externalResultTypeAnno.event();
     }
 
     // кешируем и регистрируем chain state event
     private void cacheAndRegisterInternalEvent() throws Exception{
-        Class<E> chainEventClass = (Class<E>) GenericTypeResolver.resolveTypeArgument(getClass(), ControlledOutboxChain.class);
+        Class<E> chainEventClass
+                = (Class<E>) GenericTypeResolver.resolveTypeArgument(getClass(), ControlledOutboxChain.class);
         EventQualifier annotation = chainEventClass.getAnnotation(EventQualifier.class);
         if (annotation==null) throw new IllegalStateException("Не прописано имя внутреннего ивента для цепи. Используйте @EventQuailifier");
         internalEventQualifier = annotation.value();
@@ -454,7 +460,8 @@ public abstract class ControlledOutboxChain
             // Duration параметры
             Long executedMaxDuration = convertToMillis(executed.maxDuration, executed.maxDurationUnit);
             next.setExpiredAt(Instant.now()
-                    .plusMillis(Objects.requireNonNullElse(executedMaxDuration, DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS*1000)));
+                    .plusMillis(Objects.requireNonNullElse(executedMaxDuration,
+                            DEFAULT_STEP_EXPIRATION_TIME_IN_SECONDS*1000)));
 
             // проставляем параметр времени на чтение waiting ивента / игнорируем waiting for
             next.setReadExpiration(Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS));
@@ -604,7 +611,9 @@ public abstract class ControlledOutboxChain
 
 
 
-                    triggersAggregator.initiateTriggerIfExists(event, bindResultingEvent(), externalResultType, waitingFor);
+                    triggersAggregator
+                            .initiateTriggerIfExists(event,
+                                    bindResultingEvent(), externalResultType, waitingFor);
                 }
                 catch (Exception e){
                     System.out.println("trigger system exception");

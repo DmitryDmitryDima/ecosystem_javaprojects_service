@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.cont
 
 // автор ивента - система (к примеру - запущенный проект), попадает в комнату проекта
 @EventQualifier("project_event_from_system")
-public class ProjectEventFromSystem extends ExternalEvent<ProjectEventFromSystemContext> {
+public class ProjectEventFromSystem
+        extends ExternalEvent<ProjectEventFromSystemContext> {
 
 }

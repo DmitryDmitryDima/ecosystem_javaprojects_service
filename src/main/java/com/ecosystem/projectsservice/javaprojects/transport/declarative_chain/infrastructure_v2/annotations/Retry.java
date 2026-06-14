@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.control;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations;
 
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.enums.StepTimeUnit;

@@ -98,6 +98,8 @@ public class DirectoryAddChain extends ControlledOutboxChain<DirectoryAddEvent> 
     public void blockDirectory(DirectoryAddEvent event){
         event.setMessage("Проверяем директорию");
 
+
+
         transaction().execute(status -> {
 
             Optional<Directory> directoryCheck = directoryRepository.findByIdForUpdate(event.getExternalData().getParentId());

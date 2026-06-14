@@ -23,7 +23,8 @@ public class ChainManager {
 
     private final Map<String,
             Class<? extends DeclarativeChainEvent<? extends ExternalEventContext,
-                ? extends ExternalEventData, ? extends InternalEventData>>> allInternalEvents
+                ? extends ExternalEventData, ? extends InternalEventData>>>
+            allInternalEvents
             = new HashMap<>();
 
     private final Map<String, Class<? extends ExternalEvent<? extends ExternalEventContext>>>

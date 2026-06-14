@@ -1,13 +1,13 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2;
 
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.DeclarativeChainEvent;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure.InternalEventData;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.EventManager;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEvent;
+import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.ExternalEventContext;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.data.ExternalEventData;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -15,10 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
-public abstract class DeclarativeChain<E extends DeclarativeChainEvent<?
-        extends ExternalEventContext,
-        ? extends ExternalEventData,
-        ? extends InternalEventData>> {
+public abstract class DeclarativeChain<E extends ChainEvent> {
 
     // TODO РАЗОБРАТЬСЯ С НАЗНАЧЕНИЕМ ПОСТОЯННЫХ ВРЕМЕНИ И ПРОПИСАТЬ ИХ НАЗНАЧЕНИЕ ТУТ
     // константы
@@ -56,6 +53,25 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<?
     @Autowired
     private ProcessRuntimeStorage processRuntimeStorage;
 
+
+    // цепочка обязана зарегистрировать свой ивент
+    @Autowired
+    private EventManager eventManager;
+
+
+
+    // ИНФОРМАЦИЯ О ЦЕПОЧКЕ
+    // информация о внутренних и внешних ивентах
+
+    // каждая цепочка - процесс может предполагать некий результирующий
+    // (т.е. предназначенный для внешнего слушателя)
+    // ивент в конце, тип которого указывается в аннотации @ExternalResultType
+    private ExternalEventType externalResultType;
+
+    // внутренние типы ивентов
+    // (внутреннего state ивента и результирующего внешнего ивента), записываемые в outbox
+    private String internalEventQualifier;
+    private String externalEventQualifier;
 
 
 
@@ -99,6 +115,13 @@ public abstract class DeclarativeChain<E extends DeclarativeChainEvent<?
     // кешируем и анализируем структуру цепочки, проверяем правильность ее конструкции
     @PostConstruct
     private void initiation() throws Exception{
+
+    }
+
+
+    // чтение деклараций, автоматизирующих некоторые процессы в цепочке
+    // (например генерацию внешних ивентов)
+    private void readAutomationDeclarations(){
 
     }
 
