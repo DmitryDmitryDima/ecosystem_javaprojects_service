@@ -60,7 +60,7 @@ public class OutboxEvent {
     // последняя смена статуса
     private Instant last_update;
 
-
+    // TODO DEPRECATED
     private Instant expiredAt = null;
 
     // время, до которого ивент должен быть прочитан (комбинация с waiting for или waiting)

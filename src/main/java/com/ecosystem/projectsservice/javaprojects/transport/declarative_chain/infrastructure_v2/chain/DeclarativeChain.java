@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain;
 
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
