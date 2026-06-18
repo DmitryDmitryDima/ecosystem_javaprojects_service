@@ -1,15 +1,17 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure;
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry.EventRegistry;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.EventManager;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorageImpl;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.List;
 
 public abstract class DeclarativeChain<E extends ChainEvent> {
@@ -23,25 +25,48 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 30;
 
 
+    public DeclarativeChain(ProcessRuntimeStorage processRuntimeStorage, EventRegistry eventRegistry, ChainPublisher chainPublisher) {
+        this.processRuntimeStorage = processRuntimeStorage;
+        this.eventRegistry = eventRegistry;
+        this.chainPublisher = chainPublisher;
+    }
+
+    public DeclarativeChain(){
+
+    }
+
+    protected void setProcessRuntimeStorage(ProcessRuntimeStorage processRuntimeStorage) {
+        this.processRuntimeStorage = processRuntimeStorage;
+    }
+
+    protected void setEventRegistry(EventRegistry eventRegistry) {
+        this.eventRegistry = eventRegistry;
+    }
+
+    protected void setChainPublisher(ChainPublisher chainPublisher) {
+        this.chainPublisher = chainPublisher;
+    }
 
 
 
 
-
-
-
-
-
-
-
-
-    // рантайм регистратор процессов
-    @Autowired
     private ProcessRuntimeStorage processRuntimeStorage;
 
 
-    @Autowired
+
     private EventRegistry eventRegistry;
+
+    private ChainPublisher chainPublisher;
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -85,10 +110,15 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
     // кешируем и анализируем структуру цепочки, проверяем правильность ее конструкции
-    @PostConstruct
-    public void onChainPreparing() throws ChainPreparationException {
+    public void prepareChain() throws ChainPreparationException {
 
         try {
+
+            // регистрируем главный ивент
+            registerChainEvent();
+
+
+
 
         }
         catch (Exception e){
@@ -99,12 +129,22 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     }
 
     // регистрация главного ивента (дефолт - через интерфейс EventRegistry
-    protected void registerChainEvent(E event){
-        eventRegistry.register(event);
+    protected void registerChainEvent(){
+
+
+
+        Class clazz = (Class)((ParameterizedType)getClass().getGenericSuperclass())
+                .getActualTypeArguments()[0];
+
+
+        eventRegistry.register(clazz);
     }
 
     // обработка структуры
     protected void readChainStructure(){
+
+
+
 
     }
 

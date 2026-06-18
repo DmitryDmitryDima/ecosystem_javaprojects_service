@@ -4,7 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 
 public interface EventRegistry {
 
-    void register(ChainEvent event);
+    void register(Class<? extends ChainEvent> eventClass);
 
 
 }
