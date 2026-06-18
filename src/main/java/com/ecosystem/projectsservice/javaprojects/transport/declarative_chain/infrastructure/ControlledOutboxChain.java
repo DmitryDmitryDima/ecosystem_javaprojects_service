@@ -574,7 +574,8 @@ public abstract class ControlledOutboxChain
 
             // записываем максимальный период выполнения
             next.setPerformanceExpirationPeriod(
-                    Objects.requireNonNullElse(maxDuration, DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS*1000)
+                    Objects.requireNonNullElse(maxDuration,
+                            DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS*1000)
             );
             // не забываем изменить статус. Задача внешней системы - изменить статус на waiting (таким образом,
             // решение принимает waiting чтец
