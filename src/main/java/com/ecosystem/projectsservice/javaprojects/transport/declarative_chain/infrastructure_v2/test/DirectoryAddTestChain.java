@@ -4,6 +4,8 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.DeclarativeChainSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 
@@ -15,7 +17,14 @@ public class DirectoryAddTestChain
 
 
     @Override
+    @Async("chainExecutor")
+    @EventListener
     public void catchEvent(DirectoryAddTestEvent event) {
+
+
+        System.out.println("directory add test caught with message "+event.getMessage());
+
+
 
     }
 

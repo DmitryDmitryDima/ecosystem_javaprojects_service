@@ -6,13 +6,11 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.Basic;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.BasicSpringEdition;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.DirectoryAddTestChain;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.TestChain;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationEventPublisher;
 
 @SpringBootTest
 public class ChainStateTests {
@@ -32,21 +30,32 @@ public class ChainStateTests {
     private ChainPublisher publisher;
 
 
+
     @Autowired
-    private DirectoryAddTestChain directoryAddTestChain;
+    private ApplicationEventPublisher eventPublisher;
+
+
+
+
+
 
     @Test
     public void test(){
 
 
-        TestChain testChain = new TestChain(storage, eventRegistry, publisher );
+        DirectoryAddTestEvent testEvent = new DirectoryAddTestEvent();
+
+        testEvent.setMessage("hello directory add");
+
+        DirectoryRemoveTestEvent testEvent1 = new DirectoryRemoveTestEvent();
+
+        testEvent1.setMessage("hello directory remove");
+
+        eventPublisher.publishEvent(testEvent);
 
 
-        try {
-            testChain.prepareChain();
-        } catch (ChainPreparationException e) {
-            throw new RuntimeException(e);
-        }
+
+        eventPublisher.publishEvent(testEvent1);
 
 
 

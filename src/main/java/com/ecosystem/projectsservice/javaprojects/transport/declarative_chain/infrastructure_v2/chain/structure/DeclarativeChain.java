@@ -12,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class DeclarativeChain<E extends ChainEvent> {
 
@@ -25,6 +27,29 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 30;
 
 
+
+    private ProcessRuntimeStorage processRuntimeStorage;
+
+
+
+    private EventRegistry eventRegistry;
+
+    private ChainPublisher chainPublisher;
+
+
+
+
+
+    // прочитанное тело цепи
+    private Map<String, ChainStep<?>> chainBody = new HashMap<>();
+
+    // каждая цепь имеет точку входа и точку выхода
+    private ChainStep<?> opening;
+
+    private ChainStep<?> ending;
+
+
+
     public DeclarativeChain(ProcessRuntimeStorage processRuntimeStorage, EventRegistry eventRegistry, ChainPublisher chainPublisher) {
         this.processRuntimeStorage = processRuntimeStorage;
         this.eventRegistry = eventRegistry;
@@ -34,6 +59,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     public DeclarativeChain(){
 
     }
+
+
 
     protected void setProcessRuntimeStorage(ProcessRuntimeStorage processRuntimeStorage) {
         this.processRuntimeStorage = processRuntimeStorage;
@@ -50,13 +77,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    private ProcessRuntimeStorage processRuntimeStorage;
 
-
-
-    private EventRegistry eventRegistry;
-
-    private ChainPublisher chainPublisher;
 
 
 
@@ -117,6 +138,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             // регистрируем главный ивент
             registerChainEvent();
 
+            // читаем структуру, на каждом из шагов вызываем хук onStepRead
+
+
 
 
 
@@ -142,6 +166,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     // обработка структуры
     protected void readChainStructure(){
+
+
+
+
 
 
 
