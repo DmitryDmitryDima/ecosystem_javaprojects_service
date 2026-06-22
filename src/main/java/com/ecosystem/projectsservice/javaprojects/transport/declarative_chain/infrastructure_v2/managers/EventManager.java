@@ -14,6 +14,8 @@ import java.util.Map;
 
 // сервис, отвечающий за регистрацию ивентов в системе, их расшифровку и доставку очередям
 
+
+@Deprecated
 @Service
 public class EventManager {
 

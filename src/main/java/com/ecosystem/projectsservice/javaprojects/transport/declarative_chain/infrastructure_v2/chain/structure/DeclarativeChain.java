@@ -1,5 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure;
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Ending;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
@@ -15,6 +17,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public abstract class DeclarativeChain<E extends ChainEvent> {
 
@@ -40,7 +43,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    // прочитанное тело цепи
+    // прочитанное тело цепи, ассоциированное по имени
     private Map<String, ChainStep<?>> chainBody = new HashMap<>();
 
     // каждая цепь имеет точку входа и точку выхода
@@ -50,7 +53,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    public DeclarativeChain(ProcessRuntimeStorage processRuntimeStorage, EventRegistry eventRegistry, ChainPublisher chainPublisher) {
+    public DeclarativeChain(ProcessRuntimeStorage processRuntimeStorage,
+                            EventRegistry eventRegistry,
+                            ChainPublisher chainPublisher) {
+
         this.processRuntimeStorage = processRuntimeStorage;
         this.eventRegistry = eventRegistry;
         this.chainPublisher = chainPublisher;
@@ -75,32 +81,17 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     }
 
 
+    protected Map<String, ChainStep<?>> getChainBody() {
+        return chainBody;
+    }
 
+    protected ChainStep<?> getOpening() {
+        return opening;
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    protected ChainStep<?> getEnding() {
+        return ending;
+    }
 
 
 
@@ -171,6 +162,39 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
+        Method[] allMethods = this.getClass().getDeclaredMethods();
+
+        for (Method method:allMethods){
+
+
+
+            Opening openingAnno = method.getAnnotation(Opening.class);
+
+
+
+
+
+
+
+
+
+
+
+
+
+            // onStepRead(step)
+
+
+
+
+
+        }
+
+        validate();
+
+
+
+
 
 
 
@@ -178,6 +202,12 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     // хук, срабатывающий при чтении шагов, позволяет добавить расширения для шагов
     protected void onStepRead(ChainStep<?> aReadStep, Method from){
+
+    }
+
+    // хук валидации - работает с геттерами
+
+    protected void validate(){
 
     }
 

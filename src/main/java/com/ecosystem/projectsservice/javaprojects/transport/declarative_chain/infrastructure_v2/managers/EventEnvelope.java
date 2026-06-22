@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 
 // класс + метаданные
+
+@Deprecated
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

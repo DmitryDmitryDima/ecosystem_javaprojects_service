@@ -4,6 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.EventQualifier;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.registry.ChainEventQualifier;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.OutputMetadata;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
@@ -34,7 +35,7 @@ public class OutboxPublisher implements ChainPublisher {
             ChainEvent chainEvent = output.getEvent();
 
             String type
-                    = chainEvent.getClass().getAnnotation(EventQualifier.class).value();
+                    = chainEvent.getClass().getAnnotation(ChainEventQualifier.class).value();
 
 
 

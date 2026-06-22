@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.EventQualifier;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.registry.ChainEventQualifier;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import org.springframework.stereotype.Service;
 
@@ -23,14 +24,14 @@ public class EventRegistryDefault implements EventRegistry {
 
 
 
-        EventQualifier annotation = event
-                .getAnnotation(EventQualifier.class);
+        ChainEventQualifier annotation = event
+                .getAnnotation(ChainEventQualifier.class);
 
 
         if (annotation == null)
             throw new IllegalStateException("Не" +
                     " прописано имя внешнего ивента для цепи." +
-                    " Используйте @EventQualifier");
+                    " Используйте @ChainEventQualifier");
 
         System.out.println(annotation.value()+" "+event.getName());
 

@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.order;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order;
 
 
 import java.lang.annotation.ElementType;
