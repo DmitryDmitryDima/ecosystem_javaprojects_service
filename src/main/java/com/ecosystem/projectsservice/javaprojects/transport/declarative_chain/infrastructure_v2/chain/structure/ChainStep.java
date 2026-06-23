@@ -25,15 +25,15 @@ public class ChainStep <Extension> {
 
     // control info
 
-    private long retry;
+    private Long retry;
 
     private ChainTimeUnit timeLimitUnit;
 
-    private long timeLimit;
+    private Long timeLimit;
 
     private ChainTimeUnit waitingForSignalUnit;
 
-    private long waitingForSignal;
+    private Long waitingForSignal;
 
 
 

@@ -1,23 +1,24 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure;
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.Retry;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.TimeLimit;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.WaitingForSignal;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainInitException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorageImpl;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public abstract class DeclarativeChain<E extends ChainEvent> {
 
@@ -129,7 +130,12 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             // регистрируем главный ивент
             registerChainEvent();
 
+
+
             // читаем структуру, на каждом из шагов вызываем хук onStepRead
+            readChainStructure();
+
+
 
 
 
@@ -169,45 +175,109 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
             Opening openingAnno = method.getAnnotation(Opening.class);
+            Ending endingAnno = method.getAnnotation(Ending.class);
+            Step step = method.getAnnotation(Step.class);
+
+            Retry retry = method.getAnnotation(Retry.class);
+            TimeLimit timeLimit = method.getAnnotation(TimeLimit.class);
+            WaitingForSignal waitingForSignal = method.getAnnotation(WaitingForSignal.class);
 
 
+            ChainStep<?> chainStep = new ChainStep<>();
+
+            chainStep.setMethod(method);
+            chainStep.setRetry(retry==null?0: retry.maxCount());
+
+            chainStep.setTimeLimit(timeLimit==null?null: timeLimit.time());
+            chainStep.setTimeLimitUnit(timeLimit == null? null : timeLimit.timeUnit());
+
+            chainStep
+                    .setWaitingForSignal(waitingForSignal == null?null: waitingForSignal.time());
+            chainStep
+                    .setWaitingForSignalUnit(waitingForSignal == null? null
+                            : waitingForSignal.timeUnit());
 
 
+            if (openingAnno!=null){
+                chainStep.setName(openingAnno.name());
+                chainStep.setNext(opening.getNext());
+
+                opening = chainStep;
+
+            }
+
+            else if (endingAnno!=null){
+                chainStep.setName(ending.getName());
+
+                ending = chainStep;
 
 
+            }
+
+            else if (step!=null){
+                chainStep.setName(step.name());
+                chainStep.setNext(step.next());
+                chainBody.put(chainStep.getName(), chainStep);
+            }
 
 
-
-
-
-
-
-            // onStepRead(step)
-
-
-
-
+            onStepRead(chainStep);
 
         }
 
-        validate();
-
-
-
-
-
+        validateStructure();
 
 
     }
 
     // хук, срабатывающий при чтении шагов, позволяет добавить расширения для шагов
-    protected void onStepRead(ChainStep<?> aReadStep, Method from){
+    protected void onStepRead(ChainStep<?> aReadStep){
 
     }
 
-    // хук валидации - работает с геттерами
 
-    protected void validate(){
+    // хук, если требуется валидировать структуру. Допишу его при введении циклов
+    protected void validateStructure(){
+
+
+        new BasicStructureValidator(getOpening(), getChainBody(), getEnding())
+                .validateStructure();
+
+    }
+
+
+
+
+    // current шаг вычисляется перед публикацией outbox !
+    // Соответственно в init проставляется current step == opening
+    public void init(E event) throws ChainInitException {
+
+        try {
+
+        }
+
+        catch (Exception e){
+            throw new ChainInitException("Chain start fail "+e.getMessage());
+
+        }
+
+    }
+
+
+    // хук, вызываемый после запуска процесса
+    protected void afterChainInit(E event){
+
+    }
+
+
+
+
+
+
+
+
+
+    protected void processEvent(E event){
 
     }
 

@@ -19,22 +19,14 @@ public abstract class ChainEvent {
 
     private String message;
 
+    private UUID parentProcess; // поле используется в сценариях,
+    // когда цепочка была вызвана из какой либо родительской цепочки.
+    // Предполагается использование триггера
+
 
 
     private ChainEventProcessingInfo processingInfo
             = new ChainEventProcessingInfo();
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
