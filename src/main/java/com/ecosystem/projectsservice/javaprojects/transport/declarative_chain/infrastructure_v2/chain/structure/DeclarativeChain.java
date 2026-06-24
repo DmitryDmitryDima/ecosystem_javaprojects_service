@@ -1,11 +1,13 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure;
 
+import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.Retry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.TimeLimit;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.WaitingForSignal;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainInitException;
@@ -13,9 +15,11 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEventProcessingInfo;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +32,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     private static final long DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS = 10;
 
 
-    private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 30;
+    private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 60*60;
 
 
 
@@ -81,6 +85,11 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         this.chainPublisher = chainPublisher;
     }
 
+    // оставляем доступ к геттеру для модификации поведения при публикации
+    protected ChainPublisher getChainPublisher() {
+        return this.chainPublisher;
+    }
+
 
     protected Map<String, ChainStep<?>> getChainBody() {
         return chainBody;
@@ -93,6 +102,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     protected ChainStep<?> getEnding() {
         return ending;
     }
+
+
 
 
 
@@ -248,11 +259,57 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
+
+
+
     // current шаг вычисляется перед публикацией outbox !
     // Соответственно в init проставляется current step == opening
     public void init(E event) throws ChainInitException {
 
         try {
+
+            if (event == null){
+                throw new IllegalStateException("missing event");
+            }
+
+            if (event.getProcessId() == null){
+                throw new IllegalStateException("you should set process uuid");
+            }
+
+            // цепочка уже собрана и валидирована
+            ChainEventProcessingInfo startingSettings = ChainEventProcessingInfo.builder()
+                    .currentStep(opening.getName())
+                    .build();
+            event.setProcessingInfo(startingSettings);
+
+
+            // duration первого шага
+
+            Long duration = ChainUtils.convertToMillis(opening.getTimeLimit(),
+                    opening.getTimeLimitUnit());
+
+
+            // если performance expiration == null, то это означает Everlasting шаг
+            ChainOutput output = ChainOutput.builder()
+                    .event(event)
+                    .status(OutboxEvent.OutboxEventStatus.WAITING)
+                    .last_update(Instant.now())
+                    .readExpiration(Instant.now()
+                            .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                    .performanceExpirationPeriod(duration)
+                    .build();
+
+
+            // TODO ВЕЧНЫЙ ШАГ - ЗАДАЕТСЯ ЯВНО, ПРИ НЕМ PERFORMANCE EXPIRATION == NULL
+            // ЕСЛИ АННОТАЦИИ EVERLASTING НЕТ, ТО ВЫСТАВЛЯЕТСЯ ЛИБО MAX_DURATION, либо default
+
+
+
+
+
+
+
+
 
         }
 
@@ -261,13 +318,14 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         }
 
+
+
+
+
     }
 
 
-    // хук, вызываемый после запуска процесса
-    protected void afterChainInit(E event){
 
-    }
 
 
 

@@ -35,6 +35,8 @@ public class ChainStep <Extension> {
 
     private Long waitingForSignal;
 
+    private boolean everlasting;
+
 
 
 

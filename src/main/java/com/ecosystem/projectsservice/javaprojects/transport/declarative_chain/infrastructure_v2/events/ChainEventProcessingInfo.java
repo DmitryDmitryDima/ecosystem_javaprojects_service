@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Builder
 public class ChainEventProcessingInfo {
 
     // ПАРАМЕТРЫ ХОДА ПРОЦЕССА
