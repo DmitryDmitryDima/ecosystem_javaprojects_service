@@ -1,6 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure;
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.ChainTimeUnit;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.Everlasting;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.Retry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.TimeLimit;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.WaitingForSignal;
@@ -12,10 +14,12 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainInitException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.DeclarativeChainProcess;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEventProcessingInfo;
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ChainProcess;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -193,20 +197,32 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             TimeLimit timeLimit = method.getAnnotation(TimeLimit.class);
             WaitingForSignal waitingForSignal = method.getAnnotation(WaitingForSignal.class);
 
+            Everlasting everlasting = method.getAnnotation(Everlasting.class);
+
 
             ChainStep<?> chainStep = new ChainStep<>();
 
             chainStep.setMethod(method);
             chainStep.setRetry(retry==null?0: retry.maxCount());
 
-            chainStep.setTimeLimit(timeLimit==null?null: timeLimit.time());
-            chainStep.setTimeLimitUnit(timeLimit == null? null : timeLimit.timeUnit());
+            // сразу проставляем дефолт в случае отсутствия аннотации
+            // значение лимита на выполнение игнорируется при наличии EVERLASTING
+            chainStep.setTimeLimit(timeLimit==null?
+                    DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS: timeLimit.time());
+            chainStep.setTimeLimitUnit(timeLimit == null? ChainTimeUnit.SEC : timeLimit.timeUnit());
+            if (everlasting!=null){
+                chainStep.setEverlasting(true);
+            }
+
+
 
             chainStep
                     .setWaitingForSignal(waitingForSignal == null?null: waitingForSignal.time());
             chainStep
                     .setWaitingForSignalUnit(waitingForSignal == null? null
                             : waitingForSignal.timeUnit());
+
+
 
 
             if (openingAnno!=null){
@@ -244,6 +260,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     // хук, срабатывающий при чтении шагов, позволяет добавить расширения для шагов
     protected void onStepRead(ChainStep<?> aReadStep){
 
+        // aReadStep.setExtensions
     }
 
 
@@ -284,9 +301,15 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
             // duration первого шага
+            // если everlasting, то значение остается null
+            // в противном случае указывается время на основании пользовательского значения, или дефолт
+            Long duration = null;
+            if (!opening.isEverlasting()){
+                duration = ChainUtils.convertToMillis(opening.getTimeLimit(),
+                        opening.getTimeLimitUnit());
+            }
 
-            Long duration = ChainUtils.convertToMillis(opening.getTimeLimit(),
-                    opening.getTimeLimitUnit());
+
 
 
             // если performance expiration == null, то это означает Everlasting шаг
@@ -300,8 +323,22 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                     .build();
 
 
-            // TODO ВЕЧНЫЙ ШАГ - ЗАДАЕТСЯ ЯВНО, ПРИ НЕМ PERFORMANCE EXPIRATION == NULL
-            // ЕСЛИ АННОТАЦИИ EVERLASTING НЕТ, ТО ВЫСТАВЛЯЕТСЯ ЛИБО MAX_DURATION, либо default
+
+            onPublishChainOutput(output);
+
+
+
+            // создаем runtime аватар процесса
+
+            DeclarativeChainProcess runtimeAvatar
+                    = new DeclarativeChainProcess(event.getProcessId());
+
+            // добавляем индексы, вызывая переопределяемый метод
+            runtimeAvatar.addIndexes(setProcessIndexes(event));
+
+            runtimeAvatar.setStatus(ChainProcess.ProcessStatus.WAITING);
+
+            processRuntimeStorage.registerChainProcess(runtimeAvatar);
 
 
 
@@ -322,6 +359,11 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
+    }
+
+    // выделяем хук для возможности добавления metadata
+    protected void onPublishChainOutput(ChainOutput output){
+        chainPublisher.publish(output, null);
     }
 
 

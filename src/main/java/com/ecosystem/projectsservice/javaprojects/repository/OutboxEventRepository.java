@@ -19,5 +19,7 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT event FROM OutboxEvent event WHERE event.status = :status AND event.correlationId = :correlationId")
-    Optional<OutboxEvent> findByStatusAndCorrelationIdForUpdate(OutboxEvent.OutboxEventStatus status, UUID correlationId);
+    Optional<OutboxEvent>
+    findByStatusAndCorrelationIdForUpdate(OutboxEvent.OutboxEventStatus status,
+                                          UUID correlationId);
 }

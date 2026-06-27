@@ -14,6 +14,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 // отделяем логику записи в outbox составляющую
+
+// TODO ДЛЯ PUBLISHER НЕОБХОДИМО СДЕЛАТЬ НЕ ТОЛЬКО ИНТЕРФЕЙС,
+//  НО И ВНЕДРИТЬ ЗАВИСИМОСТЬ ОТ OUTBOX MODEL REPOSITORY, СДЕЛАВ CALLBACK ЧАСТЬЮ КОНТРАКТА
 @Service
 public class OutboxPublisher implements ChainPublisher {
 
