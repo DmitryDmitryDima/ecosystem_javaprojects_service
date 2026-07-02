@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure;
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry.EventRegistry;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
@@ -14,8 +14,8 @@ public abstract class DeclarativeChainSpringAdapter <E extends ChainEvent>
 
     @Override
     @Autowired
-    protected void setChainPublisher( ChainPublisher chainPublisher) {
-        super.setChainPublisher(chainPublisher);
+    protected void setChainPublisher( OutputProcessor outputProcessor) {
+        super.setChainPublisher(outputProcessor);
     }
 
     @Override

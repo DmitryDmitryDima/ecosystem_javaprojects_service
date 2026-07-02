@@ -1,7 +1,7 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output;
 
-import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,12 +18,15 @@ public class ChainOutput {
 
 
 
+
+
+
     private ChainEvent event;
 
 
 
 
-    private OutboxEvent.OutboxEventStatus status;
+    private OutboxStatus status;
     // последняя смена статуса
     private Instant last_update;
 

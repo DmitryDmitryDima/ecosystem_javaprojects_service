@@ -1,37 +1,28 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model;
 
-
 import jakarta.persistence.*;
-import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.id.uuid.UuidVersion7Strategy;
 
 import java.time.Instant;
 import java.util.UUID;
 
-// Jpa реализация
-@Entity
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class OutboxModelEntity implements OutboxModel {
+public class OutboxModelDefault implements OutboxModel{
 
-    @Id
-    @GeneratedValue
-    @UuidGenerator(algorithm = UuidVersion7Strategy.class)
+
+
     private UUID outboxUUID;
 
 
 
     private UUID processUUID;
 
-    @Enumerated(EnumType.STRING)
+
     private OutboxStatus status;
 
     private String type;
 
-    @Column(columnDefinition = "TEXT")
+
     private String payload;
 
     private Instant lastUpdate;
@@ -40,7 +31,37 @@ public class OutboxModelEntity implements OutboxModel {
 
     private Long performanceLimitTime;
 
+    public void setOutboxUUID(UUID outboxUUID) {
+        this.outboxUUID = outboxUUID;
+    }
 
+    public void setProcessUUID(UUID processUUID) {
+        this.processUUID = processUUID;
+    }
+
+    public void setStatus(OutboxStatus status) {
+        this.status = status;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public void setPayload(String payload) {
+        this.payload = payload;
+    }
+
+    public void setLastUpdate(Instant lastUpdate) {
+        this.lastUpdate = lastUpdate;
+    }
+
+    public void setReadExpiration(Instant readExpiration) {
+        this.readExpiration = readExpiration;
+    }
+
+    public void setPerformanceLimitTime(Long performanceLimitTime) {
+        this.performanceLimitTime = performanceLimitTime;
+    }
 
     @Override
     public UUID getOutboxUUID() {

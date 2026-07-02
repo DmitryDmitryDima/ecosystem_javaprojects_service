@@ -1,17 +1,17 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test;
 
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
 
 public abstract class Basic {
 
-    private ChainPublisher publisher;
+    private OutputProcessor publisher;
 
-    public Basic(ChainPublisher publisher){
+    public Basic(OutputProcessor publisher){
         this.publisher = publisher;
     }
 
 
-    public ChainPublisher getPublisher() {
+    public OutputProcessor getPublisher() {
         return publisher;
     }
 }

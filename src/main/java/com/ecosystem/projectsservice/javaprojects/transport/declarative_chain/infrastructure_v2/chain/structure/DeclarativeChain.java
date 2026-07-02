@@ -1,6 +1,5 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure;
 
-import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.ChainTimeUnit;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.Everlasting;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.Retry;
@@ -11,7 +10,8 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry.EventRegistry;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.publisher.ChainPublisher;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.ChainOutput;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainInitException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.DeclarativeChainProcess;
@@ -19,6 +19,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEventProcessingInfo;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ChainProcess;
 
 import java.lang.reflect.Method;
@@ -46,7 +47,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     private EventRegistry eventRegistry;
 
-    private ChainPublisher chainPublisher;
+    private OutputProcessor outputProcessor;
 
 
 
@@ -64,11 +65,11 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     public DeclarativeChain(ProcessRuntimeStorage processRuntimeStorage,
                             EventRegistry eventRegistry,
-                            ChainPublisher chainPublisher) {
+                            OutputProcessor outputProcessor) {
 
         this.processRuntimeStorage = processRuntimeStorage;
         this.eventRegistry = eventRegistry;
-        this.chainPublisher = chainPublisher;
+        this.outputProcessor = outputProcessor;
     }
 
     public DeclarativeChain(){
@@ -85,13 +86,13 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         this.eventRegistry = eventRegistry;
     }
 
-    protected void setChainPublisher(ChainPublisher chainPublisher) {
-        this.chainPublisher = chainPublisher;
+    protected void setChainPublisher(OutputProcessor outputProcessor) {
+        this.outputProcessor = outputProcessor;
     }
 
     // оставляем доступ к геттеру для модификации поведения при публикации
-    protected ChainPublisher getChainPublisher() {
-        return this.chainPublisher;
+    protected OutputProcessor getChainPublisher() {
+        return this.outputProcessor;
     }
 
 
@@ -315,7 +316,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             // если performance expiration == null, то это означает Everlasting шаг
             ChainOutput output = ChainOutput.builder()
                     .event(event)
-                    .status(OutboxEvent.OutboxEventStatus.WAITING)
+                    .status(OutboxStatus.WAITING)
                     .last_update(Instant.now())
                     .readExpiration(Instant.now()
                             .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
@@ -363,7 +364,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     // выделяем хук для возможности добавления metadata
     protected void onPublishChainOutput(ChainOutput output){
-        chainPublisher.publish(output, null);
+        outputProcessor.publish(output, null);
     }
 
 
