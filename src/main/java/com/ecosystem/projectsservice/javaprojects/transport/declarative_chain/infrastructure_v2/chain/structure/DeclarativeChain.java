@@ -230,14 +230,14 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             if (openingAnno!=null){
                 chainStep.setName(openingAnno.name());
-                chainStep.setNext(opening.getNext());
+                chainStep.setNext(openingAnno.next());
 
                 opening = chainStep;
 
             }
 
             else if (endingAnno!=null){
-                chainStep.setName(ending.getName());
+                chainStep.setName(endingAnno.name());
 
                 ending = chainStep;
 
@@ -269,6 +269,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     // хук, если требуется валидировать структуру. Допишу его при введении циклов
     protected void validateStructure(){
+
+
 
 
         new BasicStructureValidator(getOpening(), getChainBody(), getEnding())

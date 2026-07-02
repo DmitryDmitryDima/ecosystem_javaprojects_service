@@ -5,10 +5,14 @@ package com.ecosystem.projectsservice.javaprojects;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.DirectoryAddTestChain;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.DirectoryAddTestEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationEventPublisher;
+
+import java.util.UUID;
 
 @SpringBootTest
 public class ChainStateTests {
@@ -18,13 +22,7 @@ public class ChainStateTests {
 
 
     @Autowired
-    private EventRegistry eventRegistry;
-
-    @Autowired
-    private ProcessRuntimeStorage storage;
-
-    @Autowired
-    private OutputProcessor publisher;
+    private DirectoryAddTestChain testChain;
 
 
 
@@ -38,6 +36,18 @@ public class ChainStateTests {
 
     @Test
     public void test(){
+
+
+        DirectoryAddTestEvent event = new DirectoryAddTestEvent();
+
+        event.setProcessId(UUID.randomUUID());
+        event.setMessage("hello process");
+
+
+
+        testChain.init(event);
+
+
 
 
 
