@@ -15,6 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "outbox_model")
 public class OutboxModelJpaEntity implements OutboxModel {
 
     @Id

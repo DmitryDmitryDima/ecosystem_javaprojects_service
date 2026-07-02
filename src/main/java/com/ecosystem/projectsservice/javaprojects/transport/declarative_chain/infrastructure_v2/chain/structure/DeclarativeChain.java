@@ -11,7 +11,9 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.ChainOutput;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputMetadata;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.ChainInit;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainInitException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.DeclarativeChainProcess;
@@ -86,7 +88,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         this.eventRegistry = eventRegistry;
     }
 
-    protected void setChainPublisher(OutputProcessor outputProcessor) {
+    protected void setOutputProcessor(OutputProcessor outputProcessor) {
         this.outputProcessor = outputProcessor;
     }
 
@@ -325,7 +327,12 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-            onPublishChainOutput(output);
+            OutputMetadata<?> metadata = new OutputMetadata<>();
+
+            // не забываем проставить тип действия
+            metadata.setAction(new ChainInit());
+
+            onPublishChainOutput(output, metadata);
 
 
 
@@ -362,9 +369,12 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     }
 
-    // выделяем хук для возможности добавления metadata
-    protected void onPublishChainOutput(ChainOutput output){
-        outputProcessor.publish(output, null);
+    // выделяем хук для возможности добавления/модификации metadata
+    protected void onPublishChainOutput(ChainOutput output,
+                                        OutputMetadata<?> metadata){
+        outputProcessor.publish(output, metadata);
+
+
     }
 
 

@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output;
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.registry.ChainEventQualifier;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.OutputAction;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperComponent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelDefault;
@@ -29,23 +29,14 @@ public class OutputProcessorDefault implements OutputProcessor {
 
     // todo используем дефолтную модель для аккумуляции данных
     // todo обработка происходит с опорой на Output Action
-    @Override
-    public void publish(ChainOutput output, OutputMetadata<?> metadata) {
-
-
-        OutputAction action = metadata.getAction();
-
-        /*
-
-        if (action instanceof ){
-
-        }
-
-         */
 
 
 
 
+
+
+    private void publishNewEvent(ChainOutput output,
+                                 OutputMetadata<?> metadata){
 
         try {
 
@@ -73,14 +64,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
 
 
-            // помечаем ивент как обработанный
 
-            UUID outboxId = chainEvent.getOutboxId();
-
-
-            if (outboxId!=null){
-                repository.markAsProcessed(outboxId);
-            }
 
 
 
@@ -91,6 +75,58 @@ public class OutputProcessorDefault implements OutputProcessor {
         }
 
     }
+
+    @Override
+    public void publish(ChainOutput output, OutputMetadata<?> metadata) {
+
+
+        try {
+
+            OutputAction action = metadata.getAction();
+
+            if (action == null){
+                throw new OutputProcessorException("missing action merker, check origin",
+                        "OUTPUT_ERROR");
+            }
+
+
+            if (action instanceof ChainInit){
+                publishNewEvent(output, metadata);
+            }
+
+            else if (action instanceof ChainStop || action instanceof ChainEnd){
+                repository.markAsProcessed(output.getEvent().getOutboxId());
+            }
+
+
+            else {
+                publishNewEvent(output, metadata);
+                repository.markAsProcessed(output.getEvent().getOutboxId());
+            }
+
+
+        }
+
+        catch (Exception e){
+            throw new OutputProcessorException("output processing error. Reason: "+e.getMessage(),
+                    "OUTPUT_ERROR");
+        }
+
+
+
+
+
+
+
+
+
+
+    }
+
+
+
+
+
 
 
     public void setRepository(OutboxModelRepository repository) {

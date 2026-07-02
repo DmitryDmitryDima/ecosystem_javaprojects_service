@@ -1,4 +1,4 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions;
 
-public class ChainSuccessEnding extends OutputAction{
+public class ChainEnd extends OutputAction{
 }

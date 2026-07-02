@@ -14,8 +14,8 @@ public abstract class DeclarativeChainSpringAdapter <E extends ChainEvent>
 
     @Override
     @Autowired
-    protected void setChainPublisher( OutputProcessor outputProcessor) {
-        super.setChainPublisher(outputProcessor);
+    protected void setOutputProcessor( OutputProcessor outputProcessor) {
+        super.setOutputProcessor(outputProcessor);
     }
 
     @Override
