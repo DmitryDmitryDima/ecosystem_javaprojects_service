@@ -1,13 +1,13 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.event_registry;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry;
 
 
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.EventQualifier;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.registry.ChainEventQualifier;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 
 // регистрация с помощью аннотации EventQualifier
@@ -15,7 +15,7 @@ import java.util.Map;
 public class EventRegistryDefault implements EventRegistry {
 
 
-    private  final Map<String, Class<?>> storage = new HashMap<>();
+    private final Map<String, Class<? extends ChainEvent>> storage = new HashMap<>();
 
 
     @Override
@@ -36,7 +36,20 @@ public class EventRegistryDefault implements EventRegistry {
         System.out.println(annotation.value()+" "+event.getName());
 
 
-        storage.put(annotation.value(), event.getClass());
+        storage.put(annotation.value(), event);
 
     }
+
+    @Override
+    public Optional<Class<? extends ChainEvent>> getRegisteredClass(String type) {
+
+
+        Class<? extends ChainEvent> eventClass = storage.get(type);
+
+        if (eventClass == null) return Optional.empty();
+
+        else return Optional.of(eventClass);
+    }
+
+
 }

@@ -35,7 +35,7 @@ public class OutboxListener {
     private ChainManager chainManager;
 
     // todo добавить обработку ивентов, устаревших при статусе waiting (очень редкий кейс)
-    //@Scheduled(fixedDelay = 500)
+    @Scheduled(fixedDelay = 500)
     public void readWaitingOutbox(){
 
         WaitingEventsTransactionResult result = transactionTemplate.execute(status -> {
@@ -73,7 +73,7 @@ public class OutboxListener {
     }
     // обработка ивентов, устаревших со статусом processing
     // todo добавить обновление времени updated_at, чтобы не было повторного прочтения
-    //@Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 1000)
     public void readExpiredProcessingOutboxEvents(){
 
 
@@ -112,7 +112,7 @@ public class OutboxListener {
     }
 
     // обработка просроченных ивентов с waiting_for
-    //@Scheduled(fixedDelay = 1000)
+    @Scheduled(fixedDelay = 1000)
     public void readExpiredWaitingForOutboxEvents(){
 
         List<OutboxEvent> toProcess = transactionTemplate.execute(status -> {
