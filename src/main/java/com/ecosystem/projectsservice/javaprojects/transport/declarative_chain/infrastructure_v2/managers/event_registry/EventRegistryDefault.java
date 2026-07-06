@@ -11,7 +11,7 @@ import java.util.Optional;
 
 
 // регистрация с помощью аннотации EventQualifier
-@Service
+
 public class EventRegistryDefault implements EventRegistry {
 
 

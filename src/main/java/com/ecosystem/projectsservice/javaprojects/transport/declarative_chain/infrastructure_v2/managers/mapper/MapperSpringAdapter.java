@@ -5,11 +5,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
-@Service
+
 public class MapperSpringAdapter implements MapperComponent{
 
-    @Autowired
+
+    // берется зависимость от spring
+
     private ObjectMapper springDefaultMapper;
+
+    public MapperSpringAdapter(ObjectMapper springMapper){
+        this.springDefaultMapper = springMapper;
+    }
 
 
     @Override

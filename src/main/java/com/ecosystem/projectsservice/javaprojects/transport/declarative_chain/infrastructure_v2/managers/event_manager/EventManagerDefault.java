@@ -59,23 +59,6 @@ public class EventManagerDefault implements EventManager{
         this.mapperComponent = mapperComponent;
     }
 
-    @Override
-    public void workWithExpiredWaitingForSignalEvent(OutboxModel model) {
 
-    }
 
-    @Override
-    public void workWithExpiredProcessingEvent(OutboxModel model) {
-
-    }
-
-    @Override
-    public void workWithExpiredWaitingEvent(OutboxModel model) {
-
-    }
-
-    @Override
-    public void workWithWaitingEvent(OutboxModel model) {
-
-    }
 }

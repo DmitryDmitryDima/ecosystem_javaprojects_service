@@ -6,13 +6,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
-@Service
+
 public class ChainManagerSenderSpringApplicationPublisherAdapter implements ChainManagerSender {
 
 
-    @Autowired
+
     private ApplicationEventPublisher standardEventPublisher;
 
+    public ChainManagerSenderSpringApplicationPublisherAdapter(
+            ApplicationEventPublisher standardEventPublisher) {
+        this.standardEventPublisher = standardEventPublisher;
+    }
 
     @Override
     public void send(ChainEvent event) {
