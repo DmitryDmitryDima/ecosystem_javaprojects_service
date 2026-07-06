@@ -3,6 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -16,11 +17,14 @@ import java.util.UUID;
 @Repository
 public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEntity, UUID> {
 
-    List<OutboxEvent> findByStatus(OutboxEvent.OutboxEventStatus status);
+    List<OutboxModelJpaEntity> findByStatus(OutboxStatus status);
+
+    List<OutboxModelJpaEntity> findByStatus(OutboxStatus status,
+                                            Limit limit);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT event FROM OutboxEvent event WHERE event.status = :status AND event.correlationId = :correlationId")
-    Optional<OutboxEvent>
-    findByStatusAndCorrelationIdForUpdate(OutboxEvent.OutboxEventStatus status,
-                                          UUID correlationId);
+    @Query("SELECT entity FROM OutboxModelJpaEntity entity WHERE entity.status = :status AND entity.processId = :processId")
+    Optional<OutboxModelJpaEntity>
+    findByStatusAndCorrelationIdForUpdate(OutboxStatus status,
+                                          UUID processId);
 }

@@ -3,9 +3,11 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 
 import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,7 +50,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                 return null;
             });
 
-            jpaRepository.save(entity);
+
         }
         catch (Exception e){
             throw
@@ -85,5 +87,41 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
 
 
+    }
+
+    @Override
+    public List<? extends OutboxModel> getByStatus(OutboxStatus status) {
+
+
+        try {
+
+            return transaction.execute(st -> jpaRepository.findByStatus(status));
+
+        }
+
+        catch (Exception e){
+            throw
+                    new OutboxRepositoryException("processed callback error. Reason: "
+                            +e.getMessage());
+        }
+
+
+
+    }
+
+    @Override
+    public List<? extends OutboxModel> getByStatus(OutboxStatus status, Integer limit) {
+        try {
+
+            return transaction.execute(st -> jpaRepository.findByStatus(status,
+                    Limit.of(limit)));
+
+        }
+
+        catch (Exception e){
+            throw
+                    new OutboxRepositoryException("processed callback error. Reason: "
+                            +e.getMessage());
+        }
     }
 }
