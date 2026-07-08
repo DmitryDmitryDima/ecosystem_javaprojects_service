@@ -1,6 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events;
 
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.DeliveryStatus;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.PerformanceStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +37,16 @@ public class ChainEventProcessingInfo {
     // если true, то это означает, что при обработке
     // внутри цепи необходимо учитывать максимально допустимое время между ретраями
     private boolean stepTimeout = false;
+
+
+    // в каком качестве был прочитан ивент
+    private DeliveryStatus deliveryStatus;
+
+    // что произошло с процессом в момент создания outbox ивента
+    private PerformanceStatus performanceStatus;
+
+
+
 
 
 

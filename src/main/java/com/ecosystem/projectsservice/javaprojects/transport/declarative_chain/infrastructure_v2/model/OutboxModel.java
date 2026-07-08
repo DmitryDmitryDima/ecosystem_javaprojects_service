@@ -31,6 +31,9 @@ public interface OutboxModel {
     // максимальное время, в котором ивент может быть в статусе PROCESSING
     Long getPerformanceLimitTime();
 
+    // счетчик прочтения ивента - обновляется всегда
+    Long getReadVersion();
+
 
 
 

@@ -89,39 +89,5 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     }
 
-    @Override
-    public List<? extends OutboxModel> getByStatus(OutboxStatus status) {
 
-
-        try {
-
-            return transaction.execute(st -> jpaRepository.findByStatus(status));
-
-        }
-
-        catch (Exception e){
-            throw
-                    new OutboxRepositoryException("processed callback error. Reason: "
-                            +e.getMessage());
-        }
-
-
-
-    }
-
-    @Override
-    public List<? extends OutboxModel> getByStatus(OutboxStatus status, Integer limit) {
-        try {
-
-            return transaction.execute(st -> jpaRepository.findByStatus(status,
-                    Limit.of(limit)));
-
-        }
-
-        catch (Exception e){
-            throw
-                    new OutboxRepositoryException("processed callback error. Reason: "
-                            +e.getMessage());
-        }
-    }
 }

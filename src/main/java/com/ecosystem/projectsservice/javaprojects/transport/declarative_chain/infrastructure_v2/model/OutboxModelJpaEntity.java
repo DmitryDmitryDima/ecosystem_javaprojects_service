@@ -41,6 +41,8 @@ public class OutboxModelJpaEntity implements OutboxModel {
 
     private Long performanceLimitTime;
 
+    private Long readVersion;
+
 
 
     @Override
@@ -81,5 +83,10 @@ public class OutboxModelJpaEntity implements OutboxModel {
     @Override
     public Long getPerformanceLimitTime() {
         return performanceLimitTime;
+    }
+
+    @Override
+    public Long getReadVersion() {
+        return 0L;
     }
 }

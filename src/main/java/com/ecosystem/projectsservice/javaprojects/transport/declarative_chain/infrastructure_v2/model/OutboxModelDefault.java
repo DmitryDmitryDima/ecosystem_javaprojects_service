@@ -31,6 +31,13 @@ public class OutboxModelDefault implements OutboxModel{
 
     private Long performanceLimitTime;
 
+    private Long readVersion = 0L;
+
+
+    public void setReadVersion(Long readVersion) {
+        this.readVersion = readVersion;
+    }
+
     public void setOutboxUUID(UUID outboxUUID) {
         this.outboxUUID = outboxUUID;
     }
@@ -101,5 +108,10 @@ public class OutboxModelDefault implements OutboxModel{
     @Override
     public Long getPerformanceLimitTime() {
         return performanceLimitTime;
+    }
+
+    @Override
+    public Long getReadVersion() {
+        return readVersion;
     }
 }
