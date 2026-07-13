@@ -31,12 +31,16 @@ public class OutboxModelDefault implements OutboxModel{
 
     private Long performanceLimitTime;
 
-    private Long readVersion = 0L;
+    private Long allReadVersion = 0L;
+
+    private Long allReadProcessingVersion = 0L;
+
+    private String message;
 
 
-    public void setReadVersion(Long readVersion) {
-        this.readVersion = readVersion;
-    }
+
+
+
 
     public void setOutboxUUID(UUID outboxUUID) {
         this.outboxUUID = outboxUUID;
@@ -111,7 +115,33 @@ public class OutboxModelDefault implements OutboxModel{
     }
 
     @Override
-    public Long getReadVersion() {
-        return readVersion;
+    public Long getAllReadVersion() {
+        return allReadVersion;
     }
+
+    @Override
+    public Long getAllReadProcessingVersion() {
+        return allReadProcessingVersion;
+    }
+
+    @Override
+    public String getMessage(){
+
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setAllReadVersion(Long allReadVersion) {
+        this.allReadVersion = allReadVersion;
+    }
+
+    public void setAllReadProcessingVersion(Long allReadProcessingVersion) {
+        this.allReadProcessingVersion = allReadProcessingVersion;
+    }
+
+
+
 }

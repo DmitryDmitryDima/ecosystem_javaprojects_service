@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager;
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperComponent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.sender.ChainManagerSender;
@@ -18,16 +19,20 @@ public class EventManagerDefault implements EventManager{
     private MapperComponent mapperComponent;
 
 
+    private ProcessRuntimeStorage processRuntimeStorage;
+
+
 
 
     public EventManagerDefault(){}
 
     public EventManagerDefault(ChainManagerSender sender,
                                EventRegistry registry,
-                               MapperComponent mapper){
+                               MapperComponent mapper, ProcessRuntimeStorage runtimeStorage){
         this.sender = sender;
         this.registry = registry;
         this.mapperComponent = mapper;
+        this.processRuntimeStorage = runtimeStorage;
     }
 
 
@@ -60,5 +65,46 @@ public class EventManagerDefault implements EventManager{
     }
 
 
+    public ProcessRuntimeStorage getProcessRuntimeStorage() {
+        return processRuntimeStorage;
+    }
 
+    public void setProcessRuntimeStorage(ProcessRuntimeStorage processRuntimeStorage) {
+        this.processRuntimeStorage = processRuntimeStorage;
+    }
+
+    @Override
+    public ManagementResult workWithWaitingEvent(OutboxModel model) {
+        return null;
+    }
+
+    @Override
+    public ManagementResult workWithExpiredWaitingEvent(OutboxModel model) {
+        return null;
+    }
+
+    @Override
+    public ManagementResult workWithEverlastingProcessingEvent(OutboxModel model) {
+        return null;
+    }
+
+    @Override
+    public ManagementResult workWithExpiredProcessingEvent(OutboxModel model) {
+        return null;
+    }
+
+    @Override
+    public ManagementResult workWithMissedExpiredProcessingEvent(OutboxModel model) {
+        return null;
+    }
+
+    @Override
+    public ManagementResult workWithManagerCrashEvent(OutboxModel model) {
+        return null;
+    }
+
+    @Override
+    public ManagementResult workWithExpiredWaitingForSignalEvent(OutboxModel model) {
+        return null;
+    }
 }

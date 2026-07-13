@@ -10,9 +10,19 @@ public interface OutboxReader {
 
     void readWaitingEvents();
 
-    void readProcessingEvents();
+    void readExpiredWaitingEvents();
+
+    void readExpiredProcessingEvents();
+
+    void readEverlastingProcessingEvents();
+
+    void readMissedExpiredProcessingEvents();
+
+    void readManagerCrashedEvents();
 
     void readWaitingForSignalEvents();
+
+
 
 
 

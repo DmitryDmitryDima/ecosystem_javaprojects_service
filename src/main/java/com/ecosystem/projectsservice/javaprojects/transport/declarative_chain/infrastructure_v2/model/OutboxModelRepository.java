@@ -17,29 +17,44 @@ public interface OutboxModelRepository {
 
 
 
+    // проставление статуса с учетом последней версии (race condition free)
+    void changeStatusForGivenAllReadVersion(UUID uuid,
+                                   OutboxStatus toStatus,
+                                   Long forAllReadVersion);
+
+    // проставление статуса с учетом последней версии, с сообщением
+    void changeStatusAndMessageForGivenAllReadVersion(UUID uuid,
+                                                      OutboxStatus toStatus, String message,
+                                                      Long forAllReadVersion);
 
 
-    // читаем ивенты, где readVersion == 0, performancePeriod = null
-    // атомарно readVersion ++;
+
+
+
+
+
+
+
+    // performance period == null
+    // allProcessingRead ++
 
     List<OutboxModel> readEverlastingProcessingEvents(Long batchSize);
 
     List<OutboxModel> readEverlastingProcessingEvents();
 
 
-    // читаем processing ивенты, где readVersion!=0 - это означает попадание в dead letter
-    // при чтении такие ивенты атомарно получают processed
+    // читаем processing ивенты, где allProcessingRead!=0 && period ! =null
+    // - это означает попадание в dead letter
+    // при чтении такие ивенты атомарно получают dead_letter
 
     List<OutboxModel> readMissedExpiredProcessingEvents();
 
     List<OutboxModel> readMissedExpiredProcessingEvents(Long batchSize);
 
 
-    // читаем expired processing ивенты, где readVersion = 0,
+    // читаем expired processing ивенты, где allProcessingRead = 0,
     // now > performancePeriod + lastUpdate
-    // НЮАНС - ПРИ ЧТЕНИИ WAITING EVENT'А СЧЕТЧИК ЧТЕНИЯ НЕ ТРОГАЕТСЯ,
-    // ТАК КАК ЗА ИДЕМПОТЕНТНОСТЬ ОТВЕЧАЕТ СМЕНА СТАТУСА
-    // атомарно - readVersion ++
+    // атомарно - allProcessingRead++
 
     List<OutboxModel> readExpiredProcessingEvents();
 
@@ -48,6 +63,7 @@ public interface OutboxModelRepository {
 
     // читаем актуальные waiting events - самая высокая частота проверки
     // атомарно ставим статус processing
+    // в данном случае allProcessingRead не трогаем !
     List<OutboxModel> readActualWaitingEvents();
     List<OutboxModel> readActualWaitingEvents(Long batchSize);
 
@@ -63,6 +79,17 @@ public interface OutboxModelRepository {
 
     List<OutboxModel> readExpiredWaitingForSignalEvents();
     List<OutboxModel> readExpiredWaitingForSignalEvents(Long batchSize);
+
+
+
+
+
+    List<OutboxModel> readManagerCrashEvents();
+    List<OutboxModel> readManagerCrashEvents(Long batchSize);
+
+
+
+
 
 
 

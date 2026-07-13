@@ -5,17 +5,24 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessorDefault;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorageImpl;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager.EventManager;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager.EventManagerDefault;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry.EventRegistryDefault;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperComponent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperSpringAdapter;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReader;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReaderDefault;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.sender.ChainManagerSender;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.sender.ChainManagerSenderSpringApplicationPublisherAdapter;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelJpaRepository;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelRepository;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelRepositorySpringAdapter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 @Configuration
@@ -61,6 +68,41 @@ public class BasicConfiguration {
         return new OutputProcessorDefault(repository, mapper);
 
     }
+
+
+    @Bean
+    @ConditionalOnMissingBean
+    public OutboxModelRepository repository(OutboxModelJpaRepository jpaRepository,
+                                            TransactionTemplate transactionTemplate){
+
+
+        return new OutboxModelRepositorySpringAdapter(jpaRepository, transactionTemplate);
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean
+    public OutboxReader outboxReader(OutboxModelRepository repository,
+                                     EventManager eventManager){
+
+
+        return new OutboxReaderDefault(repository, eventManager);
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean
+    public EventManager eventManager(EventRegistry registry,
+                                     ProcessRuntimeStorage runtimeStorage,
+                                     MapperComponent mapperComponent,
+                                     ChainManagerSender sender ){
+
+
+        return new EventManagerDefault(sender, registry, mapperComponent, runtimeStorage);
+    }
+
+
+
 
 
 

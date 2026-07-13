@@ -94,7 +94,7 @@ public class OutputProcessorDefault implements OutputProcessor {
                 publishNewEvent(output, metadata);
             }
 
-            else if (action instanceof ChainStop || action instanceof ChainEnd){
+            else if (action instanceof ChainEnd){
                 repository.markAsProcessed(output.getEvent().getOutboxId());
             }
 

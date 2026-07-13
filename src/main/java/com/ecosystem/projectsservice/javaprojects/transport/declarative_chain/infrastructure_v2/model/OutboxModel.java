@@ -32,7 +32,24 @@ public interface OutboxModel {
     Long getPerformanceLimitTime();
 
     // счетчик прочтения ивента - обновляется всегда
-    Long getReadVersion();
+    // необходим, например, при попытке проставить manager_crash status при обработке в reader
+    Long getAllReadVersion();
+
+    // счетчик processing прочтений - для специфичных сценариев зависания
+    Long getAllReadProcessingVersion();
+
+
+    // сообщение, для логов и ошибок
+
+    String getMessage();
+
+
+
+
+
+
+
+
 
 
 
