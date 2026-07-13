@@ -7,13 +7,19 @@ public class ManagementResult {
     private boolean success;
 
 
-    private RuntimeException exception;
+    private Exception exception;
 
     public boolean isSuccess() {
         return success;
     }
 
-    public RuntimeException getException() {
+    public Exception getException() {
         return exception;
+    }
+
+
+    public ManagementResult(boolean success, Exception exception) {
+        this.success = success;
+        this.exception = exception;
     }
 }

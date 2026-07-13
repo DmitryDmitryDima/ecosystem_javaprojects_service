@@ -5,6 +5,8 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessorDefault;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorageImpl;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetterChannel;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetterChannelApplicationPublisher;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager.EventManager;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager.EventManagerDefault;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry.EventRegistry;
@@ -95,10 +97,21 @@ public class BasicConfiguration {
     public EventManager eventManager(EventRegistry registry,
                                      ProcessRuntimeStorage runtimeStorage,
                                      MapperComponent mapperComponent,
-                                     ChainManagerSender sender ){
+                                     ChainManagerSender sender,
+                                     DeadLetterChannel deadLetterChannel){
 
 
-        return new EventManagerDefault(sender, registry, mapperComponent, runtimeStorage);
+        return new EventManagerDefault(sender,
+                registry,
+                mapperComponent,
+                runtimeStorage, deadLetterChannel);
+
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DeadLetterChannel deadLetterChannel(ApplicationEventPublisher publisher){
+        return new DeadLetterChannelApplicationPublisher(publisher);
     }
 
 

@@ -20,7 +20,7 @@ public interface OutboxReader {
 
     void readManagerCrashedEvents();
 
-    void readWaitingForSignalEvents();
+    void readExpiredWaitingForSignalEvents();
 
 
 

@@ -35,6 +35,24 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
 
+
+    private void attemptToSetManagerCrashedStatus(ManagementResult result,
+                                                  OutboxModel model){
+
+        // блокирующе ставим статус manager_crash,
+        // при этом генерируя message для будущей dead letter
+        // менеджер обязан сохранять exception при ошибке
+        // при смене статуса не забываем про last_update
+        String message = "ошибка обработки ивента "+ result.getException().getMessage();
+
+        repository
+                .changeStatusAndMessageForGivenAllReadVersion(model.getOutboxUUID()
+                        , OutboxStatus.MANAGER_CRASH, message, model.getAllReadVersion()
+                );
+
+    }
+
+
     @Override
     public void readWaitingEvents() {
 
@@ -49,16 +67,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
             if (!result.isSuccess()){
 
-                // блокирующе ставим статус manager_crash,
-                // при этом генерируя message для будущей dead letter
-                // менеджер обязан сохранять exception при ошибке
-                // при смене статуса не забываем про last_update
-                String message = "ошибка обработки ивента "+ result.getException().getMessage();
-
-                repository
-                        .changeStatusAndMessageForGivenAllReadVersion(model.getOutboxUUID()
-                        , OutboxStatus.MANAGER_CRASH, message, model.getAllReadVersion()
-                        );
+                attemptToSetManagerCrashedStatus(result, model);
 
 
 
@@ -69,41 +78,115 @@ public class OutboxReaderDefault implements OutboxReader{
             }
         }
 
-
-
-
-
-
-
     }
 
     @Override
     public void readExpiredWaitingEvents() {
 
+
+        List<OutboxModel> expiredWaitingEvents = repository.readExpiredWaitingEvents();
+
+        for (var model:expiredWaitingEvents){
+            ManagementResult managementResult = manager.workWithExpiredWaitingEvent(model);
+
+            if (!managementResult.isSuccess()){
+
+                attemptToSetManagerCrashedStatus(managementResult, model);
+
+            }
+        }
     }
 
     @Override
     public void readExpiredProcessingEvents() {
 
+
+        List<OutboxModel> expiredProcessingEvents
+                = repository.readExpiredProcessingEvents();
+
+
+        for (var model:expiredProcessingEvents){
+
+            ManagementResult result = manager.workWithExpiredProcessingEvent(model);
+
+            if (!result.isSuccess()){
+                attemptToSetManagerCrashedStatus(result, model);
+            }
+        }
     }
 
     @Override
     public void readEverlastingProcessingEvents() {
 
+        List<OutboxModel> everlastingProcessingEvents = repository
+                .readEverlastingProcessingEvents();
+
+
+        for (var model:everlastingProcessingEvents){
+            ManagementResult result = manager.workWithEverlastingProcessingEvent(model);
+
+            // внутри менеджера - либо игнор, либо компенсация внутри очереди, либо какая-либо ошибка
+            if (!result.isSuccess()){
+                attemptToSetManagerCrashedStatus(result, model);
+            }
+        }
     }
 
+
+    // dead letter статус проставляется атомарно! менеджер не трогает модель и посылает ее в модель
     @Override
     public void readMissedExpiredProcessingEvents() {
 
+        List<OutboxModel> missedExpiredProcessingEvents
+                = repository.readMissedExpiredProcessingEvents();
+
+
+
+        for (var model:missedExpiredProcessingEvents){
+
+            manager.workWithMissedExpiredProcessingEvent(model);
+        }
+
+
+
+
+
+
     }
+
+
+    // при чтении данные ивенты атомарно получают финальный dead_letter
 
     @Override
     public void readManagerCrashedEvents() {
 
+        List<OutboxModel> managerCrashedEvents = repository.readManagerCrashEvents();
+
+
+        for (var model:managerCrashedEvents){
+
+            manager.workWithManagerCrashEvent(model);
+        }
+
     }
 
+    // атомарно получили processing статус
     @Override
-    public void readWaitingForSignalEvents() {
+    public void readExpiredWaitingForSignalEvents() {
+
+
+        List<OutboxModel> expiredWaitingForSignalEvents = repository
+                .readExpiredWaitingForSignalEvents();
+
+        for (var model:expiredWaitingForSignalEvents){
+
+
+            ManagementResult result = manager.workWithExpiredWaitingForSignalEvent(model);
+
+            if (!result.isSuccess()){
+                attemptToSetManagerCrashedStatus(result, model);
+            }
+        }
 
     }
 }
