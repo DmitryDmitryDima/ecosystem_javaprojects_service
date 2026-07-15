@@ -9,6 +9,7 @@ public enum DeliveryStatus {
     SUCCESS_READING,
     EXPIRED_READING,
     EXPIRED_PROCESSING_WITH_CONTEXT, // выполнение просрочено, но аватар жив
-    EXPIRED_PROCESSING_NO_CONTEXT,
-    EXPIRED_WAITING // не дождались внешнего сигнала
+    EXPIRED_PROCESSING_MISSING_CONTEXT,
+    EVERLASTING_STEP_MISSING_CONTEXT,
+    EXPIRED_WAITING_FOR_SIGNAL // не дождались внешнего сигнала
 }

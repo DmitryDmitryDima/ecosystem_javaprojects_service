@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager;
 
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.DeliveryStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetterChannel;
@@ -26,7 +27,7 @@ public class EventManagerDefault implements EventManager{
     private MapperComponent mapperComponent;
 
 
-    private ProcessRuntimeStorage processRuntimeStorage;
+    private ProcessAvatarStorage processAvatarStorage;
 
     private DeadLetterChannel deadLetterChannel;
 
@@ -38,13 +39,13 @@ public class EventManagerDefault implements EventManager{
     public EventManagerDefault(ChainManagerSender sender,
                                EventRegistry registry,
                                MapperComponent mapper,
-                               ProcessRuntimeStorage runtimeStorage,
+                               ProcessAvatarStorage runtimeStorage,
                                DeadLetterChannel deadLetterChannel
                                ){
         this.sender = sender;
         this.registry = registry;
         this.mapperComponent = mapper;
-        this.processRuntimeStorage = runtimeStorage;
+        this.processAvatarStorage = runtimeStorage;
         this.deadLetterChannel = deadLetterChannel;
     }
 
@@ -78,12 +79,12 @@ public class EventManagerDefault implements EventManager{
     }
 
 
-    public ProcessRuntimeStorage getProcessRuntimeStorage() {
-        return processRuntimeStorage;
+    public ProcessAvatarStorage getProcessRuntimeStorage() {
+        return processAvatarStorage;
     }
 
-    public void setProcessRuntimeStorage(ProcessRuntimeStorage processRuntimeStorage) {
-        this.processRuntimeStorage = processRuntimeStorage;
+    public void setProcessRuntimeStorage(ProcessAvatarStorage processAvatarStorage) {
+        this.processAvatarStorage = processAvatarStorage;
     }
 
     public void setDeadLetterChannel(DeadLetterChannel deadLetterChannel) {
@@ -172,33 +173,202 @@ public class EventManagerDefault implements EventManager{
 
     }
 
+
+    // проверка на аватар не проводится
     @Override
     public ManagementResult workWithExpiredWaitingEvent(OutboxModel model) {
-        return null;
+
+        try {
+            ChainEvent chainEvent = readPayload(model);
+
+            chainEvent.getProcessingInfo()
+                    .setDeliveryStatus(DeliveryStatus.EXPIRED_READING);
+
+
+            sender.send(chainEvent);
+
+            return new ManagementResult(true, null);
+
+
+        }
+
+        catch (Exception e){
+
+            return new ManagementResult(false, e);
+        }
+
+
     }
+
+
+    // проводится проверка на аватар
+
+    // если аватара нет, то выставляется специфический delivery status
+
+    // если аватар есть, то ничего не делаем
+    // - шаг бесконечен, пока его не убьют вручную и есть аватар
 
     @Override
     public ManagementResult workWithEverlastingProcessingEvent(OutboxModel model) {
-        return null;
+
+
+        try {
+
+            ChainEvent chainEvent = readPayload(model);
+
+            Optional<ProcessAvatar> avatar = processAvatarStorage
+                    .getChainProcessById(chainEvent.getProcessId());
+
+
+            if (avatar.isEmpty()){
+                chainEvent.getProcessingInfo().setDeliveryStatus(DeliveryStatus
+                        .EVERLASTING_STEP_MISSING_CONTEXT);
+
+                sender.send(chainEvent);
+            }
+
+            // если аватар есть - не трогаем процесс
+
+            return new ManagementResult(true, null);
+
+
+
+
+
+        }
+        catch (Exception e){
+            return new ManagementResult(false, e);
+        }
+
+
+
     }
+
+
+    // время выполнения текущего ивента просрочено.
+
+    // todo нужно поразмыслить, имеет ли значение наличие/отсутствие аватара
 
     @Override
     public ManagementResult workWithExpiredProcessingEvent(OutboxModel model) {
-        return null;
+
+
+
+        try {
+
+            ChainEvent chainEvent = readPayload(model);
+
+            Optional<ProcessAvatar> avatar = processAvatarStorage
+                    .getChainProcessById(chainEvent.getProcessId());
+
+            if (avatar.isEmpty()){
+
+                chainEvent.getProcessingInfo().setDeliveryStatus(DeliveryStatus
+                        .EXPIRED_PROCESSING_MISSING_CONTEXT);
+            }
+
+            else {
+                chainEvent.getProcessingInfo()
+                        .setDeliveryStatus(DeliveryStatus.EXPIRED_PROCESSING_WITH_CONTEXT);
+            }
+
+
+            sender.send(chainEvent);
+
+
+            return new ManagementResult(true, null);
+
+
+
+
+
+        }
+        catch (Exception e){
+            return new ManagementResult(false, e);
+        }
+
+
     }
+
+    // dead letter
+
+    // убийство аватара
 
     @Override
     public ManagementResult workWithMissedExpiredProcessingEvent(OutboxModel model) {
-        return null;
+
+
+        try {
+            processAvatarStorage.getChainProcessById(model.getProcessUUID())
+                    .ifPresent(ProcessAvatar::terminateInstantly);
+        }
+        catch (Exception e){
+
+
+
+        }
+
+
+        deadLetterChannel.send(model);
+
+
+        return new ManagementResult(true, null);
     }
 
     @Override
     public ManagementResult workWithManagerCrashEvent(OutboxModel model) {
-        return null;
+
+        try {
+            processAvatarStorage.getChainProcessById(model.getProcessUUID())
+                    .ifPresent(ProcessAvatar::terminateInstantly);
+        }
+        catch (Exception e){
+
+
+
+        }
+
+
+        deadLetterChannel.send(model);
+
+
+
+        return new ManagementResult(true, null);
     }
+
+
+    // наличие аватара не важно
 
     @Override
     public ManagementResult workWithExpiredWaitingForSignalEvent(OutboxModel model) {
-        return null;
+
+        try {
+
+            ChainEvent chainEvent = readPayload(model);
+
+            chainEvent.getProcessingInfo()
+                    .setDeliveryStatus(DeliveryStatus
+                            .EXPIRED_WAITING_FOR_SIGNAL);
+
+            sender.send(chainEvent);
+
+            return new ManagementResult(true, null);
+
+
+
+
+
+
+
+        }
+
+        // ошибка менеджера
+
+        catch (Exception exception){
+            return new ManagementResult(false, exception);
+
+
+        }
+
     }
 }

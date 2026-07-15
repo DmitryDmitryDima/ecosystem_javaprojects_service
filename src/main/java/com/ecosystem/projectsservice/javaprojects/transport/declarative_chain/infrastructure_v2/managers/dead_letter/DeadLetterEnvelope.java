@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class DeadLetterEnvelope {
 
     private OutboxModel model;
+
+
 }

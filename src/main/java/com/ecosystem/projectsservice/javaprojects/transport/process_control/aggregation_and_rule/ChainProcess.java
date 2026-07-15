@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule;
 
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import lombok.Getter;
 
@@ -83,7 +83,7 @@ public class ChainProcess {
 
     private ExternalEventType processType;
 
-    private List<ProcessIndex> indexes = new ArrayList<>();
+    private List<ProcessAvatarIndex> indexes = new ArrayList<>();
 
 
 
@@ -98,7 +98,7 @@ public class ChainProcess {
 
 
 
-    public void addIndexes(List<ProcessIndex> indexes){
+    public void addIndexes(List<ProcessAvatarIndex> indexes){
         this.indexes = indexes;
     }
 

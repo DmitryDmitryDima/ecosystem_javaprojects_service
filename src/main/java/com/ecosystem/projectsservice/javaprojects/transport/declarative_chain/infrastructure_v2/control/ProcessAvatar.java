@@ -1,6 +1,6 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control;
+package com.ecosystem.projectsservice.javaprojects
+        .transport.declarative_chain.infrastructure_v2.control;
 
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ChainProcess;
 import lombok.Getter;
 
 import java.time.Instant;
@@ -9,29 +9,24 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+
+// TODO ПЕРЕСМОТРЕТЬ ЖИЗНЕННЫЙ ЦИКЛ В соответствии с новой цепью
 @Getter
-public class DeclarativeChainProcess {
+public class ProcessAvatar {
 
 
-    public static enum ChainProcessStatus{
-        WAITING, // ожидание следующего шага
 
-        RUNNING, // шаг
-        STOPPED, // процесс остановлен
-        TERMINATED, // процесс остановлен, очищен и может быть выброшен из всех хранилищ
-        PAUSED // в будущем
-    }
 
 
     // универсальный идентификатор процесса
     private UUID correlationId;
 
     // индексы - для реализации поиска процесса по вторичным ключам
-    private List<ProcessIndex> indexes = new ArrayList<>();
+    private List<ProcessAvatarIndex> indexes = new ArrayList<>();
 
     // статус
-    private final AtomicReference<ChainProcess.ProcessStatus> status
-            = new AtomicReference<>(ChainProcess.ProcessStatus.WAITING);
+    private final AtomicReference<ProcessAvatarStatus> status
+            = new AtomicReference<>(ProcessAvatarStatus.WAITING);
 
     // тот, кто останавливает или как то взаимодействует с процессом. может оставить сообщение
     private final AtomicReference<String> externalMessage
@@ -64,18 +59,18 @@ public class DeclarativeChainProcess {
 
 
 
-    public DeclarativeChainProcess(UUID correlationId){
+    public ProcessAvatar(UUID correlationId){
         this.correlationId = correlationId;
     }
 
 
-    public void addIndexes(List<ProcessIndex> indexes){
+    public void addIndexes(List<ProcessAvatarIndex> indexes){
         this.indexes = indexes;
     }
 
 
     // заканчиваем шаг
-    public void processCleanup(ChainProcess.ProcessStatus nextStatus){
+    public void processCleanup(ProcessAvatarStatus nextStatus){
         lastModified.set(Instant.now());
         currentStep.set(null);
         // устанавливаем имя следующего ивента
@@ -104,7 +99,7 @@ public class DeclarativeChainProcess {
     public void stepOnStart(String step){
         currentStep.set(step);
         currentThread.set(Thread.currentThread());
-        status.set(ChainProcess.ProcessStatus.RUNNING);
+        status.set(ProcessAvatarStatus.RUNNING);
         lastModified.set(Instant.now());
     }
 
@@ -117,10 +112,10 @@ public class DeclarativeChainProcess {
         });
     }
 
-    public void setStatus(ChainProcess.ProcessStatus newStatus){
+    public void setStatus(ProcessAvatarStatus newStatus){
         lastModified.set(Instant.now());
-        if (status.get()== ChainProcess.ProcessStatus.STOPPED
-                && newStatus!= ChainProcess.ProcessStatus.TERMINATED) return; // если был остановлен, замена на другой статус  не происходит
+        if (status.get()== ProcessAvatarStatus.STOPPED
+                && newStatus!= ProcessAvatarStatus.TERMINATED) return; // если был остановлен, замена на другой статус  не происходит
         status.set(newStatus);
     }
 
@@ -138,7 +133,7 @@ public class DeclarativeChainProcess {
     }
     public void terminate(){
         lastModified.set(Instant.now());
-        setStatus(ChainProcess.ProcessStatus.TERMINATED);
+        setStatus(ProcessAvatarStatus.TERMINATED);
     }
 
     // прежде всего, проставляем флаг running в false
@@ -152,7 +147,16 @@ public class DeclarativeChainProcess {
             }
             return thread;
         });
-        status.set(ChainProcess.ProcessStatus.STOPPED);
+        status.set(ProcessAvatarStatus.STOPPED);
+    }
+
+
+
+    // мгновенное убийство аватара
+
+    public void terminateInstantly(){
+
+
     }
 
 

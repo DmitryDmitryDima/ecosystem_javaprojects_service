@@ -1,25 +1,23 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control;
 
 
-import org.springframework.stereotype.Service;
-
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // бывший process aggregator
-public class ProcessRuntimeStorageImpl implements ProcessRuntimeStorage {
+public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
 
 
     // все процессы
-    private final Map<UUID, DeclarativeChainProcess> allProcesses = new HashMap<>();
+    private final Map<UUID, ProcessAvatar> allProcesses = new HashMap<>();
 
 
     // пользовательские индексы
 
     // мы используем имя индекса, как ключ, и вторичный ключ, как ключ к внутренней таблице
     // допускается, что на один ключ может быть несколько процессов
-    private Map<String, Map<String, List<DeclarativeChainProcess>>> indexes = new HashMap<>();
+    private Map<String, Map<String, List<ProcessAvatar>>> indexes = new HashMap<>();
 
 
     private final ReentrantReadWriteLock globalLock = new ReentrantReadWriteLock();
@@ -29,15 +27,15 @@ public class ProcessRuntimeStorageImpl implements ProcessRuntimeStorage {
 
 
 
-    private void createIndexes(DeclarativeChainProcess process){
+    private void createIndexes(ProcessAvatar process){
         // читаем индексы
 
-        List<ProcessIndex> userIndexes = process.getIndexes();
+        List<ProcessAvatarIndex> userIndexes = process.getIndexes();
 
         for (var index:userIndexes){
 
             // извлекаем структуру, ассоциированную с заданным ключом
-            Map<String, List<DeclarativeChainProcess>> indexStructure = indexes.get(index.getKey());
+            Map<String, List<ProcessAvatar>> indexStructure = indexes.get(index.getKey());
 
             // если структуры нет, создаем новую
             if (indexStructure == null){
@@ -46,7 +44,7 @@ public class ProcessRuntimeStorageImpl implements ProcessRuntimeStorage {
             }
 
             // извлекаем список, ассоциированный со вторичным ключом
-            List<DeclarativeChainProcess> processes
+            List<ProcessAvatar> processes
                     = indexStructure.computeIfAbsent(index.getKey(), k -> new ArrayList<>());
 
             // если процессов нет, создаем список и вставляем в структуру
@@ -61,7 +59,7 @@ public class ProcessRuntimeStorageImpl implements ProcessRuntimeStorage {
 
 
     // регистрируем процесс, при этом реализую прописанные пользователем индексы, если они есть
-    public void registerChainProcess(DeclarativeChainProcess chainProcess){
+    public void registerChainProcess(ProcessAvatar chainProcess){
         writeLock.lock();
 
 
@@ -85,7 +83,7 @@ public class ProcessRuntimeStorageImpl implements ProcessRuntimeStorage {
 
 
 
-    public Optional<DeclarativeChainProcess> getChainProcessById(UUID correlationId){
+    public Optional<ProcessAvatar> getChainProcessById(UUID correlationId){
         readLock.lock();
 
         try {
@@ -96,13 +94,13 @@ public class ProcessRuntimeStorageImpl implements ProcessRuntimeStorage {
         }
     }
 
-    public DeclarativeChainProcess getOrRestore(UUID correlationId,
-                                                DeclarativeChainProcess toRestore){
+    public ProcessAvatar getOrRestore(UUID correlationId,
+                                      ProcessAvatar toRestore){
         writeLock.lock();
 
         try {
             if (allProcesses.containsKey(correlationId)) {
-                DeclarativeChainProcess chainProcess = allProcesses.get(correlationId);
+                ProcessAvatar chainProcess = allProcesses.get(correlationId);
                 chainProcess.getCurrentThread().set(Thread.currentThread());
                 return chainProcess;
             }

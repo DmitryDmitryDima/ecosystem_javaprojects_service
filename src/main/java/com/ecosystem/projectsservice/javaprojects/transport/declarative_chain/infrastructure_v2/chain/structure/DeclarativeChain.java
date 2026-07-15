@@ -9,6 +9,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputMetadata;
@@ -16,10 +17,10 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.ChainInit;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainInitException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.DeclarativeChainProcess;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEventProcessingInfo;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ChainProcess;
@@ -43,7 +44,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    private ProcessRuntimeStorage processRuntimeStorage;
+    private ProcessAvatarStorage processAvatarStorage;
 
 
 
@@ -65,11 +66,11 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    public DeclarativeChain(ProcessRuntimeStorage processRuntimeStorage,
+    public DeclarativeChain(ProcessAvatarStorage processAvatarStorage,
                             EventRegistry eventRegistry,
                             OutputProcessor outputProcessor) {
 
-        this.processRuntimeStorage = processRuntimeStorage;
+        this.processAvatarStorage = processAvatarStorage;
         this.eventRegistry = eventRegistry;
         this.outputProcessor = outputProcessor;
     }
@@ -80,8 +81,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    protected void setProcessRuntimeStorage(ProcessRuntimeStorage processRuntimeStorage) {
-        this.processRuntimeStorage = processRuntimeStorage;
+    protected void setProcessRuntimeStorage(ProcessAvatarStorage processAvatarStorage) {
+        this.processAvatarStorage = processAvatarStorage;
     }
 
     protected void setEventRegistry(EventRegistry eventRegistry) {
@@ -116,7 +117,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
     // метод переопределяется, если необходимо добавить дополнительное индексирование процесса
-    protected List<ProcessIndex> setProcessIndexes(E event){
+    protected List<ProcessAvatarIndex> setProcessIndexes(E event){
         return List.of();
     }
 
@@ -340,15 +341,15 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             // создаем runtime аватар процесса
 
-            DeclarativeChainProcess runtimeAvatar
-                    = new DeclarativeChainProcess(event.getProcessId());
+            ProcessAvatar runtimeAvatar
+                    = new ProcessAvatar(event.getProcessId());
 
             // добавляем индексы, вызывая переопределяемый метод
             runtimeAvatar.addIndexes(setProcessIndexes(event));
 
-            runtimeAvatar.setStatus(ChainProcess.ProcessStatus.WAITING);
+            runtimeAvatar.setStatus(ProcessAvatarStatus.WAITING);
 
-            processRuntimeStorage.registerChainProcess(runtimeAvatar);
+            processAvatarStorage.registerChainProcess(runtimeAvatar);
 
 
 

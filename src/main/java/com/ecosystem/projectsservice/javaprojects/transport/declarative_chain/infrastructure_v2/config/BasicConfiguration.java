@@ -3,8 +3,8 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessorDefault;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorageImpl;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStorageImpl;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetterChannel;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetterChannelApplicationPublisher;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager.EventManager;
@@ -57,8 +57,8 @@ public class BasicConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public ProcessRuntimeStorage runtimeStorage(){
-        return new ProcessRuntimeStorageImpl();
+    public ProcessAvatarStorage runtimeStorage(){
+        return new ProcessAvatarStorageImpl();
     }
 
 
@@ -95,7 +95,7 @@ public class BasicConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public EventManager eventManager(EventRegistry registry,
-                                     ProcessRuntimeStorage runtimeStorage,
+                                     ProcessAvatarStorage runtimeStorage,
                                      MapperComponent mapperComponent,
                                      ChainManagerSender sender,
                                      DeadLetterChannel deadLetterChannel){

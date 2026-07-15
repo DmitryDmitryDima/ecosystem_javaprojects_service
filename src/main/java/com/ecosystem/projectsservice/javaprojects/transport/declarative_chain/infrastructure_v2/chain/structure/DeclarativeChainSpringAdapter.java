@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessRuntimeStorage;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +26,8 @@ public abstract class DeclarativeChainSpringAdapter <E extends ChainEvent>
 
     @Override
     @Autowired
-    protected void setProcessRuntimeStorage( ProcessRuntimeStorage processRuntimeStorage) {
-        super.setProcessRuntimeStorage(processRuntimeStorage);
+    protected void setProcessRuntimeStorage( ProcessAvatarStorage processAvatarStorage) {
+        super.setProcessRuntimeStorage(processAvatarStorage);
     }
 
     @PostConstruct

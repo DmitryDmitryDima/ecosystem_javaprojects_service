@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule;
 
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessIndex;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarIndex;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -52,7 +52,7 @@ public class ProcessAggregator {
 
             // читаем индексы
 
-            List<ProcessIndex> userIndexes = chainProcess.getIndexes();
+            List<ProcessAvatarIndex> userIndexes = chainProcess.getIndexes();
 
             for (var index:userIndexes){
 

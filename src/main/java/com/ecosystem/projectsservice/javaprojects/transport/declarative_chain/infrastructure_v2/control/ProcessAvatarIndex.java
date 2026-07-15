@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProcessIndex {
+public class ProcessAvatarIndex {
 
 
     // имя индекса
