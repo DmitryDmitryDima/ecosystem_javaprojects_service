@@ -37,6 +37,8 @@ public class OutboxModelDefault implements OutboxModel{
 
     private String message;
 
+    private boolean compensation;
+
 
 
 
@@ -128,6 +130,16 @@ public class OutboxModelDefault implements OutboxModel{
     public String getMessage(){
 
         return message;
+    }
+
+
+    @Override
+    public boolean isCompensation() {
+        return compensation;
+    }
+
+    public void setCompensation(boolean compensation) {
+        this.compensation = compensation;
     }
 
     public void setMessage(String message) {

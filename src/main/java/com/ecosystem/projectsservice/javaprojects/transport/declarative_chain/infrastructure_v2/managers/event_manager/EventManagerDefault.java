@@ -187,7 +187,7 @@ public class EventManagerDefault implements EventManager{
 
             sender.send(chainEvent);
 
-            return new ManagementResult(true, null);
+            return new ManagementResult(true, true);
 
 
         }
@@ -225,6 +225,9 @@ public class EventManagerDefault implements EventManager{
                         .EVERLASTING_STEP_MISSING_CONTEXT);
 
                 sender.send(chainEvent);
+
+                // уведомляем о компенсации
+                return new ManagementResult(true, true);
             }
 
             // если аватар есть - не трогаем процесс
@@ -276,7 +279,7 @@ public class EventManagerDefault implements EventManager{
             sender.send(chainEvent);
 
 
-            return new ManagementResult(true, null);
+            return new ManagementResult(true, true);
 
 
 
@@ -352,7 +355,7 @@ public class EventManagerDefault implements EventManager{
 
             sender.send(chainEvent);
 
-            return new ManagementResult(true, null);
+            return new ManagementResult(true, true);
 
 
 

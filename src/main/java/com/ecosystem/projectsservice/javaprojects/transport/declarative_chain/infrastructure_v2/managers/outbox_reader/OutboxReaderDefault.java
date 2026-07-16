@@ -53,6 +53,8 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
 
+
+
     @Override
     public void readWaitingEvents() {
 
@@ -76,6 +78,10 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
             }
+
+
+
+
         }
 
     }
@@ -94,6 +100,14 @@ public class OutboxReaderDefault implements OutboxReader{
                 attemptToSetManagerCrashedStatus(managementResult, model);
 
             }
+
+            else {
+                // компенсационная группа - компенсационный флаг
+                repository.markAsCompensating(model.getOutboxUUID());
+            }
+
+
+
         }
     }
 
@@ -112,6 +126,13 @@ public class OutboxReaderDefault implements OutboxReader{
             if (!result.isSuccess()){
                 attemptToSetManagerCrashedStatus(result, model);
             }
+
+            else {
+                // компенсационная группа - компенсационный флаг
+                repository.markAsCompensating(model.getOutboxUUID());
+            }
+
+
         }
     }
 
@@ -129,6 +150,15 @@ public class OutboxReaderDefault implements OutboxReader{
             if (!result.isSuccess()){
                 attemptToSetManagerCrashedStatus(result, model);
             }
+
+            else {
+                if (result.isCompensationStart()){
+                    // компенсационная группа - компенсационный флаг
+                    repository.markAsCompensating(model.getOutboxUUID());
+                }
+            }
+
+
         }
     }
 
@@ -186,6 +216,14 @@ public class OutboxReaderDefault implements OutboxReader{
             if (!result.isSuccess()){
                 attemptToSetManagerCrashedStatus(result, model);
             }
+
+            else {
+                // компенсационная группа - компенсационный флаг
+                repository.markAsCompensating(model.getOutboxUUID());
+            }
+
+
+
         }
 
     }

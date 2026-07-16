@@ -3,8 +3,8 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 public interface OutputProcessor {
 
 
-    void publish(ChainOutput output,
-                 OutputMetadata<?> metadata);
+    void output(ChainOutput output,
+                OutputMetadata<?> metadata);
 
 
 }

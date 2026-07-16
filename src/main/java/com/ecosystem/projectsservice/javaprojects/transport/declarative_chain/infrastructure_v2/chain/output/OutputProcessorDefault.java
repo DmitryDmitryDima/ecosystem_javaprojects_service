@@ -7,8 +7,6 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelDefault;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelRepository;
 
-import java.util.UUID;
-
 // дефолтная реализация, чей контракт - публикация в репозиторий и проставление
 // mark as processed для parent outbox
 public class OutputProcessorDefault implements OutputProcessor {
@@ -44,7 +42,8 @@ public class OutputProcessorDefault implements OutputProcessor {
             ChainEvent chainEvent = output.getEvent();
 
             String type
-                    = chainEvent.getClass().getAnnotation(ChainEventQualifier.class).value();
+                    = chainEvent.getClass()
+                    .getAnnotation(ChainEventQualifier.class).value();
 
 
             OutboxModelDefault model = new OutboxModelDefault();
@@ -60,7 +59,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
 
 
-            repository.save(model);
+            repository.create(model);
 
 
 
@@ -77,7 +76,7 @@ public class OutputProcessorDefault implements OutputProcessor {
     }
 
     @Override
-    public void publish(ChainOutput output, OutputMetadata<?> metadata) {
+    public void output(ChainOutput output, OutputMetadata<?> metadata) {
 
 
         try {
@@ -95,13 +94,18 @@ public class OutputProcessorDefault implements OutputProcessor {
             }
 
             else if (action instanceof ChainEnd){
-                repository.markAsProcessed(output.getEvent().getOutboxId());
+                repository.markAsProcessedForSuccessStep(output.getEvent().getOutboxId());
+            }
+
+            else if (action instanceof CompensationEnd){
+                repository.markAsProcessedForCompensation(output.getEvent().getOutboxId());
             }
 
 
             else {
+
+                repository.markAsProcessedForSuccessStep(output.getEvent().getOutboxId());
                 publishNewEvent(output, metadata);
-                repository.markAsProcessed(output.getEvent().getOutboxId());
             }
 
 

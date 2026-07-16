@@ -7,6 +7,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,15 +31,19 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
 
 
+
+
+    // создание новой записи
     @Override
-    public void save(OutboxModel model) {
+    public void create(OutboxModel model) {
 
         try {
 
 
             // используя интерфейс, производим маппинг
             OutboxModelJpaEntity entity = OutboxModelJpaEntity.builder()
-                    .outboxUUID(model.getOutboxUUID())
+
+
                     .processUUID(model.getProcessUUID())
                     .status(model.getStatus())
                     .type(model.getType())
@@ -46,8 +51,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                     .lastUpdate(model.getLastUpdate())
                     .readExpiration(model.getReadExpiration())
                     .performanceLimitTime(model.getPerformanceLimitTime())
-                    .allReadVersion(model.getAllReadVersion())
-                    .allReadProcessingVersion(model.getAllReadProcessingVersion())
+                    .allReadVersion(0L)
+                    .allReadProcessingVersion(0L)
+                    .message(model.getMessage())
                     .build();
 
 
@@ -68,8 +74,16 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     }
 
+
+    // todo каким должен быть такой запрос?
+    /*
+    должен ли он гарантировать, что предыдущий статус - processing, и compensation = false
+    Так мы защищаем от ситуации,
+     когда успешная цепь пытается продолжиться после входа в компенсационный режим
+     */
+
     @Override
-    public void markAsProcessed(UUID id) {
+    public void markAsProcessedForSuccessStep(UUID id) {
 
 
         try {
@@ -77,6 +91,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             transaction.execute(status -> {
                 Optional<OutboxModelJpaEntity> outboxEventCheck = jpaRepository.findById(id);
                 outboxEventCheck.ifPresent(outbox->{
+                    outbox.setLastUpdate(Instant.now()); // status change
                     outbox.setStatus(OutboxStatus.PROCESSED);
                 });
 
@@ -94,6 +109,16 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
 
 
+
+    }
+
+    @Override
+    public void markAsProcessedForCompensation(UUID id) {
+
+    }
+
+    @Override
+    public void markAsCompensating(UUID id) {
 
     }
 

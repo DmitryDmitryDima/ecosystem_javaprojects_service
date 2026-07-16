@@ -47,6 +47,8 @@ public class OutboxModelJpaEntity implements OutboxModel {
 
     private String message;
 
+    private boolean compensation;
+
 
 
 
@@ -106,5 +108,8 @@ public class OutboxModelJpaEntity implements OutboxModel {
         return message;
     }
 
-
+    @Override
+    public boolean isCompensation() {
+        return compensation;
+    }
 }

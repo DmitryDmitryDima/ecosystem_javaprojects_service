@@ -17,14 +17,15 @@ import java.util.UUID;
 @Repository
 public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEntity, UUID> {
 
-    List<OutboxModelJpaEntity> findByStatus(OutboxStatus status);
 
-    List<OutboxModelJpaEntity> findByStatus(OutboxStatus status,
-                                            Limit limit);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT entity FROM OutboxModelJpaEntity entity WHERE entity.status = :status AND entity.processId = :processId")
     Optional<OutboxModelJpaEntity>
     findByStatusAndCorrelationIdForUpdate(OutboxStatus status,
                                           UUID processId);
+
+
+
+
 }

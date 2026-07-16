@@ -23,7 +23,6 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEventProcessingInfo;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxStatus;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule.ChainProcess;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -375,7 +374,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     // выделяем хук для возможности добавления/модификации metadata
     protected void onPublishChainOutput(ChainOutput output,
                                         OutputMetadata<?> metadata){
-        outputProcessor.publish(output, metadata);
+        outputProcessor.output(output, metadata);
 
 
     }

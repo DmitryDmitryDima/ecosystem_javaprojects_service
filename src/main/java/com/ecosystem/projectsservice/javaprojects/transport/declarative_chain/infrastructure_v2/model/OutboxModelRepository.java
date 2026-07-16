@@ -8,11 +8,20 @@ import java.util.UUID;
 public interface OutboxModelRepository {
 
 
-    void save(OutboxModel model);
+    void create(OutboxModel model);
 
 
-    // помечает outbox запись как processed, выкидывая ее из ряда ждущих обработки
-    void markAsProcessed(UUID id);
+    // помечает outbox запись как processed,
+    // при этом запись запись должна иметь compensation = true и статус processing
+    void markAsProcessedForSuccessStep(UUID id);
+
+
+    // помечает, как processed,
+    // при этом запись должна иметь processing в качестве предыдущего статуса
+    void markAsProcessedForCompensation(UUID id);
+
+
+    void markAsCompensating(UUID id);
 
 
 

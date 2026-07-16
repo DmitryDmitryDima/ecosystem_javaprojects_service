@@ -44,6 +44,11 @@ public interface OutboxModel {
     String getMessage();
 
 
+    // при переходе в компенсацию management result должен донести это до reader,
+    // а reader должен сделать update этого поля
+    boolean isCompensation();
+
+
 
 
 
