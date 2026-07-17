@@ -1,6 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects
         .transport.declarative_chain.infrastructure_v2.control;
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.ChainOutput;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputMetadata;
 import lombok.Getter;
 
 import java.time.Instant;
@@ -36,6 +38,8 @@ public class ProcessAvatar {
     private AtomicReference<Instant> lastModified = new AtomicReference<>(Instant.now());
 
 
+
+
     // если Running, но при
     private AtomicReference<String> currentStep
             = new AtomicReference<>(null);
@@ -59,6 +63,20 @@ public class ProcessAvatar {
 
 
 
+    // ПОЛЯ ДЛЯ РЕАЛИЗАЦИИ МЕХАНИЗМА РЕТРАЙ ПУБЛИКАЦИИ
+    // ЕСЛИ СТАТУС OUTPUT_ERROR,
+    // ТО МЕНЕДЖЕР ИМЕЕТ ПРАВО ПРОБРОСИТЬ РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ ИЗ АВАТАРА В ЦЕПЬ
+    // СОХРАНИВ КОНТЕКСТ ВЫПОЛНЕНИЯ
+
+    // механизм настраивается пользователем
+
+    private AtomicReference<ChainOutput> previousOutput;
+
+    private AtomicReference<OutputMetadata<?>> previousOutputMetadata;
+
+
+
+
     public ProcessAvatar(UUID correlationId){
         this.correlationId = correlationId;
     }
@@ -70,9 +88,18 @@ public class ProcessAvatar {
 
 
     // заканчиваем шаг
-    public void processCleanup(ProcessAvatarStatus nextStatus){
+    public void processCleanup(ProcessAvatarStatus nextStatus,
+                               ChainOutput output, OutputMetadata<?> metadata ){
+
+
+        previousOutput.set(output);
+        previousOutputMetadata.set(metadata);
+
+
+
         lastModified.set(Instant.now());
         currentStep.set(null);
+
         // устанавливаем имя следующего ивента
         setStatus(nextStatus);
         currentNativeProcesses.getAndUpdate((processes -> {
@@ -138,7 +165,7 @@ public class ProcessAvatar {
 
     // прежде всего, проставляем флаг running в false
 
-    // может вызываться как снаружи, так и изнутри. Метод cleanup вызывается из цепочки
+    // может вызываться как снаружи, так и изнутри. Метод cleanup вызывается из output processor
     public void stop(){
         lastModified.set(Instant.now());
         currentThread.getAndUpdate(thread -> {

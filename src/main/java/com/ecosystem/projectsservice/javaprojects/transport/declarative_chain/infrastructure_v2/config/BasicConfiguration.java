@@ -65,9 +65,11 @@ public class BasicConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public OutputProcessor outputProcessor(OutboxModelRepository repository,
-                                           MapperComponent mapper){
+                                           MapperComponent mapper,
+                                           DeadLetterChannel deadLetterChannel,
+                                           ProcessAvatarStorage avatarStorage){
 
-        return new OutputProcessorDefault(repository, mapper);
+        return new OutputProcessorDefault(repository, mapper, avatarStorage, deadLetterChannel );
 
     }
 

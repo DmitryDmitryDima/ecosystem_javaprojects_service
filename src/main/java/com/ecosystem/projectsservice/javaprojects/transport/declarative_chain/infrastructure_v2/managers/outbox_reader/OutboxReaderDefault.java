@@ -102,7 +102,8 @@ public class OutboxReaderDefault implements OutboxReader{
             }
 
             else {
-                // компенсационная группа - компенсационный флаг
+                // компенсационная группа - компенсационный флаг. защищает от сценария,
+                // при котором процесс отвис во время запущенной компенсации
                 repository.markAsCompensating(model.getOutboxUUID());
             }
 
@@ -153,7 +154,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
             else {
                 if (result.isCompensationStart()){
-                    // компенсационная группа - компенсационный флаг
+                    // компенсационная группа - компенсационный флаг.
                     repository.markAsCompensating(model.getOutboxUUID());
                 }
             }

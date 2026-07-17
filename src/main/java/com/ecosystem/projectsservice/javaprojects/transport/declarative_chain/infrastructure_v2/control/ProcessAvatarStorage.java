@@ -6,9 +6,9 @@ import java.util.UUID;
 public interface ProcessAvatarStorage {
 
 
-    void registerChainProcess(ProcessAvatar chainProcess);
+    void registerAvatar(ProcessAvatar chainProcess);
 
-    Optional<ProcessAvatar> getChainProcessById(UUID correlationId);
+    Optional<ProcessAvatar> getAvatarById(UUID correlationId);
 
     ProcessAvatar getOrRestore(UUID correlationId,
                                ProcessAvatar toRestore);

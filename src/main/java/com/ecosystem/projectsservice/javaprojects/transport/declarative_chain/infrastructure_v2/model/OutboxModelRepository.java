@@ -11,8 +11,11 @@ public interface OutboxModelRepository {
     void create(OutboxModel model);
 
 
+    void markPreviousAsProcessedAndCreateNewModel(UUID previous, OutboxModel model);
+
+
     // помечает outbox запись как processed,
-    // при этом запись запись должна иметь compensation = true и статус processing
+    // при этом запись запись должна иметь compensation = false и статус processing
     void markAsProcessedForSuccessStep(UUID id);
 
 
@@ -30,6 +33,9 @@ public interface OutboxModelRepository {
     void changeStatusForGivenAllReadVersion(UUID uuid,
                                    OutboxStatus toStatus,
                                    Long forAllReadVersion);
+
+
+
 
     // проставление статуса с учетом последней версии, с сообщением
     void changeStatusAndMessageForGivenAllReadVersion(UUID uuid,

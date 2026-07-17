@@ -74,6 +74,11 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     }
 
+    @Override
+    public void markPreviousAsProcessedAndCreateNewModel(OutboxModel model, UUID previous) {
+
+    }
+
 
     // todo каким должен быть такой запрос?
     /*

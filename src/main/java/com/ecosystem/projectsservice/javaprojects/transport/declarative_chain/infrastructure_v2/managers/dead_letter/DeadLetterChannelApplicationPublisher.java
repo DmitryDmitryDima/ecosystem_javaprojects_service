@@ -12,10 +12,10 @@ public class DeadLetterChannelApplicationPublisher implements DeadLetterChannel 
     }
 
     @Override
-    public void send(OutboxModel model) {
+    public void send(DeadLetter deadLetter) {
 
-        DeadLetterEnvelope envelope = new DeadLetterEnvelope(model);
 
-        springPublisher.publishEvent(envelope);
+
+        springPublisher.publishEvent(deadLetter);
     }
 }

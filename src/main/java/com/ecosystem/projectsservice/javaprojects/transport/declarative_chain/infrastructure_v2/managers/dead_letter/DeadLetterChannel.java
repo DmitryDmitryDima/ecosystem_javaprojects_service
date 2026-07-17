@@ -6,5 +6,5 @@ public interface DeadLetterChannel {
 
 
 
-    void send(OutboxModel model);
+    void send(DeadLetter deadLetter);
 }

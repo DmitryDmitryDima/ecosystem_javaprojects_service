@@ -3,12 +3,9 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 import com.ecosystem.projectsservice.javaprojects.common_exceptions.BaseException;
 import org.springframework.http.HttpStatus;
 
-public class OutputProcessorException extends BaseException {
-    public OutputProcessorException(String message,
-                                    String errorCode) {
+public class OutputProcessorException extends RuntimeException {
+    public OutputProcessorException(String message) {
 
-        super(message,
-                errorCode,
-                HttpStatus.INTERNAL_SERVER_ERROR);
+        super(message);
     }
 }

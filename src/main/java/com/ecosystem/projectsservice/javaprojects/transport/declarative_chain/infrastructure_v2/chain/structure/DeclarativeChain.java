@@ -348,7 +348,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             runtimeAvatar.setStatus(ProcessAvatarStatus.WAITING);
 
-            processAvatarStorage.registerChainProcess(runtimeAvatar);
+            processAvatarStorage.registerAvatar(runtimeAvatar);
 
 
 

@@ -1,9 +1,11 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager;
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.DeliveryStatus;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetter;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetterChannel;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperComponent;
@@ -217,7 +219,7 @@ public class EventManagerDefault implements EventManager{
             ChainEvent chainEvent = readPayload(model);
 
             Optional<ProcessAvatar> avatar = processAvatarStorage
-                    .getChainProcessById(chainEvent.getProcessId());
+                    .getAvatarById(chainEvent.getProcessId());
 
 
             if (avatar.isEmpty()){
@@ -230,7 +232,27 @@ public class EventManagerDefault implements EventManager{
                 return new ManagementResult(true, true);
             }
 
-            // если аватар есть - не трогаем процесс
+            // если аватар есть и он не output_error - не трогаем процесс
+
+            if (avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR
+
+                || avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP
+
+                    || avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH
+
+
+            ){
+                chainEvent.getProcessingInfo().setDeliveryStatus(DeliveryStatus
+                        .OUTBOX_PROCESSOR_ERROR);
+
+
+
+                // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
+                // если аватар упадет в момент попадания в цепь,
+                // то шаг попадет в новый цикл проверки
+                sender.send(chainEvent);
+
+            }
 
             return new ManagementResult(true, null);
 
@@ -262,7 +284,7 @@ public class EventManagerDefault implements EventManager{
             ChainEvent chainEvent = readPayload(model);
 
             Optional<ProcessAvatar> avatar = processAvatarStorage
-                    .getChainProcessById(chainEvent.getProcessId());
+                    .getAvatarById(chainEvent.getProcessId());
 
             if (avatar.isEmpty()){
 
@@ -271,8 +293,30 @@ public class EventManagerDefault implements EventManager{
             }
 
             else {
-                chainEvent.getProcessingInfo()
-                        .setDeliveryStatus(DeliveryStatus.EXPIRED_PROCESSING_WITH_CONTEXT);
+
+                // шаг на самом деле завершился, но не смог опубликоваться
+                if (avatar.get().getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR
+
+                        || avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP
+
+                        || avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH
+
+
+
+                ){
+                    chainEvent.getProcessingInfo().setDeliveryStatus(DeliveryStatus
+                            .OUTBOX_PROCESSOR_ERROR);
+
+
+                }
+
+                else {
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.EXPIRED_PROCESSING_WITH_CONTEXT);
+                }
+
+
+
             }
 
 
@@ -302,7 +346,7 @@ public class EventManagerDefault implements EventManager{
 
 
         try {
-            processAvatarStorage.getChainProcessById(model.getProcessUUID())
+            processAvatarStorage.getAvatarById(model.getProcessUUID())
                     .ifPresent(ProcessAvatar::terminateInstantly);
         }
         catch (Exception e){
@@ -312,7 +356,8 @@ public class EventManagerDefault implements EventManager{
         }
 
 
-        deadLetterChannel.send(model);
+        deadLetterChannel.send(new DeadLetter("Processing ивент был прочитан несколько раз. " +
+                "Возможно зависание", model));
 
 
         return new ManagementResult(true, null);
@@ -322,7 +367,7 @@ public class EventManagerDefault implements EventManager{
     public ManagementResult workWithManagerCrashEvent(OutboxModel model) {
 
         try {
-            processAvatarStorage.getChainProcessById(model.getProcessUUID())
+            processAvatarStorage.getAvatarById(model.getProcessUUID())
                     .ifPresent(ProcessAvatar::terminateInstantly);
         }
         catch (Exception e){
@@ -332,7 +377,8 @@ public class EventManagerDefault implements EventManager{
         }
 
 
-        deadLetterChannel.send(model);
+        deadLetterChannel.send(new DeadLetter("невозможно расшифровать или отправить ивент",
+                model));
 
 
 

@@ -59,7 +59,7 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
 
 
     // регистрируем процесс, при этом реализую прописанные пользователем индексы, если они есть
-    public void registerChainProcess(ProcessAvatar chainProcess){
+    public void registerAvatar(ProcessAvatar chainProcess){
         writeLock.lock();
 
 
@@ -83,7 +83,7 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
 
 
 
-    public Optional<ProcessAvatar> getChainProcessById(UUID correlationId){
+    public Optional<ProcessAvatar> getAvatarById(UUID correlationId){
         readLock.lock();
 
         try {
@@ -120,6 +120,10 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
             writeLock.unlock();
         }
     }
+
+
+    public void clearTerminatedAvatars(){}
+
 
 
 
