@@ -75,10 +75,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     }
 
     @Override
-    public void markPreviousAsProcessedAndCreateNewModel(OutboxModel model, UUID previous) {
+    public void markPreviousAsProcessedAndCreateNewModel(UUID previous, OutboxModel model) {
 
     }
-
 
     // todo каким должен быть такой запрос?
     /*
@@ -169,8 +168,14 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         return List.of();
     }
 
+
+    // обновляем readVersion, атомарно меняем статус на processing
     @Override
     public List<OutboxModel> readActualWaitingEvents() {
+
+
+
+
         return List.of();
     }
 

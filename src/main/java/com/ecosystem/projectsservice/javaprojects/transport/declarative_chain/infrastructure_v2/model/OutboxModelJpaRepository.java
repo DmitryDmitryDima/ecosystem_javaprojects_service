@@ -19,8 +19,15 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
 
 
+
+
+
+    
+
+
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT entity FROM OutboxModelJpaEntity entity WHERE entity.status = :status AND entity.processId = :processId")
+    @Query("SELECT entity FROM OutboxModelJpaEntity entity WHERE entity.status = :status AND entity.processUUID = :processId")
     Optional<OutboxModelJpaEntity>
     findByStatusAndCorrelationIdForUpdate(OutboxStatus status,
                                           UUID processId);

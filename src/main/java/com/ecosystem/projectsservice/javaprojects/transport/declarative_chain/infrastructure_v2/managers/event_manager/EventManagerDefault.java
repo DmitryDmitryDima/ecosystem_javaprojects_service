@@ -357,7 +357,7 @@ public class EventManagerDefault implements EventManager{
 
 
         deadLetterChannel.send(new DeadLetter("Processing ивент был прочитан несколько раз. " +
-                "Возможно зависание", model));
+                "Возможно зависание. Сообщение из модели: "+model.getMessage(), model));
 
 
         return new ManagementResult(true, null);
@@ -377,7 +377,9 @@ public class EventManagerDefault implements EventManager{
         }
 
 
-        deadLetterChannel.send(new DeadLetter("невозможно расшифровать или отправить ивент",
+        deadLetterChannel.send(new
+                DeadLetter("невозможно расшифровать или отправить ивент, " +
+                "сообщение из модели "+model.getMessage(),
                 model));
 
 

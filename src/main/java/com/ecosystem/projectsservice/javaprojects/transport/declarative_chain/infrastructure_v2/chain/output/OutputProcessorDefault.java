@@ -53,6 +53,8 @@ public class OutputProcessorDefault implements OutputProcessor {
 
 
 
+
+    // готовим сущность для ее сохранения в базу данных
     protected OutboxModel prepareNewEvent(ChainOutput output,
                                         OutputMetadata<?> metadata){
 
