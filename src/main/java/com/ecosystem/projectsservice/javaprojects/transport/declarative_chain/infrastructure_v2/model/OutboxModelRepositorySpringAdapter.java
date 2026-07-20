@@ -68,7 +68,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         }
         catch (Exception e){
             throw
-                    new OutboxRepositoryException("outbox model saving error. Reason: "
+                    new OutboxRepositoryException("Не удалось создать outbox модель, причина: "
                             +e.getMessage());
         }
 
@@ -92,15 +92,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
         try {
 
-            transaction.execute(status -> {
-                Optional<OutboxModelJpaEntity> outboxEventCheck = jpaRepository.findById(id);
-                outboxEventCheck.ifPresent(outbox->{
-                    outbox.setLastUpdate(Instant.now()); // status change
-                    outbox.setStatus(OutboxStatus.PROCESSED);
-                });
 
-                return null;
-            });
 
         }
 
@@ -138,81 +130,163 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
 
 
-    @Override
-    public List<OutboxModel> readEverlastingProcessingEvents(Long batchSize) {
-        return List.of();
-    }
 
-    @Override
-    public List<OutboxModel> readEverlastingProcessingEvents() {
-        return List.of();
-    }
-
-    @Override
-    public List<OutboxModel> readMissedExpiredProcessingEvents() {
-        return List.of();
-    }
-
-    @Override
-    public List<OutboxModel> readMissedExpiredProcessingEvents(Long batchSize) {
-        return List.of();
-    }
-
-    @Override
-    public List<OutboxModel> readExpiredProcessingEvents() {
-        return List.of();
-    }
-
-    @Override
-    public List<OutboxModel> readExpiredProcessingEvents(Long batchSize) {
-        return List.of();
-    }
 
 
     // обновляем readVersion, атомарно меняем статус на processing
     @Override
-    public List<OutboxModel> readActualWaitingEvents() {
+    public List<? extends OutboxModel> readActualWaitingEvents() {
+
+        try {
+            return
+                    transaction.execute(status -> {
+
+                    List<OutboxModelJpaEntity> jpaEntities = jpaRepository
+                        .readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus.WAITING);
 
 
+                    // при чтении статус меняется на processing,
+                    // обновляется last update,
+                    // а также происходит обновление readVersion
+                    jpaEntities.forEach(outboxModelJpaEntity -> {
+                        outboxModelJpaEntity.setLastUpdate(Instant.now());
+                        outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion()+1);
+                        outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+
+                    });
+
+                return jpaEntities;}
+                    );
+        }
+
+        catch (Exception e){
+            throw new
+                    OutboxRepositoryException("Не удалось получить актуальные Waiting записи. Причина: "+e.getMessage());
+        }
+    }
+
+    @Override
+    public List<? extends OutboxModel> readActualWaitingEvents(Long batchSize) {
+        return List.of();
+    }
 
 
+    @Override
+    public List<? extends OutboxModel> readEverlastingProcessingEvents(Long batchSize) {
         return List.of();
     }
 
     @Override
-    public List<OutboxModel> readActualWaitingEvents(Long batchSize) {
+    public List<? extends OutboxModel> readEverlastingProcessingEvents() {
         return List.of();
     }
 
     @Override
-    public List<OutboxModel> readExpiredWaitingEvents() {
+    public List<? extends OutboxModel> readMissedExpiredProcessingEvents() {
         return List.of();
     }
 
     @Override
-    public List<OutboxModel> readExpiredWaitingEvents(Long batchSize) {
+    public List<? extends OutboxModel> readMissedExpiredProcessingEvents(Long batchSize) {
         return List.of();
     }
 
     @Override
-    public List<OutboxModel> readExpiredWaitingForSignalEvents() {
+    public List<? extends OutboxModel> readExpiredProcessingEvents() {
         return List.of();
     }
 
     @Override
-    public List<OutboxModel> readExpiredWaitingForSignalEvents(Long batchSize) {
+    public List<? extends OutboxModel> readExpiredProcessingEvents(Long batchSize) {
         return List.of();
     }
 
     @Override
-    public List<OutboxModel> readManagerCrashEvents() {
+    public List<? extends OutboxModel> readExpiredWaitingEvents() {
+
+        try {
+            return
+                    transaction.execute(status -> {
+
+                        List<OutboxModelJpaEntity> jpaEntities = jpaRepository
+                                .readAllEntitiesWithReadExpirationReached(OutboxStatus.WAITING);
+
+
+                        // при чтении статус меняется на processing,
+                        // обновляется last update,
+                        // а также происходит обновление readVersion
+                        jpaEntities.forEach(outboxModelJpaEntity -> {
+                            outboxModelJpaEntity.setLastUpdate(Instant.now());
+                            outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion()+1);
+                            outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+
+                        });
+
+                        return jpaEntities;}
+                    );
+        }
+
+        catch (Exception e){
+            throw new
+                    OutboxRepositoryException("Не удалось получить просроченные Waiting записи. Причина: " +
+                    ""+e.getMessage());
+        }
+
+
+    }
+
+    @Override
+    public List<? extends OutboxModel> readExpiredWaitingEvents(Long batchSize) {
         return List.of();
     }
 
     @Override
-    public List<OutboxModel> readManagerCrashEvents(Long batchSize) {
+    public List<? extends OutboxModel> readExpiredWaitingForSignalEvents() {
+
+
+        try {
+            return
+                    transaction.execute(status -> {
+
+                        List<OutboxModelJpaEntity> jpaEntities = jpaRepository
+                                .readAllEntitiesWithReadExpirationReached(OutboxStatus.WAITING_FOR_EXTERNAL);
+
+
+                        // при чтении статус меняется на processing,
+                        // обновляется last update,
+                        // а также происходит обновление readVersion
+                        jpaEntities.forEach(outboxModelJpaEntity -> {
+                            outboxModelJpaEntity.setLastUpdate(Instant.now());
+                            outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion()+1);
+                            outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+
+                        });
+
+                        return jpaEntities;}
+                    );
+        }
+
+        catch (Exception e){
+            throw new
+                    OutboxRepositoryException("Не удалось получить просроченные" +
+                    " Waiting for External записи. Причина: " +
+                    ""+e.getMessage());
+        }
+
+    }
+
+    @Override
+    public List<? extends OutboxModel> readExpiredWaitingForSignalEvents(Long batchSize) {
         return List.of();
     }
 
+    @Override
+    public List<? extends OutboxModel> readManagerCrashEvents() {
+        return List.of();
+    }
 
+    @Override
+    public List<? extends OutboxModel> readManagerCrashEvents(Long batchSize) {
+        return List.of();
+    }
 }

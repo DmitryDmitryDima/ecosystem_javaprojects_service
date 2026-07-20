@@ -15,6 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString
 @Table(name = "outbox_model")
 public class OutboxModelJpaEntity implements OutboxModel {
 
@@ -112,4 +113,7 @@ public class OutboxModelJpaEntity implements OutboxModel {
     public boolean isCompensation() {
         return compensation;
     }
+
+
+
 }

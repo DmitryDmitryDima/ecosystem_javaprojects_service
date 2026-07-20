@@ -59,7 +59,7 @@ public class OutboxReaderDefault implements OutboxReader{
     public void readWaitingEvents() {
 
         // атомарно проставлен processing статус
-        List<OutboxModel> actualWaiting
+        List<? extends OutboxModel> actualWaiting
                 = repository.readActualWaitingEvents();
 
 
@@ -90,7 +90,7 @@ public class OutboxReaderDefault implements OutboxReader{
     public void readExpiredWaitingEvents() {
 
 
-        List<OutboxModel> expiredWaitingEvents = repository.readExpiredWaitingEvents();
+        List<? extends OutboxModel> expiredWaitingEvents = repository.readExpiredWaitingEvents();
 
         for (var model:expiredWaitingEvents){
             ManagementResult managementResult = manager.workWithExpiredWaitingEvent(model);
@@ -116,7 +116,7 @@ public class OutboxReaderDefault implements OutboxReader{
     public void readExpiredProcessingEvents() {
 
 
-        List<OutboxModel> expiredProcessingEvents
+        List<? extends OutboxModel> expiredProcessingEvents
                 = repository.readExpiredProcessingEvents();
 
 
@@ -140,7 +140,7 @@ public class OutboxReaderDefault implements OutboxReader{
     @Override
     public void readEverlastingProcessingEvents() {
 
-        List<OutboxModel> everlastingProcessingEvents = repository
+        List<? extends OutboxModel> everlastingProcessingEvents = repository
                 .readEverlastingProcessingEvents();
 
 
@@ -168,7 +168,7 @@ public class OutboxReaderDefault implements OutboxReader{
     @Override
     public void readMissedExpiredProcessingEvents() {
 
-        List<OutboxModel> missedExpiredProcessingEvents
+        List<? extends OutboxModel> missedExpiredProcessingEvents
                 = repository.readMissedExpiredProcessingEvents();
 
 
@@ -191,7 +191,7 @@ public class OutboxReaderDefault implements OutboxReader{
     @Override
     public void readManagerCrashedEvents() {
 
-        List<OutboxModel> managerCrashedEvents = repository.readManagerCrashEvents();
+        List<? extends OutboxModel> managerCrashedEvents = repository.readManagerCrashEvents();
 
 
         for (var model:managerCrashedEvents){
@@ -206,7 +206,7 @@ public class OutboxReaderDefault implements OutboxReader{
     public void readExpiredWaitingForSignalEvents() {
 
 
-        List<OutboxModel> expiredWaitingForSignalEvents = repository
+        List<? extends OutboxModel> expiredWaitingForSignalEvents = repository
                 .readExpiredWaitingForSignalEvents();
 
         for (var model:expiredWaitingForSignalEvents){

@@ -53,54 +53,54 @@ public interface OutboxModelRepository {
     // performance period == null
     // allProcessingRead ++
 
-    List<OutboxModel> readEverlastingProcessingEvents(Long batchSize);
+    List<? extends OutboxModel> readEverlastingProcessingEvents(Long batchSize);
 
-    List<OutboxModel> readEverlastingProcessingEvents();
+    List<? extends OutboxModel> readEverlastingProcessingEvents();
 
 
     // читаем processing ивенты, где allProcessingRead!=0 && period ! =null
     // - это означает попадание в dead letter
     // при чтении такие ивенты атомарно получают dead_letter
 
-    List<OutboxModel> readMissedExpiredProcessingEvents();
+    List<? extends OutboxModel> readMissedExpiredProcessingEvents();
 
-    List<OutboxModel> readMissedExpiredProcessingEvents(Long batchSize);
+    List<? extends OutboxModel> readMissedExpiredProcessingEvents(Long batchSize);
 
 
     // читаем expired processing ивенты, где allProcessingRead = 0,
     // now > performancePeriod + lastUpdate
     // атомарно - allProcessingRead++
 
-    List<OutboxModel> readExpiredProcessingEvents();
+    List<? extends OutboxModel> readExpiredProcessingEvents();
 
-    List<OutboxModel> readExpiredProcessingEvents(Long batchSize);
+    List<? extends OutboxModel> readExpiredProcessingEvents(Long batchSize);
 
 
     // читаем актуальные waiting events - самая высокая частота проверки
     // атомарно ставим статус processing
     // в данном случае allProcessingRead не трогаем !
-    List<OutboxModel> readActualWaitingEvents();
-    List<OutboxModel> readActualWaitingEvents(Long batchSize);
+    List<? extends OutboxModel> readActualWaitingEvents();
+    List<? extends OutboxModel> readActualWaitingEvents(Long batchSize);
 
     // читаем просроченные waiting event
     // атомарно processing
 
-    List<OutboxModel> readExpiredWaitingEvents();
-    List<OutboxModel> readExpiredWaitingEvents(Long batchSize);
+    List<? extends OutboxModel> readExpiredWaitingEvents();
+    List<? extends OutboxModel> readExpiredWaitingEvents(Long batchSize);
 
 
     // читаем просроченные waiting for signal ивенты
     // атомарно processing
 
-    List<OutboxModel> readExpiredWaitingForSignalEvents();
-    List<OutboxModel> readExpiredWaitingForSignalEvents(Long batchSize);
+    List<? extends OutboxModel> readExpiredWaitingForSignalEvents();
+    List<? extends OutboxModel> readExpiredWaitingForSignalEvents(Long batchSize);
 
 
 
 
 
-    List<OutboxModel> readManagerCrashEvents();
-    List<OutboxModel> readManagerCrashEvents(Long batchSize);
+    List<? extends OutboxModel> readManagerCrashEvents();
+    List<? extends OutboxModel> readManagerCrashEvents(Long batchSize);
 
 
 
