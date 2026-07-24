@@ -7,10 +7,10 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.ChainInit;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperComponent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReader;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModel;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelRepository;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxStatus;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReaderDefault;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.DirectoryAddTestEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import org.junit.jupiter.api.MethodOrderer;
@@ -19,9 +19,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @SpringBootTest
@@ -32,8 +34,19 @@ public class EventLivingCycleTest {
     @Autowired
     private OutputProcessor outputProcessor;
 
+    /*
     @Autowired
     private OutboxModelRepository repository;
+
+     */
+
+    @Autowired
+    private OutboxModelRepository repository;
+
+    @Autowired
+    private MapperComponent mapper;
+
+
 
 
 
@@ -44,7 +57,18 @@ public class EventLivingCycleTest {
     public void repository(){
 
 
-        repository.readActualWaitingEvents().forEach(System.out::println);
+
+
+
+
+
+
+
+
+
+       repository
+               .changeStatusAndMessageForGivenAllReadVersion(UUID.fromString("019f7ffb-d47a-711b-8c76-eddaaba76710"),
+                       OutboxStatus.MANAGER_CRASH, "Hello", 3L);
 
 
 
@@ -75,6 +99,7 @@ public class EventLivingCycleTest {
 
 
 
+
         outputProcessor.output(output, meta);
 
 
@@ -85,6 +110,30 @@ public class EventLivingCycleTest {
 
 
     }
+
+
+    private OutboxModel getModel(){
+        ChainEvent event = getChainEvent();
+
+
+        OutboxModelDefault model = new OutboxModelDefault();
+
+
+        model.setPerformanceLimitTime(null);
+        model.setLastUpdate(Instant.now());
+        model.setPayload(mapper.writeValueAsString(event));
+        model.setType("directory_add_test");
+        model.setProcessUUID(event.getProcessId());
+
+        model.setReadExpiration(Instant.now().plusSeconds(60*60));
+
+        model.setStatus(OutboxStatus.WAITING);
+
+        return model;
+    }
+
+
+
 
 
     private ChainEvent getChainEvent(){

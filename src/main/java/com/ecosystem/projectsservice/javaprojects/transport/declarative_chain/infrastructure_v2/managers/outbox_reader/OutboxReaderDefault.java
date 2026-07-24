@@ -35,7 +35,7 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
 
-
+    // read version должен совпадать
     private void attemptToSetManagerCrashedStatus(ManagementResult result,
                                                   OutboxModel model){
 

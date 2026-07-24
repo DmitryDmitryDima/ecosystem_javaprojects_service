@@ -24,6 +24,16 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
 
 
+
+
+
+    // блокирующий поиск сущности
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT entity FROM OutboxModelJpaEntity " +
+            "entity where entity.outboxUUID = :uuid")
+    Optional<OutboxModelJpaEntity>
+    findByUUIDForUpdate(UUID uuid);
     
 
 

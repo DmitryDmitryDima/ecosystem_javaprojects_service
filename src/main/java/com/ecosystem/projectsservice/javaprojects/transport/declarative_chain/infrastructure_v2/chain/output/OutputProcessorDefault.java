@@ -223,7 +223,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
         try {
 
-
+            // создание новой модели все равно проверяет processing на предыдущем ивенте
             repository.markPreviousAsProcessedAndCreateNewModel(output.getEvent().getOutboxId(),
                     prepareNewEvent(output, meta));
 
