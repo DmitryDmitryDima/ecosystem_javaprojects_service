@@ -5,12 +5,17 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModel;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelRepository;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.List;
 
 
 // TODO ввести подгрузку параметров времени из файла конфигурации
 public class OutboxReaderDefault implements OutboxReader{
+
+
+
+
 
 
     private OutboxModelRepository repository;
@@ -55,14 +60,17 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
 
+    // дефолтное значение после двоеточия
     @Override
+    @Scheduled(fixedDelayString = "${reader.waiting.events:500}")
     public void readWaitingEvents() {
+
+
+        //System.out.println("READING WAITING EVENTS");
 
         // атомарно проставлен processing статус
         List<? extends OutboxModel> actualWaiting
                 = repository.readActualWaitingEvents();
-
-
         for (var model:actualWaiting){
 
             ManagementResult result = manager.workWithWaitingEvent(model);
@@ -70,25 +78,17 @@ public class OutboxReaderDefault implements OutboxReader{
             if (!result.isSuccess()){
 
                 attemptToSetManagerCrashedStatus(result, model);
-
-
-
-
-
-
-
             }
 
-
-
-
         }
-
     }
 
     @Override
+    @Scheduled(fixedDelayString = "${reader.waiting.events.expired:20000}")
     public void readExpiredWaitingEvents() {
 
+
+        //System.out.println("READING Expired waiting EVENTS");
 
         List<? extends OutboxModel> expiredWaitingEvents = repository.readExpiredWaitingEvents();
 
@@ -113,7 +113,10 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
     @Override
+    @Scheduled(fixedDelayString = "${reader.processing.events.expired:20000}")
     public void readExpiredProcessingEvents() {
+
+        //System.out.println("read expired processing events");
 
 
         List<? extends OutboxModel> expiredProcessingEvents
@@ -138,7 +141,11 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
     @Override
+    @Scheduled(fixedDelayString = "${reader.processing.events.everlasting:20000}")
     public void readEverlastingProcessingEvents() {
+
+
+        //System.out.println("READING everlasting EVENTS");
 
         List<? extends OutboxModel> everlastingProcessingEvents = repository
                 .readEverlastingProcessingEvents();
@@ -165,8 +172,13 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
     // dead letter статус проставляется атомарно! менеджер не трогает модель и посылает ее в модель
+    // 60 секунд
     @Override
+    @Scheduled(fixedDelayString = "${reader.processing.events.missed:60000}")
     public void readMissedExpiredProcessingEvents() {
+
+
+        //System.out.println("READING missed expired EVENTS");
 
         List<? extends OutboxModel> missedExpiredProcessingEvents
                 = repository.readMissedExpiredProcessingEvents();
@@ -187,9 +199,12 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
     // при чтении данные ивенты атомарно получают финальный dead_letter
-
     @Override
+    @Scheduled(fixedDelayString = "${reader.manager.crashed.events:60000}")
     public void readManagerCrashedEvents() {
+
+
+        //System.out.println("READING manager crashed EVENTS");
 
         List<? extends OutboxModel> managerCrashedEvents = repository.readManagerCrashEvents();
 
@@ -203,7 +218,11 @@ public class OutboxReaderDefault implements OutboxReader{
 
     // атомарно получили processing статус
     @Override
+    @Scheduled(fixedDelayString = "${reader.waiting.for.signal.events:2000}")
     public void readExpiredWaitingForSignalEvents() {
+
+
+        //System.out.println("READING expired waiting for signal EVENTS");
 
 
         List<? extends OutboxModel> expiredWaitingForSignalEvents = repository
