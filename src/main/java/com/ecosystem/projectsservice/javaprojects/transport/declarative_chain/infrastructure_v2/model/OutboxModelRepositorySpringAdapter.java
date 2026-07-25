@@ -16,7 +16,6 @@ import java.util.UUID;
 public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository {
 
 
-
     private OutboxModelJpaRepository jpaRepository;
 
 
@@ -28,9 +27,6 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         this.jpaRepository = jpaRepository;
         this.transaction = transaction;
     }
-
-
-
 
 
     // создание новой записи
@@ -65,11 +61,10 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             });
 
 
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             throw
                     new OutboxRepositoryException("Не удалось создать outbox модель, причина: "
-                            +e.getMessage());
+                            + e.getMessage());
         }
 
     }
@@ -105,22 +100,22 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                         .findByUUIDForUpdate(previous);
 
                 // если присутствует предыдущий ивент, он обязан соответствовать некоторым условиям
-                if (prevCheck.isPresent()){
+                if (prevCheck.isPresent()) {
 
                     var entity = prevCheck.get();
 
-                    if (entity.isCompensation()){
+                    if (entity.isCompensation()) {
                         throw new IllegalStateException("ошибка коллбэка - ивент помечен, как компенсируемый");
                     }
 
-                    if (entity.getStatus() != OutboxStatus.PROCESSING){
-                        throw new IllegalStateException("ошибка коллбэка - ивент имеет статус "+entity.getStatus());
+                    if (entity.getStatus() != OutboxStatus.PROCESSING) {
+                        throw new IllegalStateException("ошибка коллбэка - ивент имеет статус " + entity.getStatus());
 
 
                     }
 
                     entity.setLastUpdate(Instant.now());
-                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
+                    entity.setAllReadVersion(entity.getAllReadVersion() + 1);
 
                     entity.setStatus(OutboxStatus.PROCESSED);
 
@@ -135,21 +130,12 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                 // так или иначе в случае повторения той или иной ошибки зависший processing улетит в dead letter
 
 
-
-
-
-
-
-
-
                 return null;
 
             });
 
-        }
-
-        catch (Exception e){
-            throw new OutboxRepositoryException("ошибка создания нового шага. Причина: "+e.getMessage());
+        } catch (Exception e) {
+            throw new OutboxRepositoryException("ошибка создания нового шага. Причина: " + e.getMessage());
         }
     }
 
@@ -174,22 +160,22 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                         .findByUUIDForUpdate(id);
 
                 // если присутствует предыдущий ивент, он обязан соответствовать некоторым условиям
-                if (prevCheck.isPresent()){
+                if (prevCheck.isPresent()) {
 
                     var entity = prevCheck.get();
 
-                    if (entity.isCompensation()){
+                    if (entity.isCompensation()) {
                         throw new IllegalStateException("ошибка коллбэка - ивент помечен, как компенсируемый");
                     }
 
-                    if (entity.getStatus() != OutboxStatus.PROCESSING){
-                        throw new IllegalStateException("ошибка коллбэка - ивент имеет статус "+entity.getStatus());
+                    if (entity.getStatus() != OutboxStatus.PROCESSING) {
+                        throw new IllegalStateException("ошибка коллбэка - ивент имеет статус " + entity.getStatus());
 
 
                     }
 
                     entity.setLastUpdate(Instant.now());
-                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
+                    entity.setAllReadVersion(entity.getAllReadVersion() + 1);
 
                     entity.setStatus(OutboxStatus.PROCESSED);
 
@@ -200,17 +186,11 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             });
 
 
-
-        }
-
-        catch (Exception e){
+        } catch (Exception e) {
             throw
                     new OutboxRepositoryException("Ошибка проставления коллбэка для успешно выполненного шага "
-                            +e.getMessage());
+                            + e.getMessage());
         }
-
-
-
 
 
     }
@@ -231,19 +211,19 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                         .findByUUIDForUpdate(id);
 
                 // если присутствует предыдущий ивент, он обязан соответствовать некоторым условиям
-                if (prevCheck.isPresent()){
+                if (prevCheck.isPresent()) {
 
                     var entity = prevCheck.get();
 
 
-                    if (entity.getStatus() != OutboxStatus.PROCESSING){
+                    if (entity.getStatus() != OutboxStatus.PROCESSING) {
                         throw new IllegalStateException("ошибка коллбэка " +
-                                "- ивент имеет статус "+entity.getStatus());
+                                "- ивент имеет статус " + entity.getStatus());
                     }
 
                     entity.setLastUpdate(Instant.now());
 
-                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
+                    entity.setAllReadVersion(entity.getAllReadVersion() + 1);
 
 
                     entity.setStatus(OutboxStatus.PROCESSED);
@@ -255,12 +235,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             });
 
 
-
-        }
-
-        catch (Exception e){
+        } catch (Exception e) {
             throw new OutboxRepositoryException("ошибка коллбэка для компенсационного шага. Причина: "
-                    +e.getMessage());
+                    + e.getMessage());
         }
 
     }
@@ -281,21 +258,17 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                         .findByUUIDForUpdate(id);
 
 
-                prevCheck.ifPresent(entity->entity.setCompensation(true));
+                prevCheck.ifPresent(entity -> entity.setCompensation(true));
 
 
                 return null;
             });
 
 
-
-        }
-
-        catch (Exception e){
+        } catch (Exception e) {
             throw new OutboxRepositoryException("Не удалось пометить шаг как компенсационный: "
-                    +e.getMessage());
+                    + e.getMessage());
         }
-
 
 
     }
@@ -309,20 +282,18 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
                 Optional<OutboxModelJpaEntity> check = jpaRepository.findByUUIDForUpdate(uuid);
 
-                if (check.isPresent()){
+                if (check.isPresent()) {
 
                     var entity = check.get();
 
-                    if (!entity.getAllReadVersion().equals(forAllReadVersion)){
+                    if (!entity.getAllReadVersion().equals(forAllReadVersion)) {
                         throw new IllegalStateException("несовпадение версий");
                     }
 
                     entity.setStatus(toStatus);
                     entity.setLastUpdate(Instant.now());
-                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
-                }
-
-                else {
+                    entity.setAllReadVersion(entity.getAllReadVersion() + 1);
+                } else {
                     throw new IllegalStateException("Сущности нет");
                 }
 
@@ -330,15 +301,16 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                 return null;
             });
 
-        }
-
-        catch (Exception e){
-            throw new OutboxRepositoryException("ошибка изменения статуса. Причина "+e.getMessage());
+        } catch (Exception e) {
+            throw new OutboxRepositoryException("ошибка изменения статуса. Причина " + e.getMessage());
         }
     }
 
     @Override
-    public void changeStatusAndMessageForGivenAllReadVersion(UUID uuid, OutboxStatus toStatus, String message, Long forAllReadVersion) {
+    public void changeStatusAndMessageForGivenAllReadVersion(UUID uuid,
+                                                             OutboxStatus toStatus,
+                                                             String message,
+                                                             Long forAllReadVersion) {
         try {
 
             transaction.execute(status -> {
@@ -346,21 +318,19 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
                 Optional<OutboxModelJpaEntity> check = jpaRepository.findByUUIDForUpdate(uuid);
 
-                if (check.isPresent()){
+                if (check.isPresent()) {
 
                     var entity = check.get();
 
-                    if (!entity.getAllReadVersion().equals(forAllReadVersion)){
+                    if (!entity.getAllReadVersion().equals(forAllReadVersion)) {
                         throw new IllegalStateException("несовпадение версий");
                     }
 
                     entity.setStatus(toStatus);
                     entity.setMessage(message);
                     entity.setLastUpdate(Instant.now());
-                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
-                }
-
-                else {
+                    entity.setAllReadVersion(entity.getAllReadVersion() + 1);
+                } else {
                     throw new IllegalStateException("Сущности нет");
                 }
 
@@ -368,16 +338,10 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                 return null;
             });
 
-        }
-
-        catch (Exception e){
-            throw new OutboxRepositoryException("ошибка изменения статуса. Причина "+e.getMessage());
+        } catch (Exception e) {
+            throw new OutboxRepositoryException("ошибка изменения статуса. Причина " + e.getMessage());
         }
     }
-
-
-
-
 
 
     // обновляем readVersion, атомарно меняем статус на processing
@@ -388,27 +352,26 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             return
                     transaction.execute(status -> {
 
-                    List<OutboxModelJpaEntity> jpaEntities = jpaRepository
-                        .readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus.WAITING);
+                                List<OutboxModelJpaEntity> jpaEntities = jpaRepository
+                                        .readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus.WAITING);
 
 
-                    // при чтении статус меняется на processing,
-                    // обновляется last update,
-                    // а также происходит обновление readVersion
-                    jpaEntities.forEach(outboxModelJpaEntity -> {
-                        outboxModelJpaEntity.setLastUpdate(Instant.now());
-                        outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion()+1);
-                        outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+                                // при чтении статус меняется на processing,
+                                // обновляется last update,
+                                // а также происходит обновление readVersion
+                                jpaEntities.forEach(outboxModelJpaEntity -> {
+                                    outboxModelJpaEntity.setLastUpdate(Instant.now());
+                                    outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion() + 1);
+                                    outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
 
-                    });
+                                });
 
-                return jpaEntities;}
+                                return jpaEntities;
+                            }
                     );
-        }
-
-        catch (Exception e){
+        } catch (Exception e) {
             throw new
-                    OutboxRepositoryException("Не удалось получить актуальные Waiting записи. Причина: "+e.getMessage());
+                    OutboxRepositoryException("Не удалось получить актуальные Waiting записи. Причина: " + e.getMessage());
         }
     }
 
@@ -416,12 +379,6 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     public List<? extends OutboxModel> readActualWaitingEvents(Long batchSize) {
         return List.of();
     }
-
-
-
-
-
-
 
 
     @Override
@@ -438,37 +395,67 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         try {
 
 
+            return transaction.execute(status -> {
+
+                List<OutboxModelJpaEntity> everlastingSteps = jpaRepository
+                        .readEverlastingSteps(OutboxStatus.PROCESSING);
 
 
+                everlastingSteps.forEach(step -> {
+
+                    // атомарно обновляем счетчик при чтении
+                    step.setAllReadProcessingVersion(step.getAllReadProcessingVersion() + 1);
+                    step.setAllReadVersion(step.getAllReadVersion());
+
+                });
 
 
+                return everlastingSteps;
+            });
 
 
+        } catch (Exception e) {
 
-
-
+            throw new OutboxRepositoryException("ошибка чтения активных бесконечных шагов: " + e.getMessage());
         }
-
-        catch (Exception e){
-
-            throw new OutboxRepositoryException("ошибка чтения бесконечных шагов "+e.getMessage());
-        }
-
 
 
     }
 
 
-
-
-
-
-
-
-
+    // dead letter
     @Override
     public List<? extends OutboxModel> readMissedExpiredProcessingEvents() {
-        return List.of();
+
+
+        try {
+
+
+            return transaction.execute(status -> {
+
+
+                List<OutboxModelJpaEntity> entities = jpaRepository
+                        .readMissedEventsExpiredByPerformance();
+
+
+                entities.forEach(entity -> {
+                    entity.setAllReadProcessingVersion(entity.getAllReadProcessingVersion()+1);
+                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
+                    entity.setLastUpdate(Instant.now());
+                    entity.setStatus(OutboxStatus.DEAD_LETTER);
+                });
+
+                return entities;
+            });
+        }
+
+        catch (Exception e){
+
+            throw new OutboxRepositoryException("Ошибка чтения многократно зависших шагов. "+e.getMessage());
+        }
+
+
+
     }
 
     @Override
@@ -476,15 +463,48 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         return List.of();
     }
 
+
+    // ивент просрочился по времени выполнения, получает значение processing чтения = 1.
+    // Более медленный обработчик должен читать ивенты, который не вышли из этого состояния зависания
+
+
     @Override
     public List<? extends OutboxModel> readExpiredProcessingEvents() {
-        return List.of();
+
+
+        try {
+
+
+            return transaction.execute(status -> {
+
+
+                List<OutboxModelJpaEntity> entities = jpaRepository
+                        .readEventsExpiredByPerformance();
+
+
+                entities.forEach(entity -> {
+                    entity.setAllReadProcessingVersion(entity.getAllReadProcessingVersion()+1);
+                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
+                });
+
+                return entities;
+            });
+        }
+
+        catch (Exception e){
+
+            throw new OutboxRepositoryException("Ошибка чтения зависших шагов. "+e.getMessage());
+        }
     }
 
     @Override
     public List<? extends OutboxModel> readExpiredProcessingEvents(Long batchSize) {
         return List.of();
     }
+
+
+
+
 
     @Override
     public List<? extends OutboxModel> readExpiredWaitingEvents() {
@@ -567,7 +587,38 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     @Override
     public List<? extends OutboxModel> readManagerCrashEvents() {
-        return List.of();
+
+        try {
+
+            return transaction.execute(status -> {
+
+
+
+                List<OutboxModelJpaEntity> events = jpaRepository.readByStatus(OutboxStatus.MANAGER_CRASH);
+
+                // счетчик + статус
+                events.forEach(event->{
+                    event.setAllReadVersion(event.getAllReadVersion()+1);
+                    event.setStatus(OutboxStatus.DEAD_LETTER);
+                    event.setLastUpdate(Instant.now());
+
+
+
+                });
+
+
+                return events;
+            });
+
+        }
+
+        catch (Exception e){
+            throw new OutboxRepositoryException("Ошибка чтения managed_crashed шагов. "+e.getMessage());
+        }
+
+
+
+
     }
 
     @Override

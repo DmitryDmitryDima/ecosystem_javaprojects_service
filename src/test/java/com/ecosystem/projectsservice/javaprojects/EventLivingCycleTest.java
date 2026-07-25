@@ -57,18 +57,7 @@ public class EventLivingCycleTest {
     public void repository(){
 
 
-
-
-
-
-
-
-
-
-
-       repository
-               .changeStatusAndMessageForGivenAllReadVersion(UUID.fromString("019f7ffb-d47a-711b-8c76-eddaaba76710"),
-                       OutboxStatus.MANAGER_CRASH, "Hello", 3L);
+        System.out.println(repository.readMissedExpiredProcessingEvents());
 
 
 

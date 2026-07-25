@@ -307,7 +307,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             // duration первого шага
             // если everlasting, то значение остается null
-            // в противном случае указывается время на основании пользовательского значения, или дефолт
+            // в противном случае указывается время на основании
+            // пользовательского значения, или дефолт
             Long duration = null;
             if (!opening.isEverlasting()){
                 duration = ChainUtils.convertToMillis(opening.getTimeLimit(),
