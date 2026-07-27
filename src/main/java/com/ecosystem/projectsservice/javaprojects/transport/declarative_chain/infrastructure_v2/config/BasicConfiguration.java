@@ -15,6 +15,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReader;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReaderDefault;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReaderSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.sender.ChainManagerSender;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.sender.ChainManagerSenderSpringApplicationPublisherAdapter;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelJpaRepository;
@@ -90,7 +91,7 @@ public class BasicConfiguration {
                                      EventManager eventManager){
 
 
-        return new OutboxReaderDefault(repository, eventManager);
+        return new OutboxReaderSpringAdapter(repository, eventManager);
     }
 
 

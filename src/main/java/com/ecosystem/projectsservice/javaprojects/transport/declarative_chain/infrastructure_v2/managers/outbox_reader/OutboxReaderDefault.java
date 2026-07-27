@@ -62,7 +62,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
     // дефолтное значение после двоеточия
     @Override
-    @Scheduled(fixedDelayString = "${reader.waiting.events:500}")
+    //@Scheduled(fixedDelayString = "${reader.waiting.events:500}")
     public void readWaitingEvents() {
 
 
@@ -84,7 +84,7 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.waiting.events.expired:20000}")
+    //@Scheduled(fixedDelayString = "${reader.waiting.events.expired:20000}")
     public void readExpiredWaitingEvents() {
 
 
@@ -113,7 +113,7 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.processing.events.expired:20000}")
+    //@Scheduled(fixedDelayString = "${reader.processing.events.expired:20000}")
     public void readExpiredProcessingEvents() {
 
         //System.out.println("read expired processing events");
@@ -141,7 +141,7 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.processing.events.everlasting:20000}")
+    //@Scheduled(fixedDelayString = "${reader.processing.events.everlasting:20000}")
     public void readEverlastingProcessingEvents() {
 
 
@@ -174,7 +174,7 @@ public class OutboxReaderDefault implements OutboxReader{
     // dead letter статус проставляется атомарно! менеджер не трогает модель и посылает ее в модель
     // 60 секунд
     @Override
-    @Scheduled(fixedDelayString = "${reader.processing.events.missed:60000}")
+    //@Scheduled(fixedDelayString = "${reader.processing.events.missed:60000}")
     public void readMissedExpiredProcessingEvents() {
 
 
@@ -200,7 +200,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
     // при чтении данные ивенты атомарно получают финальный dead_letter
     @Override
-    @Scheduled(fixedDelayString = "${reader.manager.crashed.events:60000}")
+    //@Scheduled(fixedDelayString = "${reader.manager.crashed.events:60000}")
     public void readManagerCrashedEvents() {
 
 
@@ -218,7 +218,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
     // атомарно получили processing статус
     @Override
-    @Scheduled(fixedDelayString = "${reader.waiting.for.signal.events:2000}")
+    //@Scheduled(fixedDelayString = "${reader.waiting.for.signal.events:2000}")
     public void readExpiredWaitingForSignalEvents() {
 
 
