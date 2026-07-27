@@ -9,7 +9,10 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainStepExecutionException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.DeliveryStatus;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.PerformanceStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputMetadata;
@@ -335,6 +338,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             // не забываем проставить тип действия
             metadata.setAction(new ChainInit());
 
+
+
+
             onPublishChainOutput(output, metadata);
 
 
@@ -390,8 +396,105 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
+    /* ПРИНЦИПЫ
+     - ПОПАДАНИЕ В ЭТУ СТАДИЮ ОЗНАЧАЕТ, ЧТО АВАТАР МОЖЕТ БЫТЬ ВОСКРЕШЕН,
+        ДАЖЕ ДЛЯ КОМПЕНСАЦИИ
+
+     - Шаг для выполнения вычисляется в конце предыдущего действия
+
+     - Каждый этап должен иметь переопределяемый protected хук
+
+
+
+     // todo реализовать возможность создавать шаги с аватаром в качестве параметра
+          (альтернатива геттеру)
+
+    */
+
 
     protected void processEvent(E event){
+
+
+        // ГОТОВИМ БАЗОВУЮ ИНФОРМАЦИЮ ОБ ИВЕНТЕ
+
+        if (event.getProcessId() == null)
+            throw new ChainStepExecutionException("Невозможно выполнить шаг, отсутствует uuid процесса");
+
+
+        var info = event.getProcessingInfo();
+
+        if (info == null) throw new ChainStepExecutionException("Невозможно выполнить шаг," +
+                " отсутствует необходимый state");
+
+
+
+        ChainStep<?> step = findStepByName(info.getCurrentStep());
+
+        if (step == null) throw new ChainStepExecutionException("у шага отсутствует имя");
+
+
+
+
+
+
+        // восстанавливаем или получаем текущий runtime аватар
+        ProcessAvatar avatar = processAvatarStorage.getOrRestore(event.getProcessId(),
+                new ProcessAvatar(event.getProcessId(), setProcessIndexes(event)));
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // АНАЛИЗИРУЕМ DELIVERY И PERFORMANCE STATUS для определения следующего действия
+        DeliveryStatus deliveryStatus = info.getDeliveryStatus();
+
+        PerformanceStatus performanceStatus = info.getPerformanceStatus();
+
+
+        /*
+
+         */
+        if (deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR){
+
+
+        }
+
+
+
+
+
+
+
+
+
+    }
+
+
+
+
+    // метод поиска мета информации о шаге согласно имени
+
+
+    protected ChainStep<?> findStepByName(String name){
+
+         if (opening.getName().equals(name)) return opening;
+
+         else if (ending.getName().equals(name)) return ending;
+
+         else {
+
+             return chainBody.get(name);
+
+         }
+
 
     }
 

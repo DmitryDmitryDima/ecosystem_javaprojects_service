@@ -82,6 +82,12 @@ public class ProcessAvatar {
     }
 
 
+    public ProcessAvatar(UUID correlationId, List<ProcessAvatarIndex> indexes){
+        this.correlationId = correlationId;
+        this.indexes = indexes;
+    }
+
+
     public void addIndexes(List<ProcessAvatarIndex> indexes){
         this.indexes = indexes;
     }

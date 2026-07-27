@@ -294,12 +294,16 @@ public class EventManagerDefault implements EventManager{
 
             else {
 
+
+
                 // шаг на самом деле завершился, но не смог опубликоваться
                 if (avatar.get().getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR
 
-                        || avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP
+                        || avatar.get().getStatus().get()
+                        == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP
 
-                        || avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH
+                        || avatar.get().getStatus().get()
+                        == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH
 
 
 

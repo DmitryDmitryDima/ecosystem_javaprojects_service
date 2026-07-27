@@ -8,6 +8,8 @@ public enum DeliveryStatus {
 
     SUCCESS_READING,
     OUTBOX_PROCESSOR_ERROR, // шаг завершился, но не смог опубликоваться в конце
+
+
     EXPIRED_READING,
     EXPIRED_PROCESSING_WITH_CONTEXT, // выполнение просрочено, но аватар жив
     EXPIRED_PROCESSING_MISSING_CONTEXT,
