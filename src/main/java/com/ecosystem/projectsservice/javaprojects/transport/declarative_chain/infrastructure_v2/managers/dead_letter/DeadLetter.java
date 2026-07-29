@@ -1,12 +1,26 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter;
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputMetadata;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModel;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class DeadLetter {
+
+
+
+
+
+    // последние данные у аватара перед смертью
+    private ChainOutput previousOutput;
+
+    private OutputMetadata<?> previousOutputMetadata;
+
+    private ProcessAvatarStatus lastStatus;
 
 
 

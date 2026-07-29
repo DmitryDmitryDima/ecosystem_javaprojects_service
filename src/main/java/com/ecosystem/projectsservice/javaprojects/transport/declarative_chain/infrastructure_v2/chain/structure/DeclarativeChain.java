@@ -9,6 +9,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputResult;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainStepExecutionException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.DeliveryStatus;
@@ -134,9 +135,16 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    // хуки
 
-    // onChainStop
+    protected void onCompensationStart(E event){
+
+    }
+
+    protected void onCompensationEnd(E event){
+
+
+
+    }
 
 
 
@@ -319,6 +327,19 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             }
 
 
+            // создаем runtime аватар процесса
+
+            ProcessAvatar runtimeAvatar
+                    = new ProcessAvatar(event.getProcessId());
+
+            // добавляем индексы, вызывая переопределяемый метод
+            runtimeAvatar.addIndexes(setProcessIndexes(event));
+
+            runtimeAvatar.setStatus(ProcessAvatarStatus.WAITING);
+
+            processAvatarStorage.registerAvatar(runtimeAvatar);
+
+
 
 
             // если performance expiration == null, то это означает Everlasting шаг
@@ -341,21 +362,15 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-            onPublishChainOutput(output, metadata);
+            OutputResult result = onPublishChainOutput(output, metadata, runtimeAvatar);
+
+            if (!result.isPublished()){
+                throw new IllegalStateException(result.getMessage());
+            }
 
 
 
-            // создаем runtime аватар процесса
 
-            ProcessAvatar runtimeAvatar
-                    = new ProcessAvatar(event.getProcessId());
-
-            // добавляем индексы, вызывая переопределяемый метод
-            runtimeAvatar.addIndexes(setProcessIndexes(event));
-
-            runtimeAvatar.setStatus(ProcessAvatarStatus.WAITING);
-
-            processAvatarStorage.registerAvatar(runtimeAvatar);
 
 
 
@@ -368,8 +383,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         }
 
         catch (Exception e){
-            throw new ChainInitException("Chain start fail "+e.getMessage());
-
+            throw new ChainInitException("Не удалось запустить цепь "+e.getMessage());
         }
 
 
@@ -379,9 +393,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     }
 
     // выделяем хук для возможности добавления/модификации metadata
-    protected void onPublishChainOutput(ChainOutput output,
-                                        OutputMetadata<?> metadata){
-        outputProcessor.output(output, metadata);
+    protected OutputResult onPublishChainOutput(ChainOutput output,
+                                                OutputMetadata<?> metadata, ProcessAvatar avatar){
+        return outputProcessor.output(output, metadata, avatar);
 
 
     }
@@ -460,9 +474,20 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
         /*
-
+            Предыдущий шаг не смог корректно опубликоваться, повторяем попытку
          */
-        if (deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR){
+        if (deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH
+                || deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP
+                || deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STOP
+                || deliveryStatus == DeliveryStatus.OU
+
+        ){
+
+
+
+
+
+
 
 
         }
@@ -476,6 +501,67 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
     }
+
+
+
+
+    protected void outputErrorScenario(ChainEvent event,
+                                       ChainStep<?> step,
+                                       ProcessAvatar avatar){
+
+
+
+
+        try {
+
+            ChainOutput output = avatar.getPreviousOutput().get();
+
+            OutputMetadata<?> outputMetadata = avatar.getPreviousOutputMetadata().get();
+
+            if (output == null || outputMetadata == null){
+                throw new IllegalStateException("в аватаре отсутствует информация для публикации");
+            }
+
+
+
+            onPublishChainOutput(output, outputMetadata);
+
+        }
+
+        catch (Exception e){
+
+
+            // если проваливается попытка опубликоваться вновь
+
+            /*
+
+            для обычного шага - просто запускаем компенсацию с передачей статуса
+
+             */
+
+
+            /*
+
+
+            Для бесконечного шага все сложнее - попытки публикаций могут войти в петлю,
+
+            и, соответственно, пользователь может столкнуться с повторяющимися компенсациями
+
+
+
+
+
+
+
+
+
+             */
+        }
+
+    }
+
+
+
 
 
 

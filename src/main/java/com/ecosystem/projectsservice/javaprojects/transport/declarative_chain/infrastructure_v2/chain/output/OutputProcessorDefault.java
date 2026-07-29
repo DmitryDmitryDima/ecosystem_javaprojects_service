@@ -4,10 +4,8 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetter;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetterChannel;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperComponent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModel;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelDefault;
@@ -27,18 +25,14 @@ public class OutputProcessorDefault implements OutputProcessor {
 
 
 
-    private DeadLetterChannel deadLetterChannel;
-
-    private ProcessAvatarStorage avatarStorage;
 
 
     public OutputProcessorDefault(OutboxModelRepository repository,
-                                  MapperComponent mapper, ProcessAvatarStorage avatarStorage,
-                                  DeadLetterChannel deadLetterChannel){
+                                  MapperComponent mapper){
         this.repository = repository;
         this.mapper = mapper;
-        this.deadLetterChannel = deadLetterChannel;
-        this.avatarStorage = avatarStorage;
+
+
     }
 
     public OutputProcessorDefault(){}
@@ -85,8 +79,9 @@ public class OutputProcessorDefault implements OutputProcessor {
     }
 
     // данный сценарий предполагает только сохранение нового ивента
-    protected void chainInitOutputScenario(ChainOutput output,
-                                         OutputMetadata<?> metadata){
+    protected OutputResult chainInitOutputScenario(ChainOutput output,
+                                         OutputMetadata<?> metadata,
+                                           ProcessAvatar avatar){
 
 
         try {
@@ -95,11 +90,18 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             repository.create(model);
 
+            return OutputResult.success();
+
         }
 
         catch (Exception e){
-            throw new OutputProcessorException("Ошибка сценария публикации." +
-                    " Не удалось запустить процесс: "+e.getMessage());
+
+            // мгновенное убийство
+            avatar.terminate();
+
+            return new OutputResult(false, e, "Ошибка сценария " +
+                    "публикации init события");
+
         }
 
 
@@ -107,8 +109,9 @@ public class OutputProcessorDefault implements OutputProcessor {
 
 
     // внимание - для компенсации используется конкретный метод репозитория
-    protected void chainCompensationEndOutputScenario(ChainOutput output,
-                                                      OutputMetadata<?> meta){
+    protected OutputResult chainCompensationEndOutputScenario(ChainOutput output,
+                                                      OutputMetadata<?> meta,
+                                                      ProcessAvatar avatar){
 
 
 
@@ -116,26 +119,33 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             repository.markAsProcessedForCompensation(output.getEvent().getOutboxId());
 
-            // уничтожение аватара
-            avatarStorage.getAvatarById(output.getEvent()
-                            .getProcessId())
-                    .ifPresent(ProcessAvatar::terminate);
+
+            // terminate статус
+            avatar.terminate();
+
+
+            return OutputResult.success();
+
+
 
         }
         catch (Exception e){
 
             // ошибка проставления коллбэка. Нужно уведомить аватар специальным статусом
+            // в бесконечном шаге это спасет систему от повторной компенсации
+            // (помимо этого в большинстве случае присутствует бд механизм защиты)
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_COMPENSATION,
+                    output, meta
+                    );
 
-            Optional<ProcessAvatar> avatarCheck = avatarStorage.getAvatarById(output.getEvent()
-                    .getProcessId());
 
-            // компенсация не может быть everlasting! Если аватара нет,
-            // его обработают как обычный processing
-            // поэтому не рассматриваем ситуацию, когда аватар недоступен
-            avatarCheck.ifPresent(processAvatar
-                    -> processAvatar.processCleanup(ProcessAvatarStatus.OUTPUT_ERROR,
-                    output,
-                    meta));
+            return new OutputResult(false, e,
+                    "Ошибка публикации при закрытии компенсации "
+                    +e.getMessage());
+
+
+
+
 
 
 
@@ -150,7 +160,8 @@ public class OutputProcessorDefault implements OutputProcessor {
 
     // атомарный коллбэк плюс публикация нового ивента (компенсационного)
     protected void chainCrashOutputScenario(ChainOutput output,
-                                            OutputMetadata<?> meta){
+                                            OutputMetadata<?> meta,
+                                            ProcessAvatar avatar){
 
 
         try {
@@ -162,11 +173,9 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             // перевод аватара в статус crashed, его очистка от остатков прошлого процесса
 
-            avatarStorage.getAvatarById(output.getEvent()
-                            .getProcessId())
-                    .ifPresent(processAvatar
-                            -> processAvatar.processCleanup(ProcessAvatarStatus
-                            .CRASHED, output, meta));
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.CRASHED, output, meta);
+
+
 
 
 
@@ -176,36 +185,13 @@ public class OutputProcessorDefault implements OutputProcessor {
 
         catch (Exception e){
 
+            // уведомляем систему, что публикация не удалась
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH,
+                    output, meta);
 
-            // ошибка публикации
-
-            Optional<ProcessAvatar> avatarCheck = avatarStorage.getAvatarById(output.getEvent()
-                    .getProcessId());
-
-            if (avatarCheck.isEmpty()){
-
-                // если шаг бесконечен, мы не можем проигнорировать ситуацию,
-                // где публикация провалена, а также нет аватара
-                if (meta.getExecutedStep().isEverlasting()){
-
-                    DeadLetter deadLetter = new DeadLetter("Критическая ошибка" +
-                            " - невозможно передать информацию об падении everlasting шага.",
-                            output.getEvent().getOutboxId(),
-                            output.getEvent().getProcessId());
-
-                    deadLetterChannel.send(deadLetter);
-                }
-
-                // для шагов с фиксированным таймаутом выполнения политика предполагает,
-                // что такой шаг будет обработан reader'ом в дальнейшем
-                // (отсутствие аватара будет подмечено с помощью missing context)
-
-            }
-
-            else {
-                avatarCheck.get().processCleanup(ProcessAvatarStatus
-                        .OUTPUT_ERROR_AFTER_CRASH, output, meta);
-            }
+            throw
+                    new OutputProcessorException("Ошибка публикации после сбоя цепи. Причина" +
+                            " - "+e.getMessage());
 
 
 
@@ -271,7 +257,7 @@ public class OutputProcessorDefault implements OutputProcessor {
             }
 
             else {
-                avatarCheck.get().processCleanup(ProcessAvatarStatus
+                avatarCheck.get().performActionsAndSetStatus(ProcessAvatarStatus
                         .OUTPUT_ERROR_AFTER_STOP, output, meta);
             }
 
@@ -339,7 +325,7 @@ public class OutputProcessorDefault implements OutputProcessor {
             }
 
             else {
-                avatarCheck.get().processCleanup(ProcessAvatarStatus.OUTPUT_ERROR, output, meta);
+                avatarCheck.get().performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP, output, meta);
             }
 
 
@@ -397,7 +383,7 @@ public class OutputProcessorDefault implements OutputProcessor {
             }
 
             else {
-                avatarCheck.get().processCleanup(ProcessAvatarStatus.OUTPUT_ERROR,
+                avatarCheck.get().performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP,
                         output, meta);
             }
 
@@ -408,7 +394,9 @@ public class OutputProcessorDefault implements OutputProcessor {
 
 
     @Override
-    public void output(ChainOutput output, OutputMetadata<?> metadata) {
+    public OutputResult output(ChainOutput output,
+                               OutputMetadata<?> metadata,
+                               ProcessAvatar avatar) {
 
 
         try {
@@ -424,7 +412,7 @@ public class OutputProcessorDefault implements OutputProcessor {
             if (action instanceof ChainInit){
 
 
-                chainInitOutputScenario(output, metadata);
+                return chainInitOutputScenario(output, metadata, avatar);
             }
 
             else if (action instanceof ChainEnd){
@@ -432,7 +420,7 @@ public class OutputProcessorDefault implements OutputProcessor {
             }
 
             else if (action instanceof CompensationEnd){
-                chainCompensationEndOutputScenario(output, metadata);
+                return chainCompensationEndOutputScenario(output, metadata, avatar);
             }
 
             else if (action instanceof ChainStop){
@@ -459,11 +447,13 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             }
 
+            return new OutputResult(true, null);
+
 
         }
 
         catch (Exception e){
-            throw new OutputProcessorException("output processing error. Reason: "+e.getMessage());
+            return new OutputResult(false, e);
         }
 
 

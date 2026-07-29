@@ -7,7 +7,12 @@ public enum DeliveryStatus {
 
 
     SUCCESS_READING,
-    OUTBOX_PROCESSOR_ERROR, // шаг завершился, но не смог опубликоваться в конце
+    OUTBOX_PROCESSOR_ERROR_AFTER_STEP, // шаг завершился, но не смог опубликоваться в конце
+    OUTBOX_PROCESSOR_ERROR_AFTER_STOP, // ошибка публикации,
+    // при этом на момент ошибки процесс был остановлен
+    OUTBOX_PROCESSOR_ERROR_AFTER_CRASH, // ошибка публикации, шаг был остановлен
+
+
 
 
     EXPIRED_READING,

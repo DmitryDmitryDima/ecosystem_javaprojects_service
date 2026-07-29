@@ -216,6 +216,15 @@ public class EventManagerDefault implements EventManager{
 
         try {
 
+
+            // если модель помечена, как отправленная на компенсацию, но не получила коллбэк
+
+
+
+
+
+
+
             ChainEvent chainEvent = readPayload(model);
 
             Optional<ProcessAvatar> avatar = processAvatarStorage
@@ -234,25 +243,48 @@ public class EventManagerDefault implements EventManager{
 
             // если аватар есть и он не output_error - не трогаем процесс
 
-            if (avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR
+            // шаг на самом деле завершился, но не смог опубликоваться
+            // мутируем статус на аватаре в delivery status
 
-                || avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP
+            ProcessAvatarStatus avatarStatus = avatar.get().getStatus().get();
 
-                    || avatar.get().getStatus().get()== ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH
-
-
-            ){
-                chainEvent.getProcessingInfo().setDeliveryStatus(DeliveryStatus
-                        .OUTBOX_PROCESSOR_ERROR);
-
-
+            if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH){
+                chainEvent.getProcessingInfo()
+                        .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH);
 
                 // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
                 // если аватар упадет в момент попадания в цепь,
                 // то шаг попадет в новый цикл проверки
                 sender.send(chainEvent);
 
+
             }
+
+            else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP){
+                chainEvent.getProcessingInfo()
+                        .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP);
+                // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
+                // если аватар упадет в момент попадания в цепь,
+                // то шаг попадет в новый цикл проверки
+                sender.send(chainEvent);
+            }
+
+            else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP){
+                chainEvent.getProcessingInfo()
+                        .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STOP);
+                // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
+                // если аватар упадет в момент попадания в цепь,
+                // то шаг попадет в новый цикл проверки
+                sender.send(chainEvent);
+            }
+
+
+
+
+
+
+
+
 
             return new ManagementResult(true, null);
 
@@ -296,23 +328,31 @@ public class EventManagerDefault implements EventManager{
 
 
 
+
+
+
                 // шаг на самом деле завершился, но не смог опубликоваться
-                if (avatar.get().getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR
+                // мутируем статус на аватаре в delivery status
 
-                        || avatar.get().getStatus().get()
-                        == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP
+                ProcessAvatarStatus avatarStatus = avatar.get().getStatus().get();
 
-                        || avatar.get().getStatus().get()
-                        == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH
-
-
-
-                ){
-                    chainEvent.getProcessingInfo().setDeliveryStatus(DeliveryStatus
-                            .OUTBOX_PROCESSOR_ERROR);
-
-
+                if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH){
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH);
                 }
+
+                else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP){
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP);
+                }
+
+                else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP){
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STOP);
+                }
+
+
+
 
                 else {
                     chainEvent.getProcessingInfo()

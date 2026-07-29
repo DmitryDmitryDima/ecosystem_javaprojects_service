@@ -94,8 +94,8 @@ public class ProcessAvatar {
 
 
     // заканчиваем шаг
-    public void processCleanup(ProcessAvatarStatus nextStatus,
-                               ChainOutput output, OutputMetadata<?> metadata ){
+    public void performActionsAndSetStatus(ProcessAvatarStatus nextStatus,
+                                           ChainOutput output, OutputMetadata<?> metadata ){
 
 
         previousOutput.set(output);
@@ -106,7 +106,7 @@ public class ProcessAvatar {
         lastModified.set(Instant.now());
         currentStep.set(null);
 
-        // устанавливаем имя следующего ивента
+
         setStatus(nextStatus);
         currentNativeProcesses.getAndUpdate((processes -> {
             if (processes!=null){

@@ -9,6 +9,8 @@ public class ManagementResult {
     private boolean compensationStart;
 
 
+
+
     private Exception exception;
 
     public boolean isSuccess() {
