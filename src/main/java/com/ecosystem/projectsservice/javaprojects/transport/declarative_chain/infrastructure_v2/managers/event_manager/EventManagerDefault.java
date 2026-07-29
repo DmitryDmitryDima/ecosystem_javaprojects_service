@@ -140,7 +140,7 @@ public class EventManagerDefault implements EventManager{
     // в данном случае аватар может отсутствовать, поэтому проверку не проводим
 
     @Override
-    public ManagementResult workWithWaitingEvent(OutboxModel model) {
+    public ManagerResult workWithWaitingEvent(OutboxModel model) {
 
 
         try {
@@ -152,7 +152,12 @@ public class EventManagerDefault implements EventManager{
 
             sender.send(chainEvent);
 
-            return new ManagementResult(true, null);
+
+
+
+
+
+            return new ManagerResult();
 
 
 
@@ -165,7 +170,11 @@ public class EventManagerDefault implements EventManager{
         // ошибка менеджера
 
         catch (Exception exception){
-            return new ManagementResult(false, exception);
+
+            ManagerResult result = new ManagerResult();
+            result.setException(exception);
+
+            return result;
 
 
         }
@@ -176,9 +185,9 @@ public class EventManagerDefault implements EventManager{
     }
 
 
-    // проверка на аватар не проводится
+
     @Override
-    public ManagementResult workWithExpiredWaitingEvent(OutboxModel model) {
+    public ManagerResult workWithExpiredWaitingEvent(OutboxModel model) {
 
         try {
             ChainEvent chainEvent = readPayload(model);
@@ -189,14 +198,17 @@ public class EventManagerDefault implements EventManager{
 
             sender.send(chainEvent);
 
-            return new ManagementResult(true, true);
+            return new ManagerResult();
 
 
         }
 
         catch (Exception e){
 
-            return new ManagementResult(false, e);
+            ManagerResult result = new ManagerResult();
+            result.setException(e);
+
+            return result;
         }
 
 
@@ -207,86 +219,162 @@ public class EventManagerDefault implements EventManager{
 
     // если аватара нет, то выставляется специфический delivery status
 
-    // если аватар есть, то ничего не делаем
-    // - шаг бесконечен, пока его не убьют вручную и есть аватар
+
 
     @Override
-    public ManagementResult workWithEverlastingProcessingEvent(OutboxModel model) {
+    public ManagerResult workWithEverlastingProcessingEvent(OutboxModel model) {
 
 
         try {
 
-
-            // если модель помечена, как отправленная на компенсацию, но не получила коллбэк
-
-
+            Optional<ProcessAvatar> avatarCheck = processAvatarStorage
+                    .getAvatarById(model.getProcessUUID());
 
 
+            // это означает, что процесс уже был однажды отправлен на компенсацию,
+            // но коллбэк не получил
+            if (model.isCompensation()){
+
+                // убиваем аватар, если он есть
+                avatarCheck.ifPresent(ProcessAvatar::terminate);
+
+
+                // генерируем dead letter
+
+                DeadLetter deadLetter = new DeadLetter("Зависшая компенсация", model);
+
+                deadLetterChannel.send(deadLetter);
+
+                // провоцируем мгновенный dead letter в бд
+
+                ManagerResult result = new ManagerResult();
+
+                result.setNeedDeadLetter(true);
+
+                return result;
 
 
 
-            ChainEvent chainEvent = readPayload(model);
-
-            Optional<ProcessAvatar> avatar = processAvatarStorage
-                    .getAvatarById(chainEvent.getProcessId());
+            }
 
 
-            if (avatar.isEmpty()){
+            if (avatarCheck.isPresent()){
+
+                ProcessAvatar avatar = avatarCheck.get();
+
+
+
+                // компенсация была вызвана, но зависла
+                if (avatar.getStatus().get() == ProcessAvatarStatus.COMPENSATING){
+
+                    // убиваем аватар, тем самым убивая зависшую компенсацию
+                    avatar.terminate();
+
+                    // генерируем dead letter
+
+                    DeadLetter deadLetter = new DeadLetter("Зависшая компенсация", model);
+
+                    deadLetterChannel.send(deadLetter);
+
+
+                    // провоцируем мгновенный dead letter в бд
+
+                    ManagerResult result = new ManagerResult();
+
+                    result.setNeedDeadLetter(true);
+
+                    return result;
+
+
+
+
+
+
+
+
+                }
+
+
+                ChainEvent chainEvent = readPayload(model);
+
+
+                // шаг завершился, но не опубликовался. Отправляем в цепь
+
+                if (avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH){
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH);
+
+                    // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
+                    // если аватар упадет в момент попадания в цепь,
+                    // то шаг попадет в новый цикл проверки
+                    sender.send(chainEvent);
+
+                    return new ManagerResult();
+
+
+                }
+
+                else if (avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP){
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP);
+                    // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
+                    // если аватар упадет в момент попадания в цепь,
+                    // то шаг попадет в новый цикл проверки
+                    sender.send(chainEvent);
+
+                    return new ManagerResult();
+                }
+
+                else if (avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP){
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STOP);
+                    // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
+                    // если аватар упадет в момент попадания в цепь,
+                    // то шаг попадет в новый цикл проверки
+                    sender.send(chainEvent);
+
+                    return new ManagerResult();
+                }
+
+
+                else {
+
+                    // остальные статусы игнорируются
+                    return new ManagerResult();
+                }
+
+
+            }
+
+
+            // аватара нет - контекст процесса был потерян
+
+            // компенсационная ситуация, поэтому делаем пометку в бд
+
+            // не забываем, что аватар будет воскрешен и получит статус compensating
+
+            else {
+
+
+
+                ChainEvent chainEvent = readPayload(model);
+
                 chainEvent.getProcessingInfo().setDeliveryStatus(DeliveryStatus
                         .EVERLASTING_STEP_MISSING_CONTEXT);
 
                 sender.send(chainEvent);
 
-                // уведомляем о компенсации
-                return new ManagementResult(true, true);
-            }
+                ManagerResult managerResult = new ManagerResult();
+                managerResult.setWithCompensation(true);
 
-            // если аватар есть и он не output_error - не трогаем процесс
+                return managerResult;
 
-            // шаг на самом деле завершился, но не смог опубликоваться
-            // мутируем статус на аватаре в delivery status
 
-            ProcessAvatarStatus avatarStatus = avatar.get().getStatus().get();
 
-            if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH){
-                chainEvent.getProcessingInfo()
-                        .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH);
-
-                // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
-                // если аватар упадет в момент попадания в цепь,
-                // то шаг попадет в новый цикл проверки
-                sender.send(chainEvent);
 
 
             }
 
-            else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP){
-                chainEvent.getProcessingInfo()
-                        .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP);
-                // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
-                // если аватар упадет в момент попадания в цепь,
-                // то шаг попадет в новый цикл проверки
-                sender.send(chainEvent);
-            }
-
-            else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP){
-                chainEvent.getProcessingInfo()
-                        .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STOP);
-                // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
-                // если аватар упадет в момент попадания в цепь,
-                // то шаг попадет в новый цикл проверки
-                sender.send(chainEvent);
-            }
-
-
-
-
-
-
-
-
-
-            return new ManagementResult(true, null);
 
 
 
@@ -294,7 +382,11 @@ public class EventManagerDefault implements EventManager{
 
         }
         catch (Exception e){
-            return new ManagementResult(false, e);
+
+            ManagerResult managerResult = new ManagerResult();
+            managerResult.setException(e);
+            return managerResult;
+
         }
 
 
@@ -307,7 +399,7 @@ public class EventManagerDefault implements EventManager{
     // todo нужно поразмыслить, имеет ли значение наличие/отсутствие аватара
 
     @Override
-    public ManagementResult workWithExpiredProcessingEvent(OutboxModel model) {
+    public ManagerResult workWithExpiredProcessingEvent(OutboxModel model) {
 
 
 
@@ -367,7 +459,12 @@ public class EventManagerDefault implements EventManager{
             sender.send(chainEvent);
 
 
-            return new ManagementResult(true, true);
+            ManagerResult managerResult = new ManagerResult();
+
+            managerResult.setWithCompensation(true);
+
+
+            return managerResult;
 
 
 
@@ -375,7 +472,9 @@ public class EventManagerDefault implements EventManager{
 
         }
         catch (Exception e){
-            return new ManagementResult(false, e);
+            ManagerResult managerResult = new ManagerResult();
+            managerResult.setException(e);
+            return managerResult;
         }
 
 
@@ -386,39 +485,35 @@ public class EventManagerDefault implements EventManager{
     // убийство аватара
 
     @Override
-    public ManagementResult workWithMissedExpiredProcessingEvent(OutboxModel model) {
-
-
-        try {
-            processAvatarStorage.getAvatarById(model.getProcessUUID())
-                    .ifPresent(ProcessAvatar::terminateInstantly);
-        }
-        catch (Exception e){
+    public ManagerResult workWithMissedExpiredProcessingEvent(OutboxModel model) {
 
 
 
-        }
+        processAvatarStorage.getAvatarById(model.getProcessUUID())
+                    .ifPresent(ProcessAvatar::terminate);
+
+
 
 
         deadLetterChannel.send(new DeadLetter("Processing ивент был прочитан несколько раз. " +
                 "Возможно зависание. Сообщение из модели: "+model.getMessage(), model));
 
 
-        return new ManagementResult(true, null);
+        return new ManagerResult();
     }
 
     @Override
-    public ManagementResult workWithManagerCrashEvent(OutboxModel model) {
+    public ManagerResult workWithManagerCrashEvent(OutboxModel model) {
 
-        try {
-            processAvatarStorage.getAvatarById(model.getProcessUUID())
-                    .ifPresent(ProcessAvatar::terminateInstantly);
-        }
-        catch (Exception e){
+
+        processAvatarStorage.getAvatarById(model.getProcessUUID())
+                    .ifPresent(ProcessAvatar::terminate);
 
 
 
-        }
+
+
+
 
 
         deadLetterChannel.send(new
@@ -428,14 +523,14 @@ public class EventManagerDefault implements EventManager{
 
 
 
-        return new ManagementResult(true, null);
+        return new ManagerResult();
     }
 
 
     // наличие аватара не важно
 
     @Override
-    public ManagementResult workWithExpiredWaitingForSignalEvent(OutboxModel model) {
+    public ManagerResult workWithExpiredWaitingForSignalEvent(OutboxModel model) {
 
         try {
 
@@ -447,7 +542,12 @@ public class EventManagerDefault implements EventManager{
 
             sender.send(chainEvent);
 
-            return new ManagementResult(true, true);
+
+            ManagerResult result = new ManagerResult();
+
+            result.setWithCompensation(true);
+
+            return result;
 
 
 
@@ -460,7 +560,11 @@ public class EventManagerDefault implements EventManager{
         // ошибка менеджера
 
         catch (Exception exception){
-            return new ManagementResult(false, exception);
+
+
+            ManagerResult managerResult = new ManagerResult();
+            managerResult.setException(exception);
+            return managerResult;
 
 
         }

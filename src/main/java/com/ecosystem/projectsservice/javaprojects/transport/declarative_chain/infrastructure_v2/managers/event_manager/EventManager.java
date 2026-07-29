@@ -9,27 +9,27 @@ public interface EventManager {
 
 
 
-    ManagementResult workWithWaitingEvent(OutboxModel model);
+    ManagerResult workWithWaitingEvent(OutboxModel model);
 
-    ManagementResult workWithExpiredWaitingEvent(OutboxModel model);
-
-
-
-    ManagementResult workWithEverlastingProcessingEvent(OutboxModel model);
+    ManagerResult workWithExpiredWaitingEvent(OutboxModel model);
 
 
-    ManagementResult workWithExpiredProcessingEvent(OutboxModel model);
+
+    ManagerResult workWithEverlastingProcessingEvent(OutboxModel model);
 
 
-    // отправляется в dead letter сервис
-    ManagementResult workWithMissedExpiredProcessingEvent(OutboxModel model);
+    ManagerResult workWithExpiredProcessingEvent(OutboxModel model);
 
 
     // отправляется в dead letter сервис
-    ManagementResult workWithManagerCrashEvent(OutboxModel model);
+    ManagerResult workWithMissedExpiredProcessingEvent(OutboxModel model);
 
 
-    ManagementResult workWithExpiredWaitingForSignalEvent(OutboxModel model);
+    // отправляется в dead letter сервис
+    ManagerResult workWithManagerCrashEvent(OutboxModel model);
+
+
+    ManagerResult workWithExpiredWaitingForSignalEvent(OutboxModel model);
 
 
 

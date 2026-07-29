@@ -159,7 +159,7 @@ public class OutputProcessorDefault implements OutputProcessor {
     }
 
     // атомарный коллбэк плюс публикация нового ивента (компенсационного)
-    protected void chainCrashOutputScenario(ChainOutput output,
+    protected OutputResult chainCrashOutputScenario(ChainOutput output,
                                             OutputMetadata<?> meta,
                                             ProcessAvatar avatar){
 
@@ -175,6 +175,9 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             avatar.performActionsAndSetStatus(ProcessAvatarStatus.CRASHED, output, meta);
 
+            return OutputResult.success();
+
+
 
 
 
@@ -189,9 +192,11 @@ public class OutputProcessorDefault implements OutputProcessor {
             avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH,
                     output, meta);
 
-            throw
-                    new OutputProcessorException("Ошибка публикации после сбоя цепи. Причина" +
-                            " - "+e.getMessage());
+
+            return new OutputResult(false,
+                    e, "ошибка публикации после сбоя цепи "+e.getMessage());
+
+
 
 
 
@@ -203,7 +208,8 @@ public class OutputProcessorDefault implements OutputProcessor {
 
     // атомарный коллбэк + публикация нового ивента, особый статус для аватара.
     // Информация о stop проставлена в самом ивенте
-    protected void chainStopOutputScenario(ChainOutput output, OutputMetadata<?> meta){
+    protected OutputResult chainStopOutputScenario(ChainOutput output, OutputMetadata<?> meta,
+                                           ProcessAvatar avatar){
 
 
 
@@ -216,11 +222,9 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             // перевод аватара в статус stopped, его очистка от остатков прошлого процесса
 
-            avatarStorage.getAvatarById(output.getEvent()
-                            .getProcessId())
-                    .ifPresent(processAvatar
-                            -> processAvatar.processCleanup(ProcessAvatarStatus
-                            .STOPPED, output, meta));
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.STOPPED, output, meta);
+
+            return OutputResult.success();
 
 
 
@@ -233,33 +237,11 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             // ошибка публикации
 
-            Optional<ProcessAvatar> avatarCheck = avatarStorage.getAvatarById(output.getEvent()
-                    .getProcessId());
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP,
+                    output, meta);
 
-            if (avatarCheck.isEmpty()){
-
-                // если шаг бесконечен, мы не можем проигнорировать ситуацию,
-                // где публикация провалена, а также нет аватара
-                if (meta.getExecutedStep().isEverlasting()){
-
-                    DeadLetter deadLetter = new DeadLetter("Критическая ошибка" +
-                            " - невозможно передать информацию об остановке everlasting шага.",
-                            output.getEvent().getOutboxId(),
-                            output.getEvent().getProcessId());
-
-                    deadLetterChannel.send(deadLetter);
-                }
-
-                // для шагов с фиксированным таймаутом выполнения политика предполагает,
-                // что такой шаг будет обработан reader'ом в дальнейшем
-                // (отсутствие аватара будет подмечено с помощью missing context)
-
-            }
-
-            else {
-                avatarCheck.get().performActionsAndSetStatus(ProcessAvatarStatus
-                        .OUTPUT_ERROR_AFTER_STOP, output, meta);
-            }
+            return new OutputResult(false, e,
+                    "ошибка публикации после остановки цепи "+e.getMessage());
 
 
 
@@ -273,7 +255,8 @@ public class OutputProcessorDefault implements OutputProcessor {
 
 
     // атомарный коллбэк плюс публикация нового ивента
-    protected void chainStepOutputScenario(ChainOutput output, OutputMetadata<?> meta){
+    protected OutputResult chainStepOutputScenario(ChainOutput output,
+                                           OutputMetadata<?> meta, ProcessAvatar avatar){
 
 
         try {
@@ -285,11 +268,9 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             // перевод аватара в статус waiting, его очистка от остатков прошлого процесса
 
-            avatarStorage.getAvatarById(output.getEvent()
-                            .getProcessId())
-                    .ifPresent(processAvatar
-                            -> processAvatar.processCleanup(ProcessAvatarStatus
-                            .WAITING, output, meta));
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.WAITING, output, meta);
+
+            return OutputResult.success();
 
 
 
@@ -299,34 +280,11 @@ public class OutputProcessorDefault implements OutputProcessor {
         catch (Exception e){
 
 
-            // ошибка публикации
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP,
+                    output, meta);
 
-            Optional<ProcessAvatar> avatarCheck = avatarStorage.getAvatarById(output.getEvent()
-                    .getProcessId());
-
-            if (avatarCheck.isEmpty()){
-
-                // если шаг бесконечен, мы не можем проигнорировать ситуацию,
-                // где публикация провалена, а также нет аватара
-                if (meta.getExecutedStep().isEverlasting()){
-
-                    DeadLetter deadLetter = new DeadLetter("Критическая ошибка" +
-                            " - невозможно передать информацию о завершении everlasting шага.",
-                            output.getEvent().getOutboxId(),
-                            output.getEvent().getProcessId());
-
-                    deadLetterChannel.send(deadLetter);
-                }
-
-                // для шагов с фиксированным таймаутом выполнения политика предполагает,
-                // что такой шаг будет обработан reader'ом в дальнейшем
-                // (отсутствие аватара будет подмечено с помощью missing context)
-
-            }
-
-            else {
-                avatarCheck.get().performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP, output, meta);
-            }
+            return new OutputResult(false, e, "ошибка публикации после выполнения шага "
+                    +e.getMessage());
 
 
 
@@ -341,51 +299,26 @@ public class OutputProcessorDefault implements OutputProcessor {
 
     // внимание - последний шаг может быть бесконечным
 
-    protected void chainEndOutputScenario(ChainOutput output,
-                                          OutputMetadata<?> meta){
+    protected OutputResult chainEndOutputScenario(ChainOutput output,
+                                          OutputMetadata<?> meta, ProcessAvatar avatar){
 
         try {
 
             repository.markAsProcessedForSuccessStep(output.getEvent().getOutboxId());
 
-            // уничтожение аватара
-            avatarStorage.getAvatarById(output.getEvent()
-                    .getProcessId())
-                    .ifPresent(ProcessAvatar::terminate);
+            avatar.terminate();
+
+            return OutputResult.success();
 
         }
         catch (Exception e){
 
-            // ошибка проставления коллбэка. Нужно уведомить аватар специальным статусом
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP,
+                    output, meta);
 
-            Optional<ProcessAvatar> avatarCheck = avatarStorage.getAvatarById(output.getEvent()
-                    .getProcessId());
-
-            if (avatarCheck.isEmpty()){
-
-                // если шаг бесконечен, мы не можем проигнорировать ситуацию,
-                // где публикация провалена, а также нет аватара
-                if (meta.getExecutedStep().isEverlasting()){
-
-                    DeadLetter deadLetter = new DeadLetter("Критическая ошибка" +
-                            " - невозможно передать информацию о завершении everlasting шага," +
-                            " являющего конечной точкой процесса.",
-                            output.getEvent().getOutboxId(),
-                            output.getEvent().getProcessId());
-
-                    deadLetterChannel.send(deadLetter);
-                }
-
-                // для шагов с фиксированным таймаутом выполнения политика предполагает,
-                // что такой шаг будет обработан reader'ом в дальнейшем
-                // (отсутствие аватара будет подмечено с помощью missing context)
-
-            }
-
-            else {
-                avatarCheck.get().performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP,
-                        output, meta);
-            }
+            return new OutputResult(false,
+                    e, "Ошибка коллбэка после завершения последнего шага "
+                    +e.getMessage());
 
         }
     }
@@ -399,62 +332,59 @@ public class OutputProcessorDefault implements OutputProcessor {
                                ProcessAvatar avatar) {
 
 
-        try {
-
-            OutputAction action = metadata.getAction();
-
-            if (action == null){
-                throw new OutputProcessorException("Отсутствует тип действия," +
-                        " проверьте конфигурацию цепи");
-            }
 
 
-            if (action instanceof ChainInit){
+        OutputAction action = metadata.getAction();
+
+        if (action == null){
+            return new OutputResult(false, null, "Не указан тип действия");
+        }
 
 
-                return chainInitOutputScenario(output, metadata, avatar);
-            }
-
-            else if (action instanceof ChainEnd){
-                chainEndOutputScenario(output, metadata);
-            }
-
-            else if (action instanceof CompensationEnd){
-                return chainCompensationEndOutputScenario(output, metadata, avatar);
-            }
-
-            else if (action instanceof ChainStop){
-                chainStopOutputScenario(output, metadata);
-            }
+        if (action instanceof ChainInit){
 
 
-            // не забываем проставить соответствующий статус в самом ивенте
-            else if (action instanceof ChainCrash){
+            return chainInitOutputScenario(output, metadata, avatar);
+        }
 
-                chainCrashOutputScenario(output, metadata);
+        else if (action instanceof ChainEnd){
+            return chainEndOutputScenario(output, metadata, avatar);
+        }
+
+        else if (action instanceof CompensationEnd){
+            return chainCompensationEndOutputScenario(output, metadata, avatar);
+        }
+
+        else if (action instanceof ChainStop) {
+            return chainStopOutputScenario(output, metadata, avatar);
+        }
 
 
-            }
+        // не забываем проставить соответствующий статус в самом ивенте
+        else if (action instanceof ChainCrash){
 
-
-
-            else {
-
-                chainStepOutputScenario(output, metadata);
-
-
-
-
-            }
-
-            return new OutputResult(true, null);
+            return chainCrashOutputScenario(output, metadata, avatar);
 
 
         }
 
-        catch (Exception e){
-            return new OutputResult(false, e);
+
+
+        else {
+
+            return chainStepOutputScenario(output, metadata, avatar);
+
+
+
+
         }
+
+
+
+
+
+
+
 
 
 

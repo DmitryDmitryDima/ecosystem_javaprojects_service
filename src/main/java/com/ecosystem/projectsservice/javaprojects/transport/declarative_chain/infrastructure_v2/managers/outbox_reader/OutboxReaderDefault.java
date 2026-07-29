@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager.EventManager;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager.ManagementResult;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager.ManagerResult;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModel;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelRepository;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxStatus;
@@ -57,6 +58,13 @@ public class OutboxReaderDefault implements OutboxReader{
 
     }
 
+    // попытка мгновенно перевести в dead letter, также смотрим на совпадение версий
+    private void attemptToSetDeadLetterStatusInstantly(OutboxModel model){
+
+        repository.changeStatusForGivenAllReadVersion(model.getOutboxUUID(),
+                OutboxStatus.DEAD_LETTER, model.getAllReadVersion());
+    }
+
 
 
 
@@ -73,9 +81,9 @@ public class OutboxReaderDefault implements OutboxReader{
                 = repository.readActualWaitingEvents();
         for (var model:actualWaiting){
 
-            ManagementResult result = manager.workWithWaitingEvent(model);
+            ManagerResult result = manager.workWithWaitingEvent(model);
 
-            if (!result.isSuccess()){
+            if (result.getException()!=null){
 
                 attemptToSetManagerCrashedStatus(result, model);
             }

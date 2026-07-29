@@ -14,6 +14,7 @@ public enum ProcessAvatarStatus {
 
     OUTPUT_ERROR_AFTER_STEP, // провалилась публикация следующего шага и, соответственно, коллбэк для предыдущего
 
+    OUTPUT_ERROR_AFTER_FINAL_STEP, // провалилась публикация финального шага
 
     OUTPUT_ERROR_AFTER_STOP, // провалилась публикация после того, как очередь была остановлена
 

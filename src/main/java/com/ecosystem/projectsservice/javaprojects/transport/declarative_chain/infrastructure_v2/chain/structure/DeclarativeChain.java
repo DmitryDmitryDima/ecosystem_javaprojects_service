@@ -10,6 +10,9 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputResult;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.CompensationEnd;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.OutputAction;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainScenarioException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainStepExecutionException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.DeliveryStatus;
@@ -136,11 +139,56 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    protected void onCompensationStart(E event){
+    protected void onCompensationStart(E event,
+                                       ProcessAvatar avatar){
+
+        // специальный статус для компенсации, в какой то степени помощник для аналога в бд
+        // позволяет обнаружить, что runtime завис
+        avatar.setStatus(ProcessAvatarStatus.COMPENSATING);
 
     }
 
-    protected void onCompensationEnd(E event){
+
+    protected void onCompensationEnd(E event, CompensationResult result,
+                                     ProcessAvatar avatar){
+
+
+        OutputMetadata<?> meta = new OutputMetadata<>();
+
+        meta.setAction(new CompensationEnd());
+
+
+        ChainOutput output = new ChainOutput();
+
+        output.setEvent(event);
+
+
+        // финальный коллбэк плюс убийство аватара
+        onPublishChainOutput(output, meta, avatar);
+
+
+
+    }
+
+    protected void compensationDecorator(E event, ProcessAvatar avatar){
+        onCompensationStart(event, avatar);
+
+
+        CompensationResult compensationResult = new CompensationResult();
+
+        try {
+            compensationStrategy(event);
+        }
+        catch (Exception e){
+
+            compensationResult.setException(e);
+
+        }
+
+        onCompensationEnd(event, compensationResult, avatar);
+
+
+
 
 
 
@@ -474,14 +522,17 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
         /*
-            Предыдущий шаг не смог корректно опубликоваться, повторяем попытку
+            Предыдущий шаг не смог корректно опубликоваться, повторяем попытку или компенсируем
          */
         if (deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH
                 || deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP
                 || deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STOP
-                || deliveryStatus == DeliveryStatus.OU
+
+
 
         ){
+
+            outputErrorScenario(event, avatar);
 
 
 
@@ -505,8 +556,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    protected void outputErrorScenario(ChainEvent event,
-                                       ChainStep<?> step,
+    protected void outputErrorScenario(E event,
                                        ProcessAvatar avatar){
 
 
@@ -524,38 +574,25 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-            onPublishChainOutput(output, outputMetadata);
+            OutputResult result = onPublishChainOutput(output, outputMetadata, avatar);
+
+            if (!result.isPublished()){
+                throw new ChainScenarioException("провальная попытка повторной публикации." +
+                        " "+result.getMessage());
+            }
 
         }
 
         catch (Exception e){
 
 
-            // если проваливается попытка опубликоваться вновь
+            // если проваливается попытка опубликоваться вновь, мы провоцируем компенсацию
 
-            /*
-
-            для обычного шага - просто запускаем компенсацию с передачей статуса
-
-             */
-
-
-            /*
-
-
-            Для бесконечного шага все сложнее - попытки публикаций могут войти в петлю,
-
-            и, соответственно, пользователь может столкнуться с повторяющимися компенсациями
+            compensationDecorator(event, avatar);
 
 
 
 
-
-
-
-
-
-             */
         }
 
     }
