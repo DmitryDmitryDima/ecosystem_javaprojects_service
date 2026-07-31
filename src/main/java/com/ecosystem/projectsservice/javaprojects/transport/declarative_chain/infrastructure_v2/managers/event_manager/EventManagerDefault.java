@@ -171,10 +171,7 @@ public class EventManagerDefault implements EventManager{
 
         catch (Exception exception){
 
-            ManagerResult result = new ManagerResult();
-            result.setException(exception);
-
-            return result;
+            return ManagerResult.exception(exception);
 
 
         }
@@ -205,10 +202,7 @@ public class EventManagerDefault implements EventManager{
 
         catch (Exception e){
 
-            ManagerResult result = new ManagerResult();
-            result.setException(e);
-
-            return result;
+            return ManagerResult.exception(e);
         }
 
 
@@ -232,7 +226,7 @@ public class EventManagerDefault implements EventManager{
 
 
             // это означает, что процесс уже был однажды отправлен на компенсацию,
-            // но коллбэк не получил
+            // но processed callback не получил
             if (model.isCompensation()){
 
                 // убиваем аватар, если он есть
@@ -247,11 +241,7 @@ public class EventManagerDefault implements EventManager{
 
                 // провоцируем мгновенный dead letter в бд
 
-                ManagerResult result = new ManagerResult();
-
-                result.setNeedDeadLetter(true);
-
-                return result;
+                return ManagerResult.deadLetter();
 
 
 
@@ -279,11 +269,7 @@ public class EventManagerDefault implements EventManager{
 
                     // провоцируем мгновенный dead letter в бд
 
-                    ManagerResult result = new ManagerResult();
-
-                    result.setNeedDeadLetter(true);
-
-                    return result;
+                    return ManagerResult.deadLetter();
 
 
 
@@ -298,18 +284,18 @@ public class EventManagerDefault implements EventManager{
                 ChainEvent chainEvent = readPayload(model);
 
 
-                // шаг завершился, но не опубликовался. Отправляем в цепь
+                // шаг завершился, но не опубликовался. Отправляем в цепь для компенсации
 
                 if (avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH){
                     chainEvent.getProcessingInfo()
                             .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH);
 
-                    // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
-                    // если аватар упадет в момент попадания в цепь,
-                    // то шаг попадет в новый цикл проверки
+                    // цепь должна спровоцировать компенсацию
+
                     sender.send(chainEvent);
 
-                    return new ManagerResult();
+                    // это компенсационный сценарий, пользователь сам принимает решение о ретрае
+                    return ManagerResult.compensation();
 
 
                 }
@@ -317,23 +303,20 @@ public class EventManagerDefault implements EventManager{
                 else if (avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP){
                     chainEvent.getProcessingInfo()
                             .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP);
-                    // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
-                    // если аватар упадет в момент попадания в цепь,
-                    // то шаг попадет в новый цикл проверки
+
+
                     sender.send(chainEvent);
 
-                    return new ManagerResult();
+                    return ManagerResult.compensation();
                 }
 
                 else if (avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP){
                     chainEvent.getProcessingInfo()
                             .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STOP);
-                    // цепь должна попробовать снова опубликовать шаг, взяв готовый state из аватара
-                    // если аватар упадет в момент попадания в цепь,
-                    // то шаг попадет в новый цикл проверки
+
                     sender.send(chainEvent);
 
-                    return new ManagerResult();
+                    return ManagerResult.compensation();
                 }
 
 
@@ -364,10 +347,7 @@ public class EventManagerDefault implements EventManager{
 
                 sender.send(chainEvent);
 
-                ManagerResult managerResult = new ManagerResult();
-                managerResult.setWithCompensation(true);
-
-                return managerResult;
+                return ManagerResult.compensation();
 
 
 
@@ -383,9 +363,7 @@ public class EventManagerDefault implements EventManager{
         }
         catch (Exception e){
 
-            ManagerResult managerResult = new ManagerResult();
-            managerResult.setException(e);
-            return managerResult;
+            return ManagerResult.exception(e);
 
         }
 
@@ -459,12 +437,8 @@ public class EventManagerDefault implements EventManager{
             sender.send(chainEvent);
 
 
-            ManagerResult managerResult = new ManagerResult();
-
-            managerResult.setWithCompensation(true);
-
-
-            return managerResult;
+            // всегда компенсационный сценарий
+            return ManagerResult.compensation();
 
 
 
@@ -472,9 +446,7 @@ public class EventManagerDefault implements EventManager{
 
         }
         catch (Exception e){
-            ManagerResult managerResult = new ManagerResult();
-            managerResult.setException(e);
-            return managerResult;
+            return ManagerResult.exception(e);
         }
 
 
@@ -484,6 +456,8 @@ public class EventManagerDefault implements EventManager{
 
     // убийство аватара
 
+
+    // TODO тут, по идее, может бть уместен анализ содержимого аватара, если он есть
     @Override
     public ManagerResult workWithMissedExpiredProcessingEvent(OutboxModel model) {
 
@@ -543,11 +517,7 @@ public class EventManagerDefault implements EventManager{
             sender.send(chainEvent);
 
 
-            ManagerResult result = new ManagerResult();
-
-            result.setWithCompensation(true);
-
-            return result;
+            return ManagerResult.compensation();
 
 
 
@@ -562,9 +532,7 @@ public class EventManagerDefault implements EventManager{
         catch (Exception exception){
 
 
-            ManagerResult managerResult = new ManagerResult();
-            managerResult.setException(exception);
-            return managerResult;
+            return ManagerResult.exception(exception);
 
 
         }

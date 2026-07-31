@@ -10,10 +10,9 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputResult;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.CompensationEnd;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.OutputAction;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainScenarioException;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainStepExecutionException;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.StepStoppedDuringExecutionException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.DeliveryStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.PerformanceStatus;
@@ -21,7 +20,6 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputMetadata;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.ChainInit;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainInitException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatar;
@@ -144,7 +142,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // специальный статус для компенсации, в какой то степени помощник для аналога в бд
         // позволяет обнаружить, что runtime завис
-        avatar.setStatus(ProcessAvatarStatus.COMPENSATING);
+
+        // если какой то шаг выполняется параллельно, то нужно убить то, что он пометил в аватаре
+        avatar.performActionsAndSetStatus(ProcessAvatarStatus.COMPENSATING, null ,null);
 
     }
 
@@ -485,14 +485,12 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         var info = event.getProcessingInfo();
 
-        if (info == null) throw new ChainStepExecutionException("Невозможно выполнить шаг," +
+        if (info == null) throw new ChainStepExecutionException("Невозможно обработать шаг," +
                 " отсутствует необходимый state");
 
 
 
-        ChainStep<?> step = findStepByName(info.getCurrentStep());
 
-        if (step == null) throw new ChainStepExecutionException("у шага отсутствует имя");
 
 
 
@@ -521,8 +519,13 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         PerformanceStatus performanceStatus = info.getPerformanceStatus();
 
 
+        // все статусу, кроме success, предполагают по дефолту компенсационный сценарий
+        // для гибкости для каждого из них выделяем хук-сценарий, вызывающий компенсацию
+
+
         /*
-            Предыдущий шаг не смог корректно опубликоваться, повторяем попытку или компенсируем
+            Предыдущий шаг не смог корректно опубликоваться.
+             Нужна компенсация (решение о retry принимает пользователь)
          */
         if (deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH
                 || deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP
@@ -532,11 +535,56 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         ){
 
-            outputErrorScenario(event, avatar);
+            outputErrorCompensationScenario(event, avatar);
+
+        }
+
+        else if (deliveryStatus == DeliveryStatus.EXPIRED_WAITING_FOR_SIGNAL){
+
+            expiredWaitingForSignalCompensationScenario(event, avatar);
+
+        }
+
+        else if (deliveryStatus == DeliveryStatus.EVERLASTING_STEP_MISSING_CONTEXT){
+            everlastingStepMissingContextCompensationScenario(event, avatar);
+        }
+
+        else if (deliveryStatus == DeliveryStatus.EXPIRED_PROCESSING_MISSING_CONTEXT){
+            expiredProcessingMissingContextCompensationScenario(event, avatar);
+        }
+
+        else if (deliveryStatus == DeliveryStatus.EXPIRED_READING){
+            expiredReadingCompensationScenario(event, avatar);
+
+        }
+
+        else if (deliveryStatus == DeliveryStatus.EXPIRED_PROCESSING_WITH_CONTEXT){
+
+            expiredProcessingWithContextCompensationScenario(event, avatar);
+        }
+
+
+        // успешное чтение
+        else if (deliveryStatus == DeliveryStatus.SUCCESS_READING){
 
 
 
+            // stopped && crashed - компенсационные сценарии
 
+            if (performanceStatus == PerformanceStatus.CRASHED){
+                compensationAfterCrashScenario(event, avatar);
+            }
+
+            else if (performanceStatus == PerformanceStatus.STOPPED_BEFORE_STEP
+                    || performanceStatus == PerformanceStatus.STOPPED_AFTER_STEP
+                    || performanceStatus == PerformanceStatus.STOPPED_DURING_STEP
+            ){
+                compensationAfterStopScenario(event, avatar);
+            }
+
+            else {
+                stepExecutionScenario(event, avatar);
+            }
 
 
 
@@ -550,45 +598,227 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-
     }
 
 
-
-
-    protected void outputErrorScenario(E event,
-                                       ProcessAvatar avatar){
+    protected void stepExecutionScenario(E event, ProcessAvatar avatar){
 
 
 
+
+
+
+
+        var info = event.getProcessingInfo();
+
+
+        ChainStep<?> step = findStepByName(info.getCurrentStep());
+
+        if (step == null) throw new ChainStepExecutionException("не найден шаг для выполнения");
+
+
+        // обрабатываем ситуацию, когда система обнаруживает,
+        // что процесс был остановлен до выполнения следующего шага
+
+        if (avatar.getStatus().get() == ProcessAvatarStatus.STOPPED){
+
+            stepStopBeforeExecutionScenario(event, avatar, step);
+
+            return;
+
+        }
+
+
+        // выполняем шаг
+
+        // аватар фиксирует поток выполнения, а также статус running, вместе с названием выполняемого шага
+        avatar.stepOnStart(step.getName());
 
         try {
+            // todo добавить возможность инъекции аватара в метод,
+            //  чтобы пользователю было удобно получать доступ к нему
+            step.getMethod().invoke(this, event);
 
-            ChainOutput output = avatar.getPreviousOutput().get();
 
-            OutputMetadata<?> outputMetadata = avatar.getPreviousOutputMetadata().get();
 
-            if (output == null || outputMetadata == null){
-                throw new IllegalStateException("в аватаре отсутствует информация для публикации");
+
+
+        }
+        catch (Exception exception){
+
+
+            // пользователь должен явно выбрасывать исключение такого типа, чтобы сообщить системе,
+            // что процесс был прерван в момент выполнения
+            if (exception.getCause() instanceof StepStoppedDuringExecutionException){
+
+                stepStopDuringExecutionScenario(event, avatar, step);
+
+                return;
+
+            }
+
+            else {
+
+                // ошибка бизнес логики.
+
+                stepExecutionErrorScenario(event, avatar,step, exception);
+
+
+
+                return;
             }
 
 
 
-            OutputResult result = onPublishChainOutput(output, outputMetadata, avatar);
 
-            if (!result.isPublished()){
-                throw new ChainScenarioException("провальная попытка повторной публикации." +
-                        " "+result.getMessage());
-            }
+
+
 
         }
 
-        catch (Exception e){
+        // проверка на стоп после выполнения
 
 
-            // если проваливается попытка опубликоваться вновь, мы провоцируем компенсацию
+        if (avatar.getStatus().get() == ProcessAvatarStatus.STOPPED){
+            stepStopAfterStepExecutionScenario(event, avatar, step);
+            return;
+        }
 
-            compensationDecorator(event, avatar);
+        // success scenario
+
+        // если шаг был конечным в цепи
+        if (step == ending){
+            stepExecutionSuccessEndingScenario(event, avatar, step);
+        }
+
+        // промежуточный шаг
+        else {
+            stepExecutionSuccessStepScenario(event, avatar, step);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+    }
+
+    // последний шаг выполнен успешно
+    // хук завершения всего процесса
+    protected void stepExecutionSuccessEndingScenario(E event,
+                                                      ProcessAvatar avatar,
+                                                      ChainStep<?> step){
+
+
+    }
+
+    // промежуточный шаг выполнен успешно
+
+
+    protected void stepExecutionSuccessStepScenario(E event,
+                                                    ProcessAvatar avatar,
+                                                    ChainStep<?> step){
+
+        // не забываем сбросить счетчик ретраев для следующего шага
+
+    }
+
+    // выполнение шага завершилось ошибкой
+    protected void stepExecutionErrorScenario(E event,
+                                              ProcessAvatar avatar,
+                                              ChainStep<?> step,
+                                              Exception e){
+
+
+        var info = event.getProcessingInfo();
+
+        // todo причина ошибки
+        event.setMessage("Выполнение шага "+info.getCurrentStep()+
+
+                "завершилось ошибкой "
+                );
+
+
+
+
+        // количество ретраев исчерпано - процесс получает статус crashed, генерируется компенсационный ивент
+        if (info.getCurrentRetry()>=step.getRetry()){
+
+            info.setPerformanceStatus(PerformanceStatus.CRASHED);
+
+            ChainOutput output = ChainOutput.builder()
+                    .event(event)
+                    .status(OutboxStatus.WAITING)
+                    .last_update(Instant.now())
+                    .readExpiration(Instant.now()
+                            .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                    .performanceExpirationPeriod(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                    .build();
+
+
+
+            OutputMetadata<?> metadata = new OutputMetadata<>();
+
+            // не забываем проставить тип действия для процессора
+            metadata.setAction(new ChainCrash());
+
+
+            onPublishChainOutput(output,
+                    metadata,
+                    avatar);
+
+
+
+        }
+
+        // можно отправить на ретрай
+        else {
+
+            // обновляем счетчик
+            info.setCurrentRetry(info.getCurrentRetry()+1);
+
+            // фиксируем перформанс статус
+            info.setPerformanceStatus(PerformanceStatus.STEP_RETRY);
+
+
+            Long duration = null;
+            if (!step.isEverlasting()){
+                duration = ChainUtils.convertToMillis(step.getTimeLimit(),
+                        step.getTimeLimitUnit());
+            }
+
+
+            // если performance expiration == null, то это означает Everlasting шаг
+            ChainOutput output = ChainOutput.builder()
+                    .event(event)
+                    .status(OutboxStatus.WAITING)
+                    .last_update(Instant.now())
+                    .readExpiration(Instant.now()
+                            .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                    .performanceExpirationPeriod(duration)
+                    .build();
+
+
+
+            OutputMetadata<?> metadata = new OutputMetadata<>();
+
+            // не забываем проставить тип действия для процессора
+            metadata.setAction(new ChainOpeningOrMiddleStep());
+
+
+            onPublishChainOutput(output,
+                    metadata,
+                    avatar);
+
+
+
+
 
 
 
@@ -596,6 +826,193 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         }
 
     }
+
+
+    // данный сценарий может сработать также в случае,
+    // если пользователь не использовал мониторинг аватара при выполнении шага
+    protected void stepStopAfterStepExecutionScenario(E event,
+                                                      ProcessAvatar avatar,
+                                                      ChainStep<?> step
+                                                               ){
+
+        event.setMessage("Остановка процесса после выполнения шага "+event.getProcessingInfo().getCurrentStep());
+
+        event.getProcessingInfo().setPerformanceStatus(PerformanceStatus.STOPPED_AFTER_STEP);
+
+        // настройки времени берутся не от шага, а от компенсации (сейчас - дефолтные)
+
+        // компенсация не может быть everlasting
+        ChainOutput output = ChainOutput.builder()
+                .event(event)
+                .status(OutboxStatus.WAITING)
+                .last_update(Instant.now())
+                .readExpiration(Instant.now()
+                        .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                .performanceExpirationPeriod(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                .build();
+
+
+
+        OutputMetadata<?> metadata = new OutputMetadata<>();
+
+        // не забываем проставить тип действия
+        metadata.setAction(new ChainStop());
+
+
+
+
+        onPublishChainOutput(output, metadata, avatar);
+
+
+
+
+    }
+
+
+    protected void stepStopDuringExecutionScenario(E event,
+                                                   ProcessAvatar avatar,
+                                                   ChainStep<?> step){
+
+        event.setMessage("Остановка процесса во время шага "+event.getProcessingInfo().getCurrentStep());
+
+        event.getProcessingInfo().setPerformanceStatus(PerformanceStatus.STOPPED_DURING_STEP);
+
+        // настройки времени берутся не от шага, а от компенсации (сейчас - дефолтные)
+
+        // компенсация не может быть everlasting
+        ChainOutput output = ChainOutput.builder()
+                .event(event)
+                .status(OutboxStatus.WAITING)
+                .last_update(Instant.now())
+                .readExpiration(Instant.now()
+                        .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                .performanceExpirationPeriod(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                .build();
+
+
+
+        OutputMetadata<?> metadata = new OutputMetadata<>();
+
+        // не забываем проставить тип действия
+        metadata.setAction(new ChainStop());
+
+
+
+
+        onPublishChainOutput(output, metadata, avatar);
+
+
+
+    }
+
+
+
+    // сценарий, когда процесс был остановлен до выполнения следующего шага
+    // создается новый компенсационный ивент со специальным performance status
+
+    protected void stepStopBeforeExecutionScenario(E event,
+                                                   ProcessAvatar avatar,
+                                                   ChainStep<?> step){
+
+
+        event.setMessage("Остановка процесса до шага "+event
+                .getProcessingInfo()
+                .getCurrentStep());
+
+        // меняем performance статус для следующей итерации цепи - будет запущена компенсация
+        event.getProcessingInfo().setPerformanceStatus(PerformanceStatus.STOPPED_BEFORE_STEP);
+
+
+
+        // настройки времени берутся не от шага, а от компенсации (сейчас - дефолтные)
+
+        // компенсация не может быть everlasting
+        ChainOutput output = ChainOutput.builder()
+                .event(event)
+                .status(OutboxStatus.WAITING)
+                .last_update(Instant.now())
+                .readExpiration(Instant.now()
+                        .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                .performanceExpirationPeriod(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                .build();
+
+
+
+        OutputMetadata<?> metadata = new OutputMetadata<>();
+
+        // не забываем проставить тип действия
+        metadata.setAction(new ChainStop());
+
+
+
+
+        onPublishChainOutput(output, metadata, avatar);
+
+
+    }
+
+
+
+
+
+
+    // хук, срабатывающий при компенсационном сценарии
+    protected void outputErrorCompensationScenario(E event,
+                                                   ProcessAvatar avatar){
+
+
+
+
+        compensationDecorator(event, avatar);
+
+    }
+    // хук, срабатывающий при компенсационном сценарии
+    protected void expiredWaitingForSignalCompensationScenario(E event, ProcessAvatar avatar){
+
+        compensationDecorator(event, avatar);
+
+    }
+    // хук, срабатывающий при компенсационном сценарии
+    protected void everlastingStepMissingContextCompensationScenario(E event, ProcessAvatar avatar){
+
+        compensationDecorator(event, avatar);
+    }
+
+    // хук, срабатывающий при компенсационном сценарии
+    protected void expiredProcessingMissingContextCompensationScenario(E event, ProcessAvatar avatar){
+
+        compensationDecorator(event, avatar);
+    }
+    // хук, срабатывающий при компенсационном сценарии
+    protected void expiredReadingCompensationScenario(E event, ProcessAvatar avatar){
+
+        compensationDecorator(event, avatar);
+    }
+
+    // хук, срабатывающий при компенсационном сценарии
+    protected void expiredProcessingWithContextCompensationScenario(E event, ProcessAvatar avatar){
+
+        compensationDecorator(event, avatar);
+    }
+
+
+    // сценарий компенсации для остановленного процесса.
+    // После обнаружения сигнала stop цепь создает запись с performance status stopped,
+    // тем самым отделяя компенсацию от performance
+    protected void compensationAfterStopScenario(E event, ProcessAvatar avatar){
+        compensationDecorator(event, avatar);
+    }
+
+
+    // сценарий компенсации для сломавшегося процесса
+    // после исчерпания retry счетчика процесс получает crashed в performance status,
+    // после чего создает компенсационный ивент, тем самым отделяя компенсацию от хода выполнения
+    protected void compensationAfterCrashScenario(E event, ProcessAvatar avatar){
+        compensationDecorator(event, avatar);
+    }
+
+
+
 
 
 

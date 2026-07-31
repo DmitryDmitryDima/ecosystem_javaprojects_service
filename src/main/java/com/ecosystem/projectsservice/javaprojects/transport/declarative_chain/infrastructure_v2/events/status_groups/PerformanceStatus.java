@@ -5,5 +5,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 // по идее компенсация никогда не выполняется сразу
 public enum PerformanceStatus {
 
-    STOPPED, CRASHED, STEP_PERFORMED, STEP_RETRY
+    STOPPED_BEFORE_STEP, STOPPED_DURING_STEP, STOPPED_AFTER_STEP,
+
+    CRASHED, STEP_PERFORMED, STEP_RETRY
 }

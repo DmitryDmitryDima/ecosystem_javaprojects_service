@@ -16,11 +16,17 @@ import java.time.Instant;
 @Builder
 public class ChainEventProcessingInfo {
 
+
+
     // ПАРАМЕТРЫ ХОДА ПРОЦЕССА
 
+
+    /*
     // время, когда последний шаг закончил выполнение
     // если произошел таймаут, что цепочка смотрит, можно ли делать ретрай
     private Instant previousStepExecutionTime;
+
+     */
 
     private long currentRetry = 0;
 
@@ -29,14 +35,19 @@ public class ChainEventProcessingInfo {
 
 
 
-
+    /*
     // явно указываем, что достигнуто и должно быть исполнено состояние компенсации
     private boolean compensationPhase = false;
 
+     */
 
+
+    /*
     // если true, то это означает, что при обработке
     // внутри цепи необходимо учитывать максимально допустимое время между ретраями
     private boolean stepTimeout = false;
+
+     */
 
 
     // в каком качестве был прочитан ивент

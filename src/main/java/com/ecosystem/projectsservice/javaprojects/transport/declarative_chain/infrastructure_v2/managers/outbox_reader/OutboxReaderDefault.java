@@ -42,7 +42,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
     // read version должен совпадать
-    private void attemptToSetManagerCrashedStatus(ManagementResult result,
+    private void attemptToSetManagerCrashedStatus(ManagerResult result,
                                                   OutboxModel model){
 
         // блокирующе ставим статус manager_crash,
@@ -79,6 +79,7 @@ public class OutboxReaderDefault implements OutboxReader{
         // атомарно проставлен processing статус
         List<? extends OutboxModel> actualWaiting
                 = repository.readActualWaitingEvents();
+
         for (var model:actualWaiting){
 
             ManagerResult result = manager.workWithWaitingEvent(model);
@@ -101,17 +102,17 @@ public class OutboxReaderDefault implements OutboxReader{
         List<? extends OutboxModel> expiredWaitingEvents = repository.readExpiredWaitingEvents();
 
         for (var model:expiredWaitingEvents){
-            ManagementResult managementResult = manager.workWithExpiredWaitingEvent(model);
+            ManagerResult managementResult = manager.workWithExpiredWaitingEvent(model);
 
-            if (!managementResult.isSuccess()){
+            if (managementResult.getException()!=null){
 
                 attemptToSetManagerCrashedStatus(managementResult, model);
 
             }
 
             else {
-                // компенсационная группа - компенсационный флаг. защищает от сценария,
-                // при котором процесс отвис во время запущенной компенсации
+                // компенсационная группа - компенсационный флаг
+                // таким образом processing ивент помечается как вошедший в компенсационный сценарий
                 repository.markAsCompensating(model.getOutboxUUID());
             }
 
@@ -119,6 +120,10 @@ public class OutboxReaderDefault implements OutboxReader{
 
         }
     }
+
+
+
+    // в любом случае - компенсационный сценарий
 
     @Override
     //@Scheduled(fixedDelayString = "${reader.processing.events.expired:20000}")
@@ -133,13 +138,15 @@ public class OutboxReaderDefault implements OutboxReader{
 
         for (var model:expiredProcessingEvents){
 
-            ManagementResult result = manager.workWithExpiredProcessingEvent(model);
+            ManagerResult result = manager.workWithExpiredProcessingEvent(model);
 
-            if (!result.isSuccess()){
+            if (result.getException()!=null){
                 attemptToSetManagerCrashedStatus(result, model);
             }
 
             else {
+
+
                 // компенсационная группа - компенсационный флаг
                 repository.markAsCompensating(model.getOutboxUUID());
             }
@@ -147,6 +154,9 @@ public class OutboxReaderDefault implements OutboxReader{
 
         }
     }
+
+
+
 
     @Override
     //@Scheduled(fixedDelayString = "${reader.processing.events.everlasting:20000}")
@@ -160,17 +170,21 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
         for (var model:everlastingProcessingEvents){
-            ManagementResult result = manager.workWithEverlastingProcessingEvent(model);
+            ManagerResult result = manager.workWithEverlastingProcessingEvent(model);
 
             // внутри менеджера - либо игнор, либо компенсация внутри очереди, либо какая-либо ошибка
-            if (!result.isSuccess()){
+            if (result.getException()!=null){
                 attemptToSetManagerCrashedStatus(result, model);
             }
 
             else {
-                if (result.isCompensationStart()){
+                if (result.isWithCompensation()){
                     // компенсационная группа - компенсационный флаг.
                     repository.markAsCompensating(model.getOutboxUUID());
+                }
+
+                if (result.isNeedDeadLetter()){
+                    attemptToSetDeadLetterStatusInstantly(model);
                 }
             }
 
@@ -239,9 +253,9 @@ public class OutboxReaderDefault implements OutboxReader{
         for (var model:expiredWaitingForSignalEvents){
 
 
-            ManagementResult result = manager.workWithExpiredWaitingForSignalEvent(model);
+            ManagerResult result = manager.workWithExpiredWaitingForSignalEvent(model);
 
-            if (!result.isSuccess()){
+            if (result.getException()!=null){
                 attemptToSetManagerCrashedStatus(result, model);
             }
 

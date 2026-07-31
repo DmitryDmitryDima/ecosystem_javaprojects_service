@@ -1,5 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.event_manager;
 
+import org.apache.catalina.Manager;
+
 public class ManagerResult {
 
 
@@ -8,6 +10,33 @@ public class ManagerResult {
     private boolean withCompensation;
 
     private Exception exception; // если есть, то была ошибка
+
+
+    public static ManagerResult exception(Exception e){
+        ManagerResult managerResult = new ManagerResult();
+
+        managerResult.setException(e);
+
+        return managerResult;
+    }
+
+
+    public static ManagerResult compensation(){
+        ManagerResult managerResult = new ManagerResult();
+
+        managerResult.setWithCompensation(true);
+
+        return managerResult;
+
+    }
+
+
+    public static ManagerResult deadLetter(){
+        ManagerResult managerResult = new ManagerResult();
+        managerResult.setNeedDeadLetter(true);
+
+        return managerResult;
+    }
 
 
     public boolean isWithCompensation() {

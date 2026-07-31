@@ -16,9 +16,14 @@ public @interface Retry {
     // максимальное число ретраев
     long maxCount();
 
+
+    /*
+
     // максимальный период между ретраями
     long maxPeriodBetween() default 20;
 
     ChainTimeUnit timeUnit() default ChainTimeUnit.SEC;
+
+     */
 
 }
