@@ -254,15 +254,19 @@ public class EventManagerDefault implements EventManager{
 
 
 
-                // компенсация была вызвана, но зависла
-                if (avatar.getStatus().get() == ProcessAvatarStatus.COMPENSATING){
+
+
+
+                // компенсация была вызвана, но зависла или не опубликовалась
+                if (avatar.getStatus().get() == ProcessAvatarStatus.COMPENSATING ||
+                        avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_COMPENSATION){
 
                     // убиваем аватар, тем самым убивая зависшую компенсацию
                     avatar.terminate();
 
                     // генерируем dead letter
 
-                    DeadLetter deadLetter = new DeadLetter("Зависшая компенсация", model);
+                    DeadLetter deadLetter = new DeadLetter("Зависшая или  компенсация", model);
 
                     deadLetterChannel.send(deadLetter);
 
@@ -309,6 +313,19 @@ public class EventManagerDefault implements EventManager{
 
                     return ManagerResult.compensation();
                 }
+
+                else if (avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_FINAL_STEP){
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP);
+
+
+                    sender.send(chainEvent);
+
+                    return ManagerResult.compensation();
+                }
+
+
+
 
                 else if (avatar.getStatus().get() == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP){
                     chainEvent.getProcessingInfo()
@@ -406,6 +423,27 @@ public class EventManagerDefault implements EventManager{
 
                 ProcessAvatarStatus avatarStatus = avatar.get().getStatus().get();
 
+                // компенсационный шаг не смог корректно опубликоваться или завис - dead letter
+                if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_COMPENSATION ||
+                        avatarStatus == ProcessAvatarStatus.COMPENSATING){
+
+
+                    // убиваем аватар, тем самым убивая зависшую компенсацию
+                    avatar.get().terminate();
+
+                    // генерируем dead letter
+
+                    DeadLetter deadLetter = new DeadLetter("Зависшая или  компенсация", model);
+
+                    deadLetterChannel.send(deadLetter);
+
+
+                    // провоцируем мгновенный dead letter в бд
+
+                    return ManagerResult.deadLetter();
+
+                }
+
                 if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH){
                     chainEvent.getProcessingInfo()
                             .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH);
@@ -414,6 +452,11 @@ public class EventManagerDefault implements EventManager{
                 else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP){
                     chainEvent.getProcessingInfo()
                             .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP);
+                }
+
+                else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_FINAL_STEP){
+                    chainEvent.getProcessingInfo()
+                            .setDeliveryStatus(DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_FINAL_STEP);
                 }
 
                 else if (avatarStatus == ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP){

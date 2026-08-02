@@ -530,6 +530,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         if (deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_CRASH
                 || deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STEP
                 || deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_STOP
+                || deliveryStatus == DeliveryStatus.OUTBOX_PROCESSOR_ERROR_AFTER_FINAL_STEP
 
 
 
@@ -726,6 +727,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                                                     ChainStep<?> step){
 
         // не забываем сбросить счетчик ретраев для следующего шага
+
+        // вычисляем next шаг.
+        // todo Учитываем,
+        // что при ошибке публикации в ивенте в current будет именно следующий шаг
 
     }
 

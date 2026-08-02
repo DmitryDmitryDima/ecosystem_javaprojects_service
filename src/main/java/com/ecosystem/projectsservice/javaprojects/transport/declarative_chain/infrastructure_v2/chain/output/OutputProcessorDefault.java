@@ -313,7 +313,7 @@ public class OutputProcessorDefault implements OutputProcessor {
         }
         catch (Exception e){
 
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP,
+            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_FINAL_STEP,
                     output, meta);
 
             return new OutputResult(false,
