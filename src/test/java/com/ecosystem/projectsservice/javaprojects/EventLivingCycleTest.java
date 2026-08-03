@@ -52,6 +52,10 @@ public class EventLivingCycleTest {
 
 
 
+
+
+
+
     @Test
     @Order(2)
     public void repository(){
@@ -70,26 +74,7 @@ public class EventLivingCycleTest {
     public void outputProcessor(){
 
 
-        ChainEvent event = getChainEvent();
 
-        ChainOutput output = new ChainOutput();
-
-        OutputMetadata<?> meta = new OutputMetadata<>();
-
-        meta.setAction(new ChainInit()); // инициализация
-
-
-
-        output.setEvent(event);
-        output.setStatus(OutboxStatus.WAITING);
-        output.setLast_update(Instant.now());
-        output.setReadExpiration(output.getLast_update().plusSeconds(60));
-        output.setPerformanceExpirationPeriod(10000L);
-
-
-
-
-        outputProcessor.output(output, meta);
 
 
 

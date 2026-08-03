@@ -75,6 +75,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     @Override
     public void markPreviousAsProcessedAndCreateNewModel(UUID previous, OutboxModel model) {
 
+
+        System.out.println("repo: mark previous "+previous+" and "+model+" to publish");
+
         // используя интерфейс, производим маппинг
         OutboxModelJpaEntity newEntity = OutboxModelJpaEntity.builder()
 
@@ -356,6 +359,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                                         .readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus.WAITING);
 
 
+
                                 // при чтении статус меняется на processing,
                                 // обновляется last update,
                                 // а также происходит обновление readVersion
@@ -363,6 +367,8 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                                     outboxModelJpaEntity.setLastUpdate(Instant.now());
                                     outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion() + 1);
                                     outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+
+
 
                                 });
 

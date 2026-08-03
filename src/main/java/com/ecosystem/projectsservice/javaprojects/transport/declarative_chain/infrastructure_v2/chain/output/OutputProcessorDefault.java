@@ -261,6 +261,8 @@ public class OutputProcessorDefault implements OutputProcessor {
 
         try {
 
+            System.out.println("Публикация нового шага");
+
 
             repository.markPreviousAsProcessedAndCreateNewModel(output.getEvent().getOutboxId(),
                     prepareNewEvent(output, meta));
@@ -278,6 +280,8 @@ public class OutputProcessorDefault implements OutputProcessor {
 
         }
         catch (Exception e){
+
+            e.printStackTrace();
 
 
             avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP,

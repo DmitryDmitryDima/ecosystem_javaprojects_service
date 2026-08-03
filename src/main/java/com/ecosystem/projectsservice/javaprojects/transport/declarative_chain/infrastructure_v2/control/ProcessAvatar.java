@@ -70,9 +70,9 @@ public class ProcessAvatar {
 
     // механизм настраивается пользователем
 
-    private AtomicReference<ChainOutput> previousOutput;
+    private AtomicReference<ChainOutput> previousOutput = new AtomicReference<>(null);
 
-    private AtomicReference<OutputMetadata<?>> previousOutputMetadata;
+    private AtomicReference<OutputMetadata<?>> previousOutputMetadata = new AtomicReference<>(null);
 
 
 

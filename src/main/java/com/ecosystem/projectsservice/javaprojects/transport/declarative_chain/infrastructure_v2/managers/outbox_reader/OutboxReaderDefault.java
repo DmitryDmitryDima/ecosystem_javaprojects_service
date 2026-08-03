@@ -82,6 +82,9 @@ public class OutboxReaderDefault implements OutboxReader{
 
         for (var model:actualWaiting){
 
+
+
+
             ManagerResult result = manager.workWithWaitingEvent(model);
 
             if (result.getException()!=null){

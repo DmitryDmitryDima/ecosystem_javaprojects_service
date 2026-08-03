@@ -11,8 +11,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputResult;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.output_actions.*;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainStepExecutionException;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.StepStoppedDuringExecutionException;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.*;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.DeliveryStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.status_groups.PerformanceStatus;
@@ -20,8 +19,6 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputMetadata;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainInitException;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.ChainPreparationException;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
@@ -156,6 +153,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         OutputMetadata<?> meta = new OutputMetadata<>();
 
         meta.setAction(new CompensationEnd());
+
 
 
         ChainOutput output = new ChainOutput();
@@ -711,10 +709,28 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     }
 
     // последний шаг выполнен успешно
-    // хук завершения всего процесса
+    // todo хук завершения всего процесса
     protected void stepExecutionSuccessEndingScenario(E event,
                                                       ProcessAvatar avatar,
                                                       ChainStep<?> step){
+
+
+
+        OutputMetadata<?> metadata = new OutputMetadata<>();
+
+        metadata.setAction(new ChainEnd());
+        metadata.setExecutedStep(step);
+
+
+        ChainOutput chainOutput = ChainOutput.builder()
+                .event(event)
+                .build();
+
+
+        onPublishChainOutput(chainOutput, metadata, avatar);
+
+
+
 
 
     }
@@ -729,8 +745,58 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         // не забываем сбросить счетчик ретраев для следующего шага
 
         // вычисляем next шаг.
-        // todo Учитываем,
-        // что при ошибке публикации в ивенте в current будет именно следующий шаг
+        // todo Учитываем, что при ошибке публикации в ивенте в current будет именно следующий шаг
+
+
+        ChainStep<?> next = findStepByName(step.getNext());
+
+        ChainEventProcessingInfo info = event.getProcessingInfo();
+
+        if (next == null) throw new ChainScenarioException("следующий шаг не найден после "+step.getName());
+
+
+        info.setPerformanceStatus(PerformanceStatus.STEP_PERFORMED);
+        info.setCurrentStep(next.getName());
+        info.setCurrentRetry(0); // сбрасываем счетчик на случай, если мы вошли сюда после retry фазы
+
+
+        OutputMetadata<?> meta = new OutputMetadata<>();
+        meta.setExecutedStep(step);
+        meta.setAction(new ChainOpeningOrMiddleStep());
+
+
+
+        Long duration = null;
+        if (!next.isEverlasting()){
+            duration = ChainUtils.convertToMillis(step.getTimeLimit(),
+                    step.getTimeLimitUnit());
+        }
+
+
+        // todo учесть, что шаг может быть waiting for signal
+
+        // для waiting for signal (external) необходима конвертация
+        Instant readExpiration = next.getWaitingForSignal()
+                == null?Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS)
+                :Instant.now().plusMillis(ChainUtils.convertToMillis(next.getWaitingForSignal(),
+                next.getWaitingForSignalUnit()));
+
+
+
+        ChainOutput output = ChainOutput.builder()
+                .event(event)
+                .status(next.getWaitingForSignal() == null?OutboxStatus.WAITING
+                        :OutboxStatus.WAITING_FOR_EXTERNAL)
+                .last_update(Instant.now())
+                .readExpiration(readExpiration)
+                .performanceExpirationPeriod(duration)
+                .build();
+
+
+
+        onPublishChainOutput(output, meta, avatar);
+
+
 
     }
 
@@ -798,14 +864,20 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                         step.getTimeLimitUnit());
             }
 
+            // для waiting for signal (external) необходима конвертация
+            Instant readExpiration = step.getWaitingForSignal()
+                    == null?Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS)
+                    :Instant.now().plusMillis(ChainUtils.convertToMillis(step.getWaitingForSignal(),
+                    step.getWaitingForSignalUnit()));
+
 
             // если performance expiration == null, то это означает Everlasting шаг
             ChainOutput output = ChainOutput.builder()
                     .event(event)
-                    .status(OutboxStatus.WAITING)
+                    .status(step.getWaitingForSignal()==null?OutboxStatus.WAITING
+                            :OutboxStatus.WAITING_FOR_EXTERNAL)
                     .last_update(Instant.now())
-                    .readExpiration(Instant.now()
-                            .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                    .readExpiration(readExpiration)
                     .performanceExpirationPeriod(duration)
                     .build();
 

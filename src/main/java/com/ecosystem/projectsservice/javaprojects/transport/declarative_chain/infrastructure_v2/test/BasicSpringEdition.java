@@ -19,7 +19,5 @@ public class BasicSpringEdition extends Basic {
     }
 
 
-    public void check(){
-        getPublisher().output(null, null);
-    }
+
 }

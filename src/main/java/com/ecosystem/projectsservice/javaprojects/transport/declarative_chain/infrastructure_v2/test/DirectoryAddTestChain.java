@@ -23,12 +23,17 @@ public class DirectoryAddTestChain
 
         System.out.println("directory add test caught with message "+event.getMessage());
 
+        super.processEvent(event);
+
 
 
     }
 
     @Override
     protected void compensationStrategy(DirectoryAddTestEvent event) {
+
+        System.out.println(event.getProcessingInfo().getPerformanceStatus());
+        System.out.println(event.getProcessingInfo().getDeliveryStatus());
 
     }
 

@@ -126,8 +126,14 @@ public class EventManagerDefault implements EventManager{
                     " Чтение состояния процесса невозможно");
         }
 
-        return mapperComponent.read(payload,
-                clazzCheck.get());
+
+        ChainEvent chainEvent = mapperComponent.read(payload, clazzCheck.get());
+
+        chainEvent.setOutboxId(model.getOutboxUUID());
+
+
+
+        return chainEvent;
 
 
 
