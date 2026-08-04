@@ -397,7 +397,8 @@ public class EventManagerDefault implements EventManager{
 
     // время выполнения текущего ивента просрочено.
 
-    // todo нужно поразмыслить, имеет ли значение наличие/отсутствие аватара
+    // ивенты данной группы уже имеют статус compensating в бд,
+    // что означает, что внезапно оживший процесс не сможет вдруг продолжить цепь
 
     @Override
     public ManagerResult workWithExpiredProcessingEvent(OutboxModel model) {

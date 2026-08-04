@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.DeclarativeChainSpringAdapter;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -38,15 +39,37 @@ public class DirectoryAddTestChain
     }
 
 
-    @Opening(name = "opening", next = "ending")
+    @Opening(name = "opening", next = "middle")
     public void opening(DirectoryAddTestEvent event){
         System.out.println("hello from opening");
+
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Step(name = "middle", next = "ending")
+    public void middle(DirectoryAddTestEvent event){
+        System.out.println("hello from middle");
+
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
     @Ending(name = "ending")
     public void ending(DirectoryAddTestEvent event){
         System.out.println("hello from ending");
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

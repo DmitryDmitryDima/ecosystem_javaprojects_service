@@ -164,9 +164,20 @@ public class ProcessAvatar {
     public void setExternalMessage(String message){
         externalMessage.set(message);
     }
+
+    // todo настроить terminate
     public void terminate(){
         lastModified.set(Instant.now());
         setStatus(ProcessAvatarStatus.TERMINATED);
+
+
+        currentThread.getAndUpdate(thread -> {
+            if (thread!=null) {
+                thread.interrupt();
+            }
+            return thread;
+        });
+
     }
 
     // прежде всего, проставляем флаг running в false
@@ -185,12 +196,9 @@ public class ProcessAvatar {
 
 
 
-    // мгновенное убийство аватара
-
-    public void terminateInstantly(){
 
 
-    }
+
 
 
 

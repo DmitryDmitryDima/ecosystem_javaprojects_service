@@ -375,6 +375,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             // создаем runtime аватар процесса
 
+
+
             ProcessAvatar runtimeAvatar
                     = new ProcessAvatar(event.getProcessId());
 

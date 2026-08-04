@@ -79,6 +79,8 @@ public class OutputProcessorDefault implements OutputProcessor {
     }
 
     // данный сценарий предполагает только сохранение нового ивента
+
+
     protected OutputResult chainInitOutputScenario(ChainOutput output,
                                          OutputMetadata<?> metadata,
                                            ProcessAvatar avatar){

@@ -68,6 +68,9 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
 
 
+
+
+
     // SKIP LOCKED - чтобы пропустить УЖЕ БЛОКНУТЫЕ СТРОКИ
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = :status " +

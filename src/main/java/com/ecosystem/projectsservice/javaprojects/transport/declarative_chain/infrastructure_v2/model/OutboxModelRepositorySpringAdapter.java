@@ -491,6 +491,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                 entities.forEach(entity -> {
                     entity.setAllReadProcessingVersion(entity.getAllReadProcessingVersion()+1);
                     entity.setAllReadVersion(entity.getAllReadVersion()+1);
+
+                    // явный компенсационный сценарий помечается атомарно
+                    entity.setCompensation(true);
                 });
 
                 return entities;
@@ -531,6 +534,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                             outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion()+1);
                             outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
 
+                            // явный компенсационный сценарий помечается атомарно
+                            outboxModelJpaEntity.setCompensation(true);
+
                         });
 
                         return jpaEntities;}
@@ -570,6 +576,10 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                             outboxModelJpaEntity.setLastUpdate(Instant.now());
                             outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion()+1);
                             outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+
+
+                            // явный компенсационный сценарий помечается атомарно
+                            outboxModelJpaEntity.setCompensation(true);
 
                         });
 

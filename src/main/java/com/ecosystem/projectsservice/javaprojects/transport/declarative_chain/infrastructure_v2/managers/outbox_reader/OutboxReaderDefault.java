@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.util.List;
 
 
-// TODO ввести подгрузку параметров времени из файла конфигурации
+// TODO
 public class OutboxReaderDefault implements OutboxReader{
 
 
@@ -113,11 +113,19 @@ public class OutboxReaderDefault implements OutboxReader{
 
             }
 
+
+            // compensating флаг выставляется при чтении атомарно для явно компенсационной группы
+
+
+            /*
+
             else {
                 // компенсационная группа - компенсационный флаг
                 // таким образом processing ивент помечается как вошедший в компенсационный сценарий
                 repository.markAsCompensating(model.getOutboxUUID());
             }
+
+             */
 
 
 
@@ -147,12 +155,20 @@ public class OutboxReaderDefault implements OutboxReader{
                 attemptToSetManagerCrashedStatus(result, model);
             }
 
+
+            // compensating флаг выставляется атомарно для явно компенсационной группы
+
+            /*
+
+
             else {
 
 
                 // компенсационная группа - компенсационный флаг
                 repository.markAsCompensating(model.getOutboxUUID());
             }
+
+             */
 
 
         }
@@ -262,10 +278,19 @@ public class OutboxReaderDefault implements OutboxReader{
                 attemptToSetManagerCrashedStatus(result, model);
             }
 
+
+
+            // compensating флаг выставляется атомарно для явно компенсационной группы
+
+
+            /*
+
             else {
                 // компенсационная группа - компенсационный флаг
                 repository.markAsCompensating(model.getOutboxUUID());
             }
+
+             */
 
 
 
