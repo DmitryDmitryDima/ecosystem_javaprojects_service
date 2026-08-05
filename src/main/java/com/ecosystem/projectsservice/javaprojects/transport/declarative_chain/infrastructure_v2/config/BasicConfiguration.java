@@ -14,13 +14,13 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperComponent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReader;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReaderDefault;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.outbox_reader.OutboxReaderSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.sender.ChainManagerSender;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.sender.ChainManagerSenderSpringApplicationPublisherAdapter;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelJpaRepository;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelRepository;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxModelRepositorySpringAdapter;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.idempotency.IdempotencyModelJpaRepository;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox.OutboxModelJpaRepository;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox.OutboxModelRepository;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox.OutboxModelRepositorySpringAdapter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -75,11 +75,13 @@ public class BasicConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public OutboxModelRepository repository(OutboxModelJpaRepository jpaRepository,
+    public OutboxModelRepository repository(OutboxModelJpaRepository outboxModelJpaRepository,
+                                            IdempotencyModelJpaRepository idempotencyModelJpaRepository,
                                             TransactionTemplate transactionTemplate){
 
 
-        return new OutboxModelRepositorySpringAdapter(jpaRepository, transactionTemplate);
+        return new OutboxModelRepositorySpringAdapter(outboxModelJpaRepository, idempotencyModelJpaRepository,
+                transactionTemplate);
     }
 
 

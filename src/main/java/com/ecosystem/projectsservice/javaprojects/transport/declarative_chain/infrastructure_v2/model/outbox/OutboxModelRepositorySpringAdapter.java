@@ -1,10 +1,8 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox;
 
 
-import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Limit;
-import org.springframework.stereotype.Service;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.idempotency.IdempotencyModelJpaEntity;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.idempotency.IdempotencyModelJpaRepository;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -16,24 +14,38 @@ import java.util.UUID;
 public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository {
 
 
-    private OutboxModelJpaRepository jpaRepository;
+    private OutboxModelJpaRepository outboxModelJpaRepository;
 
 
     private TransactionTemplate transaction;
 
+    private IdempotencyModelJpaRepository idempotencyModelJpaRepository;
 
-    public OutboxModelRepositorySpringAdapter(OutboxModelJpaRepository jpaRepository,
+
+    public OutboxModelRepositorySpringAdapter(OutboxModelJpaRepository outboxModelJpaRepository,
+                                              IdempotencyModelJpaRepository idempotencyModelJpaRepository,
                                               TransactionTemplate transaction) {
-        this.jpaRepository = jpaRepository;
+        this.outboxModelJpaRepository = outboxModelJpaRepository;
         this.transaction = transaction;
+        this.idempotencyModelJpaRepository = idempotencyModelJpaRepository;
     }
 
 
     // создание новой записи
+    // адаптер самостоятельно обязан предоставить дефолтный механизм идемпотентности
+    // мы используем реестр таблицу, регистрирующую uuid
     @Override
     public void create(OutboxModel model) {
 
         try {
+
+
+            // запись в реестр
+            IdempotencyModelJpaEntity registryEntity = IdempotencyModelJpaEntity.builder()
+                    .processId(model.getProcessUUID())
+                    .build();
+
+
 
 
             // используя интерфейс, производим маппинг
@@ -52,13 +64,25 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                     .message(model.getMessage())
                     .build();
 
-
+            // создаем запись в реестре, в случае успеха - сохраняем outbox model
             transaction.execute(status -> {
 
-                jpaRepository.save(entity);
+
+                // в случае,
+                // если uuid процесса уже фигурировал, процесс не будет зарегистрирован
+                idempotencyModelJpaRepository
+                        .save(registryEntity);
+
+
+
+                outboxModelJpaRepository.save(entity);
 
                 return null;
             });
+
+
+
+
 
 
         } catch (Exception e) {
@@ -99,7 +123,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             transaction.execute(status -> {
 
 
-                Optional<OutboxModelJpaEntity> prevCheck = jpaRepository
+                Optional<OutboxModelJpaEntity> prevCheck = outboxModelJpaRepository
                         .findByUUIDForUpdate(previous);
 
                 // если присутствует предыдущий ивент, он обязан соответствовать некоторым условиям
@@ -125,7 +149,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
                     // публикуем новый ивент
 
-                    jpaRepository.save(newEntity);
+                    outboxModelJpaRepository.save(newEntity);
                 }
 
 
@@ -159,7 +183,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             transaction.execute(status -> {
 
 
-                Optional<OutboxModelJpaEntity> prevCheck = jpaRepository
+                Optional<OutboxModelJpaEntity> prevCheck = outboxModelJpaRepository
                         .findByUUIDForUpdate(id);
 
                 // если присутствует предыдущий ивент, он обязан соответствовать некоторым условиям
@@ -210,7 +234,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             transaction.execute(status -> {
 
 
-                Optional<OutboxModelJpaEntity> prevCheck = jpaRepository
+                Optional<OutboxModelJpaEntity> prevCheck = outboxModelJpaRepository
                         .findByUUIDForUpdate(id);
 
                 // если присутствует предыдущий ивент, он обязан соответствовать некоторым условиям
@@ -257,7 +281,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             transaction.execute(status -> {
 
 
-                Optional<OutboxModelJpaEntity> prevCheck = jpaRepository
+                Optional<OutboxModelJpaEntity> prevCheck = outboxModelJpaRepository
                         .findByUUIDForUpdate(id);
 
 
@@ -283,7 +307,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             transaction.execute(status -> {
 
 
-                Optional<OutboxModelJpaEntity> check = jpaRepository.findByUUIDForUpdate(uuid);
+                Optional<OutboxModelJpaEntity> check = outboxModelJpaRepository.findByUUIDForUpdate(uuid);
 
                 if (check.isPresent()) {
 
@@ -319,7 +343,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             transaction.execute(status -> {
 
 
-                Optional<OutboxModelJpaEntity> check = jpaRepository.findByUUIDForUpdate(uuid);
+                Optional<OutboxModelJpaEntity> check = outboxModelJpaRepository.findByUUIDForUpdate(uuid);
 
                 if (check.isPresent()) {
 
@@ -355,7 +379,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             return
                     transaction.execute(status -> {
 
-                                List<OutboxModelJpaEntity> jpaEntities = jpaRepository
+                                List<OutboxModelJpaEntity> jpaEntities = outboxModelJpaRepository
                                         .readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus.WAITING);
 
 
@@ -403,7 +427,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
             return transaction.execute(status -> {
 
-                List<OutboxModelJpaEntity> everlastingSteps = jpaRepository
+                List<OutboxModelJpaEntity> everlastingSteps = outboxModelJpaRepository
                         .readEverlastingSteps(OutboxStatus.PROCESSING);
 
 
@@ -440,7 +464,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             return transaction.execute(status -> {
 
 
-                List<OutboxModelJpaEntity> entities = jpaRepository
+                List<OutboxModelJpaEntity> entities = outboxModelJpaRepository
                         .readMissedEventsExpiredByPerformance();
 
 
@@ -484,7 +508,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             return transaction.execute(status -> {
 
 
-                List<OutboxModelJpaEntity> entities = jpaRepository
+                List<OutboxModelJpaEntity> entities = outboxModelJpaRepository
                         .readEventsExpiredByPerformance();
 
 
@@ -522,7 +546,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             return
                     transaction.execute(status -> {
 
-                        List<OutboxModelJpaEntity> jpaEntities = jpaRepository
+                        List<OutboxModelJpaEntity> jpaEntities = outboxModelJpaRepository
                                 .readAllEntitiesWithReadExpirationReached(OutboxStatus.WAITING);
 
 
@@ -565,7 +589,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             return
                     transaction.execute(status -> {
 
-                        List<OutboxModelJpaEntity> jpaEntities = jpaRepository
+                        List<OutboxModelJpaEntity> jpaEntities = outboxModelJpaRepository
                                 .readAllEntitiesWithReadExpirationReached(OutboxStatus.WAITING_FOR_EXTERNAL);
 
 
@@ -610,7 +634,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
 
 
-                List<OutboxModelJpaEntity> events = jpaRepository.readByStatus(OutboxStatus.MANAGER_CRASH);
+                List<OutboxModelJpaEntity> events = outboxModelJpaRepository.readByStatus(OutboxStatus.MANAGER_CRASH);
 
                 // счетчик + статус
                 events.forEach(event->{

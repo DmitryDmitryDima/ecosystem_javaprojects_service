@@ -24,7 +24,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEventProcessingInfo;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.OutboxStatus;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox.OutboxStatus;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -385,6 +385,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             runtimeAvatar.setStatus(ProcessAvatarStatus.WAITING);
 
+            // внутри - проверка наличия аватара с таким же id
+            // - первая idempotency защита
             processAvatarStorage.registerAvatar(runtimeAvatar);
 
 

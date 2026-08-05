@@ -1,10 +1,8 @@
-package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model;
+package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox;
 
 
-import com.ecosystem.projectsservice.javaprojects.model.OutboxEvent;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
-import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
 
