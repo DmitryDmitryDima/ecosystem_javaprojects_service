@@ -82,7 +82,8 @@ public class ProjectsActionsController {
 
     // читаем проект, получаем всю необходимую информацию
     @GetMapping("/read")
-    public ResponseEntity<ProjectDTO> read(@PathVariable("id") UUID id, @RequestHeader Map<String, String> headers) throws Exception{
+    public ResponseEntity<ProjectDTO> read(@PathVariable("id") UUID id,
+                                           @RequestHeader Map<String, String> headers) throws Exception{
 
         SecurityContext securityContext = SecurityContext.generateContext(headers);
         RequestContext requestContext = RequestContext.generateRequestContext(headers);

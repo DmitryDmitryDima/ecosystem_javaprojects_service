@@ -108,6 +108,8 @@ public class ProcessAvatar {
 
 
         setStatus(nextStatus);
+
+
         currentNativeProcesses.getAndUpdate((processes -> {
             if (processes!=null){
                 processes.forEach((process)->{

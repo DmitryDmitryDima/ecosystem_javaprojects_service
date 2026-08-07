@@ -16,4 +16,8 @@ public class ProcessAvatarIndex {
 
     // ключ поиска
     private String key;
+
+
+    // пример - name = projects - имя индекса, key - id проекта в строковой форме.
+    // К вторичному ключу прилагается список непосредственных аватаров
 }

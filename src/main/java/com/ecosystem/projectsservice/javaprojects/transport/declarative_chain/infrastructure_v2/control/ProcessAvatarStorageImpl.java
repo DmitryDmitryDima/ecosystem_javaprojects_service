@@ -34,16 +34,14 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
 
         for (var index:userIndexes){
 
-            // извлекаем структуру, ассоциированную с заданным ключом
-            Map<String, List<ProcessAvatar>> indexStructure = indexes.get(index.getKey());
+            // извлекаем структуру, ассоциированную с заданным именем, или создаем новую
+            // пример имени индекса - projects
+            Map<String, List<ProcessAvatar>> indexStructure
+                    = indexes.computeIfAbsent(index.getName(), k -> new HashMap<>());
 
-            // если структуры нет, создаем новую
-            if (indexStructure == null){
-                indexStructure = new HashMap<>();
-                indexes.put(index.getName(),indexStructure);
-            }
 
-            // извлекаем список, ассоциированный со вторичным ключом
+
+            // извлекаем список, ассоциированный с вторичным ключом (например, это может быть id проекта)
             List<ProcessAvatar> processes
                     = indexStructure.computeIfAbsent(index.getKey(), k -> new ArrayList<>());
 
@@ -54,6 +52,48 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
 
 
         }
+    }
+
+
+    private void removeIndexes(ProcessAvatar processAvatar){
+
+        var userIndexes = processAvatar.getIndexes();
+
+
+        for (var index:userIndexes){
+
+            // проверяем наличие корзины
+            Map<String, List<ProcessAvatar>> namedBucket = indexes.get(index.getName());
+
+            // по идее структура всегда присутствует, но на всякий случай проверяем
+            if (namedBucket!=null){
+
+                List<ProcessAvatar> processesAssociatedByKey = namedBucket.get(index.getKey());
+
+                if (processesAssociatedByKey!=null){
+
+                    // ссылка - одна и та же
+                    processesAssociatedByKey.remove(processAvatar);
+
+                    // очищаем список, если он пустой
+                    if (processesAssociatedByKey.isEmpty()){
+                        namedBucket.remove(index.getKey());
+                    }
+                }
+
+                // очищаем пространство имен, если в нем больше нет никаких вторичных ключей
+                if (namedBucket.isEmpty()){
+                    indexes.remove(index.getName());
+                }
+
+
+            }
+
+
+        }
+
+
+
     }
 
 
@@ -96,6 +136,12 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
 
     public ProcessAvatar getOrRestore(UUID correlationId,
                                       ProcessAvatar toRestore){
+
+
+
+
+
+
         writeLock.lock();
 
         try {
@@ -121,8 +167,65 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
         }
     }
 
+    @Override
+    public List<ProcessAvatar> getAll() {
 
-    public void clearTerminatedAvatars(){}
+
+        // read lock позволяет читать информацию множеству потоков,
+        // но при этом он не позволяет write lock начать запись
+
+        // write lock блокирует все - его будет ждать как readlock, так и другой write lock
+        readLock.lock();
+
+        try {
+            return new ArrayList<>(allProcesses.values());
+        }
+        finally {
+            readLock.unlock();
+        }
+    }
+
+
+    // очистка runtime окружения от terminated аватаров
+    public void clearTerminatedAvatars(){
+
+
+
+        writeLock.lock();
+
+        try {
+
+
+            Iterator<Map.Entry<UUID, ProcessAvatar>> iterator
+                    = allProcesses.entrySet().iterator();
+
+
+            while (iterator.hasNext()){
+
+                var next = iterator.next();
+
+                if (next.getValue().getStatus().get() == ProcessAvatarStatus.TERMINATED){
+
+
+                    // удаляем индексы
+                    removeIndexes(next.getValue());
+                    // удаляем из основного хранилища
+                    iterator.remove();
+
+
+                }
+            }
+
+
+
+        }
+
+        finally {
+            writeLock.unlock();
+        }
+
+
+    }
 
 
 
