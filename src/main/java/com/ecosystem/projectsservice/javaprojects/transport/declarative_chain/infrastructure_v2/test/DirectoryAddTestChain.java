@@ -4,9 +4,13 @@ import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.in
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.DeclarativeChainSpringAdapter;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarIndex;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 
 @Service
@@ -28,6 +32,20 @@ public class DirectoryAddTestChain
 
 
 
+    }
+
+    @Override
+    protected List<ProcessAvatarIndex> setProcessIndexes(DirectoryAddTestEvent event) {
+
+
+        ProcessAvatarIndex index = new ProcessAvatarIndex();
+
+        index.setName("projects");
+
+        index.setKey(event.getExternalContext().getProjectId().toString()); // project id in production
+
+
+        return List.of(index);
     }
 
     @Override

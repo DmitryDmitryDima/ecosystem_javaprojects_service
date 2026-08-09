@@ -14,7 +14,7 @@ public class OutboxReaderSpringAdapter extends OutboxReaderDefault
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.waiting.events:500}")
+    @Scheduled(fixedDelayString = "${reader.waiting.events:10000}")
     public void readWaitingEvents() {
         super.readWaitingEvents();
     }

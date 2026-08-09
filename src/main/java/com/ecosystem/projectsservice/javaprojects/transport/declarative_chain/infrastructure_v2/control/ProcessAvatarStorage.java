@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,6 +17,9 @@ public interface ProcessAvatarStorage {
 
 
     List<ProcessAvatar> getAll();
+
+
+    Map<String, Map<String, List<ProcessAvatar>>> getIndexesStructure();
 
 
 }

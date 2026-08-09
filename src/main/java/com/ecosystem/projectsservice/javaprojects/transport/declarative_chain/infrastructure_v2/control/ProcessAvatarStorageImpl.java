@@ -4,6 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.i
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 // бывший process aggregator
 public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
@@ -178,11 +179,44 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
         readLock.lock();
 
         try {
-            return new ArrayList<>(allProcesses.values());
+            return new ArrayList<>(allProcesses.values()); // copy
         }
         finally {
             readLock.unlock();
         }
+    }
+
+    @Override
+    public Map<String, Map<String, List<ProcessAvatar>>> getIndexesStructure() {
+
+        readLock.lock();
+
+
+
+        try {
+
+            // делаем deep copy
+
+            HashMap<String, Map<String, List<ProcessAvatar>>> deep = new HashMap<>();
+
+            for (var entry:indexes.entrySet()){
+
+                String key = entry.getKey();
+
+                Map<String, List<ProcessAvatar>> copiedValue = entry.getValue()
+                        .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                                innerEntry->new ArrayList<>(innerEntry.getValue())
+                                ));
+                deep.put(key, copiedValue);
+            }
+
+            return deep;
+        }
+
+        finally {
+            readLock.unlock();
+        }
+
     }
 
 
