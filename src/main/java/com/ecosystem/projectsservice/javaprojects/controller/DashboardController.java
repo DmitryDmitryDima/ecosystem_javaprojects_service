@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.controller;
 
 
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarDTO;
+import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarsWithIndexes;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.IndexGroupDTO;
 import com.ecosystem.projectsservice.javaprojects.service.dashboard.DashboardService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,14 @@ public class DashboardController {
 
         return ResponseEntity.ok(dashboardService.getAllIndexGroups());
     }
+
+
+    @GetMapping("/avatars_and_indexes")
+    public ResponseEntity<AvatarsWithIndexes> getAvatarsAndIndexes(){
+
+        return ResponseEntity.ok(dashboardService.getAvatarsAndIndexes());
+    }
+
 
 
     @PostMapping("/click")

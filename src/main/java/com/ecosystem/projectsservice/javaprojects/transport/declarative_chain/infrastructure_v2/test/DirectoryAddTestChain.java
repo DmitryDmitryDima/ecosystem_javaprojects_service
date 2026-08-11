@@ -51,8 +51,15 @@ public class DirectoryAddTestChain
     @Override
     protected void compensationStrategy(DirectoryAddTestEvent event) {
 
+
+
+        System.out.println("ВХОД В КОМПЕНСАЦИОННЫЙ СЦЕНАРИЙ ДЛЯ ШАГА "
+                +event.getProcessingInfo().getCurrentStep());
+
         System.out.println(event.getProcessingInfo().getPerformanceStatus());
         System.out.println(event.getProcessingInfo().getDeliveryStatus());
+
+
 
     }
 
