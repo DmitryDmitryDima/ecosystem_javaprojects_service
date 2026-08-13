@@ -14,19 +14,19 @@ public class OutboxReaderSpringAdapter extends OutboxReaderDefault
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.waiting.events:10000}")
+    @Scheduled(fixedDelayString = "${reader.waiting.events:500}")
     public void readWaitingEvents() {
         super.readWaitingEvents();
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.waiting.events.expired:20000}")
+    @Scheduled(fixedDelayString = "${reader.waiting.events.expired:2000}")
     public void readExpiredWaitingEvents() {
         super.readExpiredWaitingEvents();
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.processing.events.expired:20000}")
+    @Scheduled(fixedDelayString = "${reader.processing.events.expired:2000}")
     public void readExpiredProcessingEvents() {
         super.readExpiredProcessingEvents();
     }
@@ -34,19 +34,19 @@ public class OutboxReaderSpringAdapter extends OutboxReaderDefault
 
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.processing.events.everlasting:20000}")
+    @Scheduled(fixedDelayString = "${reader.processing.events.everlasting:2000}")
     public void readEverlastingProcessingEvents() {
         super.readEverlastingProcessingEvents();
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.processing.events.missed:60000}")
+    @Scheduled(fixedDelayString = "${reader.processing.events.missed:2000}")
     public void readMissedExpiredProcessingEvents() {
         super.readMissedExpiredProcessingEvents();
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.manager.crashed.events:60000}")
+    @Scheduled(fixedDelayString = "${reader.manager.crashed.events:2000}")
     public void readManagerCrashedEvents() {
         super.readManagerCrashedEvents();
     }

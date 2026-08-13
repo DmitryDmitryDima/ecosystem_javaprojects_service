@@ -37,13 +37,15 @@ public class DashboardService {
 
     public void runTestButton(){
 
-        directoryAddTestChain.init(getChainEvent());
+        //directoryAddTestChain.init(getChainEvent());
 
 
         var testEvent = new TestChainEvent();
         testEvent.setProcessId(UUID.randomUUID());
 
         testChain.init(testEvent);
+
+
 
 
 

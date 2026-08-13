@@ -36,4 +36,7 @@ public class ChainOutput {
     // время, за которое ивент должен получить состояние processed - милисекунды
     private Long performanceExpirationPeriod;
 
+
+
+
 }

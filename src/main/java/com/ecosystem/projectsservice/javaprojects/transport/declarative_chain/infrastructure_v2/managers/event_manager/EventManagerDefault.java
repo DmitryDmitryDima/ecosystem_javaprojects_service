@@ -272,7 +272,8 @@ public class EventManagerDefault implements EventManager{
 
                     // генерируем dead letter
 
-                    DeadLetter deadLetter = new DeadLetter("Зависшая или  компенсация", model);
+                    DeadLetter deadLetter = new DeadLetter("Зависшая или" +
+                            " не опубликованная  компенсация", model);
 
                     deadLetterChannel.send(deadLetter);
 
@@ -440,7 +441,8 @@ public class EventManagerDefault implements EventManager{
 
                     // генерируем dead letter
 
-                    DeadLetter deadLetter = new DeadLetter("Зависшая или  компенсация", model);
+                    DeadLetter deadLetter = new DeadLetter("Зависшая или" +
+                            " неопубликованная компенсация", model);
 
                     deadLetterChannel.send(deadLetter);
 

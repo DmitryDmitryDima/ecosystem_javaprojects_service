@@ -63,6 +63,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
         model.setProcessUUID(chainEvent.getProcessId());
         model.setStatus(output.getStatus());
+
         model.setType(type);
         model.setPayload(mapper.writeValueAsString(chainEvent));
         model.setLastUpdate(output.getLast_update());
@@ -260,7 +261,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
         try {
 
-            System.out.println("Публикация нового шага");
+
 
 
             repository.markPreviousAsProcessedAndCreateNewModel(output.getEvent().getOutboxId(),

@@ -100,7 +100,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     public void markPreviousAsProcessedAndCreateNewModel(UUID previous, OutboxModel model) {
 
 
-        System.out.println("repo: mark previous "+previous+" and "+model+" to publish");
+
 
         // используя интерфейс, производим маппинг
         OutboxModelJpaEntity newEntity = OutboxModelJpaEntity.builder()

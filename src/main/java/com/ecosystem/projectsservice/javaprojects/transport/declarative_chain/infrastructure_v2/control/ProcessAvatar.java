@@ -149,8 +149,10 @@ public class ProcessAvatar {
 
     public void setStatus(ProcessAvatarStatus newStatus){
         lastModified.set(Instant.now());
-        if (status.get()== ProcessAvatarStatus.STOPPED
-                && newStatus!= ProcessAvatarStatus.TERMINATED) return; // если был остановлен, замена на другой статус  не происходит
+        if ((status.get()== ProcessAvatarStatus.STOPPED
+                || status.get() == ProcessAvatarStatus.TERMINATED)
+            &&
+        newStatus!= ProcessAvatarStatus.TERMINATED) return; // если был остановлен или закончен, замена на другой статус  не происходит
         status.set(newStatus);
     }
 

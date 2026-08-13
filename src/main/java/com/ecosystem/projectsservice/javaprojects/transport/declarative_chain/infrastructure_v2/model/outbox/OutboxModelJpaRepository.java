@@ -43,7 +43,7 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = :status")
-    @QueryHints({@QueryHint(name = "javax.persistence.lock.timeout", value ="-2")})
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
 
     List<OutboxModelJpaEntity> readByStatus(OutboxStatus status);
 
@@ -73,7 +73,7 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = :status " +
             "and entity.readExpiration>CURRENT_TIMESTAMP ")
-    @QueryHints({@QueryHint(name = "javax.persistence.lock.timeout", value ="-2")})
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
 
     List<OutboxModelJpaEntity>
     readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus status);
@@ -85,7 +85,7 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = :status " +
             "and entity.readExpiration<CURRENT_TIMESTAMP")
-    @QueryHints({@QueryHint(name = "javax.persistence.lock.timeout", value ="-2")})
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
 
     List<OutboxModelJpaEntity> readAllEntitiesWithReadExpirationReached(OutboxStatus status);
 
@@ -94,7 +94,7 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT entity FROM OutboxModelJpaEntity entity " +
             "where entity.performanceLimitTime is null and entity.status = :status")
-    @QueryHints({@QueryHint(name = "javax.persistence.lock.timeout", value ="-2")})
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
 
     List<OutboxModelJpaEntity> readEverlastingSteps(OutboxStatus status);
 

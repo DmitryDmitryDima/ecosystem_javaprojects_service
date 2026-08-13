@@ -41,7 +41,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     private static final long DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS = 10;
 
 
-    private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 60*60;
+    private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 2;
 
 
 
@@ -833,7 +833,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                     .last_update(Instant.now())
                     .readExpiration(Instant.now()
                             .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
-                    .performanceExpirationPeriod(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                    .performanceExpirationPeriod(
+                            ChainUtils.convertToMillis(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                                    ChainTimeUnit.SEC))
                     .build();
 
 
@@ -924,12 +926,17 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // компенсация не может быть everlasting
         ChainOutput output = ChainOutput.builder()
+
+
+
                 .event(event)
                 .status(OutboxStatus.WAITING)
                 .last_update(Instant.now())
                 .readExpiration(Instant.now()
                         .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
-                .performanceExpirationPeriod(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                .performanceExpirationPeriod(ChainUtils
+                        .convertToMillis(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                        ChainTimeUnit.SEC))
                 .build();
 
 
@@ -962,12 +969,17 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // компенсация не может быть everlasting
         ChainOutput output = ChainOutput.builder()
+
+
+
                 .event(event)
                 .status(OutboxStatus.WAITING)
                 .last_update(Instant.now())
                 .readExpiration(Instant.now()
                         .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
-                .performanceExpirationPeriod(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                .performanceExpirationPeriod(ChainUtils
+                        .convertToMillis(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                        ChainTimeUnit.SEC))
                 .build();
 
 
@@ -1009,12 +1021,15 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // компенсация не может быть everlasting
         ChainOutput output = ChainOutput.builder()
+
                 .event(event)
                 .status(OutboxStatus.WAITING)
                 .last_update(Instant.now())
                 .readExpiration(Instant.now()
                         .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
-                .performanceExpirationPeriod(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS)
+                .performanceExpirationPeriod(ChainUtils
+                        .convertToMillis(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                        ChainTimeUnit.SEC))
                 .build();
 
 

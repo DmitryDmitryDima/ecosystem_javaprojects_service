@@ -151,7 +151,7 @@ public class FileCacheService implements FileCache{
     @Override
     public List<CachedFile> scan() {
 
-        System.out.println("scan operation starts in cache");
+        //System.out.println("scan operation starts in cache");
 
         ScanOptions scanOptions = ScanOptions
                 .scanOptions()

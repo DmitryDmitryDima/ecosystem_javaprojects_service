@@ -59,6 +59,8 @@ public class OutboxReaderDefault implements OutboxReader{
     // попытка мгновенно перевести в dead letter, также смотрим на совпадение версий
     private void attemptToSetDeadLetterStatusInstantly(OutboxModel model){
 
+        System.out.println("instant dead letter status attempt inside reader ");
+
         repository.changeStatusForGivenAllReadVersion(model.getOutboxUUID(),
                 OutboxStatus.DEAD_LETTER, model.getAllReadVersion());
     }
@@ -151,6 +153,10 @@ public class OutboxReaderDefault implements OutboxReader{
 
             if (result.getException()!=null){
                 attemptToSetManagerCrashedStatus(result, model);
+            }
+
+            if (result.isNeedDeadLetter()){
+                attemptToSetDeadLetterStatusInstantly(model);
             }
 
 

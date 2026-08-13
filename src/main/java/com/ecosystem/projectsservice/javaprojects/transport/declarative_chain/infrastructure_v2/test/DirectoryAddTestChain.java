@@ -26,7 +26,7 @@ public class DirectoryAddTestChain
     public void catchEvent(DirectoryAddTestEvent event) {
 
 
-        System.out.println("directory add test caught with message "+event.getMessage());
+
 
         super.processEvent(event);
 
@@ -58,6 +58,13 @@ public class DirectoryAddTestChain
 
         System.out.println(event.getProcessingInfo().getPerformanceStatus());
         System.out.println(event.getProcessingInfo().getDeliveryStatus());
+        System.out.println(event.getProcessingInfo().getCurrentStep()+" шаг в компенсации");
+
+        try {
+            Thread.sleep(4000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
 
 
@@ -66,7 +73,7 @@ public class DirectoryAddTestChain
 
     @Opening(name = "opening", next = "middle")
     public void opening(DirectoryAddTestEvent event){
-        System.out.println("hello from opening");
+        System.out.println("hello from opening - directory add chain");
 
         try {
             Thread.sleep(3000);
@@ -77,24 +84,28 @@ public class DirectoryAddTestChain
 
     @Step(name = "middle", next = "ending")
     public void middle(DirectoryAddTestEvent event){
-        System.out.println("hello from middle");
+        System.out.println("hello from middle - directory add chain");
 
         try {
             Thread.sleep(3000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+
     }
 
 
     @Ending(name = "ending")
     public void ending(DirectoryAddTestEvent event){
-        System.out.println("hello from ending");
+        System.out.println("hello from ending - directory add chain");
         try {
             Thread.sleep(3000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        throw new RuntimeException("ending error - directory chain");
     }
 
 
