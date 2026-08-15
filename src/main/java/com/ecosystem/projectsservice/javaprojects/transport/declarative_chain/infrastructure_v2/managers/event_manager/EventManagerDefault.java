@@ -101,6 +101,9 @@ public class EventManagerDefault implements EventManager{
 
     private ChainEvent readPayload(OutboxModel model){
 
+
+
+
         // проверяем тип
         String type = model.getType();
 
@@ -134,6 +137,11 @@ public class EventManagerDefault implements EventManager{
 
 
         return chainEvent;
+
+
+
+
+
 
 
 

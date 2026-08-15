@@ -105,7 +105,7 @@ public class DirectoryAddTestChain
             throw new RuntimeException(e);
         }
 
-        throw new RuntimeException("ending error - directory chain");
+
     }
 
 

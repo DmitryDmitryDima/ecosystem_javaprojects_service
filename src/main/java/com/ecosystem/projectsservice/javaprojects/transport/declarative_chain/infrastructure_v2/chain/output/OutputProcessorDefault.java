@@ -117,6 +117,8 @@ public class OutputProcessorDefault implements OutputProcessor {
 
         try {
 
+            System.out.println("processor - chain compensation end callback ");
+
             repository.markAsProcessedForCompensation(output.getEvent().getOutboxId());
 
 
@@ -264,6 +266,9 @@ public class OutputProcessorDefault implements OutputProcessor {
 
 
 
+
+
+
             repository.markPreviousAsProcessedAndCreateNewModel(output.getEvent().getOutboxId(),
                     prepareNewEvent(output, meta));
 
@@ -273,6 +278,10 @@ public class OutputProcessorDefault implements OutputProcessor {
             avatar.performActionsAndSetStatus(ProcessAvatarStatus.WAITING, output, meta);
 
             return OutputResult.success();
+
+
+
+
 
 
 
@@ -308,11 +317,18 @@ public class OutputProcessorDefault implements OutputProcessor {
 
         try {
 
+
+
             repository.markAsProcessedForSuccessStep(output.getEvent().getOutboxId());
 
             avatar.terminate();
 
             return OutputResult.success();
+
+
+
+
+
 
         }
         catch (Exception e){

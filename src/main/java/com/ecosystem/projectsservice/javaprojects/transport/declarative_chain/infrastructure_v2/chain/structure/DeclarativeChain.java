@@ -41,7 +41,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     private static final long DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS = 10;
 
 
-    private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 2;
+    private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 10;
 
 
 
@@ -358,7 +358,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             // цепочка уже собрана и валидирована
             ChainEventProcessingInfo startingSettings = ChainEventProcessingInfo.builder()
                     .currentStep(opening.getName())
+                    .performanceStatus(PerformanceStatus.CHAIN_INITIATED)
                     .build();
+
+
             event.setProcessingInfo(startingSettings);
 
 
@@ -634,12 +637,15 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // выполняем шаг
 
-        // аватар фиксирует поток выполнения, а также статус running, вместе с названием выполняемого шага
+        // аватар фиксирует поток выполнения,
+        // а также статус running, вместе с названием выполняемого шага
         avatar.stepOnStart(step.getName());
 
         try {
             // todo добавить возможность инъекции аватара в метод,
             //  чтобы пользователю было удобно получать доступ к нему
+
+
             step.getMethod().invoke(this, event);
 
 

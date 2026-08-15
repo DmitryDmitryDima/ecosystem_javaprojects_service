@@ -40,7 +40,7 @@ public class OutboxReaderSpringAdapter extends OutboxReaderDefault
     }
 
     @Override
-    @Scheduled(fixedDelayString = "${reader.processing.events.missed:2000}")
+    @Scheduled(fixedDelayString = "${reader.processing.events.missed:20000}")
     public void readMissedExpiredProcessingEvents() {
         super.readMissedExpiredProcessingEvents();
     }
