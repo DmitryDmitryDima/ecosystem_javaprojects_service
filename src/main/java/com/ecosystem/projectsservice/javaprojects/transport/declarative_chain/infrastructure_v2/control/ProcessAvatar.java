@@ -53,6 +53,10 @@ public class ProcessAvatar {
     private AtomicReference<Thread> currentThread
             = new AtomicReference<>(null);
 
+
+
+    /*
+
     // если шаг содержит в себе обращение к внешним системам машины через cmd - эти процессы должны быть уничтожены
     // таким образом, пользуясь аннотацией @Duration, пользователь обязан регистрировать процессы через stateManager
     // (как его заставить это сделать - отдельный вопрос)
@@ -60,15 +64,14 @@ public class ProcessAvatar {
     private AtomicReference<List<Process>> currentNativeProcesses
             = new AtomicReference<>(null);
 
+     */
 
 
 
-    // ПОЛЯ ДЛЯ РЕАЛИЗАЦИИ МЕХАНИЗМА РЕТРАЙ ПУБЛИКАЦИИ
-    // ЕСЛИ СТАТУС OUTPUT_ERROR,
-    // ТО МЕНЕДЖЕР ИМЕЕТ ПРАВО ПРОБРОСИТЬ РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ ИЗ АВАТАРА В ЦЕПЬ
-    // СОХРАНИВ КОНТЕКСТ ВЫПОЛНЕНИЯ
 
-    // механизм настраивается пользователем
+
+
+
 
     private AtomicReference<ChainOutput> previousOutput = new AtomicReference<>(null);
 
@@ -93,9 +96,14 @@ public class ProcessAvatar {
     }
 
 
-    // заканчиваем шаг
-    public void performActionsAndSetStatus(ProcessAvatarStatus nextStatus,
-                                           ChainOutput output, OutputMetadata<?> metadata ){
+    // цепь выполняет некий output -> output сохраняется в аватаре, аватар очищает поток выполнения
+    public void setOutputStatus(ProcessAvatarStatus nextStatus,
+                                ChainOutput output, OutputMetadata<?> metadata ){
+
+
+        // если процесс вошел в компенсацию или завершен, ничего не делаем
+        if (status.get() == ProcessAvatarStatus.COMPENSATING
+                || status.get() == ProcessAvatarStatus.TERMINATED)  return;
 
 
         previousOutput.set(output);
@@ -108,6 +116,9 @@ public class ProcessAvatar {
 
 
         setStatus(nextStatus);
+
+
+        /*
 
 
         currentNativeProcesses.getAndUpdate((processes -> {
@@ -126,10 +137,17 @@ public class ProcessAvatar {
             return null;
         }));
 
+
+         */
+
+
+
+
         currentThread.set(null);
 
 
     }
+
 
     public void stepOnStart(String step){
         currentStep.set(step);
@@ -138,6 +156,32 @@ public class ProcessAvatar {
         lastModified.set(Instant.now());
     }
 
+    public void compensationOnStart(){
+        currentStep.set(null);
+
+        lastModified.set(Instant.now());
+
+        // специальный статус для компенсации
+        status.set(ProcessAvatarStatus.COMPENSATING);
+
+
+
+        // если в аватаре есть некий поток (например если некий шаг завис), то он прерывается
+        currentThread.updateAndGet(current->{
+            if (current!=null){
+
+                System.out.println("INTERRUPTION BEFORE COMPENSATION for "+current.threadId());
+                current.interrupt();
+            }
+
+            return current;
+        });
+
+        currentThread.set(Thread.currentThread());
+
+    }
+
+    /*
     // регистрация процесса внутри метода шага - должно быть совершенно пользователем
     public void registerNativeProcess(Process process){
         currentNativeProcesses.getAndUpdate(list -> {
@@ -146,6 +190,8 @@ public class ProcessAvatar {
             return processes;
         });
     }
+
+     */
 
     public void setStatus(ProcessAvatarStatus newStatus){
         lastModified.set(Instant.now());
@@ -169,7 +215,7 @@ public class ProcessAvatar {
         externalMessage.set(message);
     }
 
-    // todo настроить terminate
+
     public void terminate(){
         lastModified.set(Instant.now());
         setStatus(ProcessAvatarStatus.TERMINATED);
@@ -184,10 +230,10 @@ public class ProcessAvatar {
 
     }
 
-    // прежде всего, проставляем флаг running в false
 
-    // может вызываться как снаружи, так и изнутри. Метод cleanup вызывается из output processor
     public void stop(){
+
+
         lastModified.set(Instant.now());
         currentThread.getAndUpdate(thread -> {
             if (thread!=null) {

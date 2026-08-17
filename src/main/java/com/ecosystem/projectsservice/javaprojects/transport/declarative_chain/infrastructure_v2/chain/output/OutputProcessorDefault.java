@@ -136,7 +136,7 @@ public class OutputProcessorDefault implements OutputProcessor {
             // ошибка проставления коллбэка. Нужно уведомить аватар специальным статусом
             // в бесконечном шаге это спасет систему от повторной компенсации
             // (помимо этого в большинстве случае присутствует бд механизм защиты)
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_COMPENSATION,
+            avatar.setOutputStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_COMPENSATION,
                     output, meta
                     );
 
@@ -175,7 +175,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             // перевод аватара в статус crashed, его очистка от остатков прошлого процесса
 
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.CRASHED, output, meta);
+            avatar.setOutputStatus(ProcessAvatarStatus.CRASHED, output, meta);
 
             return OutputResult.success();
 
@@ -191,7 +191,7 @@ public class OutputProcessorDefault implements OutputProcessor {
         catch (Exception e){
 
             // уведомляем систему, что публикация не удалась
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH,
+            avatar.setOutputStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_CRASH,
                     output, meta);
 
 
@@ -224,7 +224,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             // перевод аватара в статус stopped, его очистка от остатков прошлого процесса
 
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.STOPPED, output, meta);
+            avatar.setOutputStatus(ProcessAvatarStatus.STOPPED, output, meta);
 
             return OutputResult.success();
 
@@ -239,7 +239,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             // ошибка публикации
 
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP,
+            avatar.setOutputStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STOP,
                     output, meta);
 
             return new OutputResult(false, e,
@@ -275,7 +275,7 @@ public class OutputProcessorDefault implements OutputProcessor {
 
             // перевод аватара в статус waiting, его очистка от остатков прошлого процесса
 
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.WAITING, output, meta);
+            avatar.setOutputStatus(ProcessAvatarStatus.WAITING, output, meta);
 
             return OutputResult.success();
 
@@ -293,7 +293,7 @@ public class OutputProcessorDefault implements OutputProcessor {
             e.printStackTrace();
 
 
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP,
+            avatar.setOutputStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_STEP,
                     output, meta);
 
             return new OutputResult(false, e, "ошибка публикации после выполнения шага "
@@ -333,7 +333,7 @@ public class OutputProcessorDefault implements OutputProcessor {
         }
         catch (Exception e){
 
-            avatar.performActionsAndSetStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_FINAL_STEP,
+            avatar.setOutputStatus(ProcessAvatarStatus.OUTPUT_ERROR_AFTER_FINAL_STEP,
                     output, meta);
 
             return new OutputResult(false,

@@ -148,7 +148,7 @@ public class ProcessAvatarStorageImpl implements ProcessAvatarStorage {
         try {
             if (allProcesses.containsKey(correlationId)) {
                 ProcessAvatar chainProcess = allProcesses.get(correlationId);
-                chainProcess.getCurrentThread().set(Thread.currentThread());
+                //chainProcess.getCurrentThread().set(Thread.currentThread());
                 return chainProcess;
             }
             else {

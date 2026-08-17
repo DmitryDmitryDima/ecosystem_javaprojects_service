@@ -45,9 +45,21 @@ public class TestChain extends DeclarativeChainSpringAdapter<TestChainEvent> {
 
 
         System.out.println("hello from opening - test chain");
+
+        System.out.println(Thread.currentThread().threadId());
+
+
         while (!Thread.currentThread().isInterrupted()){
 
             System.out.println("opening");
+
+            try {
+                Thread.sleep(2000);
+            }
+
+            catch (Exception e){
+                break;
+            }
         }
 
 
@@ -82,10 +94,12 @@ public class TestChain extends DeclarativeChainSpringAdapter<TestChainEvent> {
 
 
         try {
-            Thread.sleep(1000);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+
 
 
 

@@ -137,11 +137,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     protected void onCompensationStart(E event,
                                        ProcessAvatar avatar){
 
-        // специальный статус для компенсации, в какой то степени помощник для аналога в бд
+        // специальный статус для компенсации, в какой-то степени помощник для аналога в бд
         // позволяет обнаружить, что runtime завис
 
-        // если какой то шаг выполняется параллельно, то нужно убить то, что он пометил в аватаре
-        avatar.performActionsAndSetStatus(ProcessAvatarStatus.COMPENSATING, null ,null);
+        avatar.compensationOnStart();
 
     }
 
@@ -641,6 +640,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         // а также статус running, вместе с названием выполняемого шага
         avatar.stepOnStart(step.getName());
 
+
+
         try {
             // todo добавить возможность инъекции аватара в метод,
             //  чтобы пользователю было удобно получать доступ к нему
@@ -778,8 +779,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         Long duration = null;
         if (!next.isEverlasting()){
-            duration = ChainUtils.convertToMillis(step.getTimeLimit(),
-                    step.getTimeLimitUnit());
+            duration = ChainUtils.convertToMillis(next.getTimeLimit(),
+                    next.getTimeLimitUnit());
         }
 
 

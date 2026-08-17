@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test;
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.TimeLimit;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Step;
@@ -83,11 +84,12 @@ public class DirectoryAddTestChain
     }
 
     @Step(name = "middle", next = "ending")
+    @TimeLimit(time = 2)
     public void middle(DirectoryAddTestEvent event){
         System.out.println("hello from middle - directory add chain");
 
         try {
-            Thread.sleep(3000);
+            Thread.sleep(5000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -97,13 +99,16 @@ public class DirectoryAddTestChain
 
 
     @Ending(name = "ending")
+
     public void ending(DirectoryAddTestEvent event){
         System.out.println("hello from ending - directory add chain");
         try {
-            Thread.sleep(3000);
+            Thread.sleep(10000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        System.out.println("end of ending");
 
 
     }
