@@ -647,6 +647,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             //  чтобы пользователю было удобно получать доступ к нему
 
 
+            //
             step.getMethod().invoke(this, event);
 
 
