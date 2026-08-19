@@ -49,6 +49,10 @@ public interface OutboxModel {
     boolean isCompensation();
 
 
+    // time lock
+    Instant getLockedUntil();
+
+
 
 
 

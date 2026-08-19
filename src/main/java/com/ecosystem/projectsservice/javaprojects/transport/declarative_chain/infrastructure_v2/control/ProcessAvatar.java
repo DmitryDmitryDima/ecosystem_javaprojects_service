@@ -217,6 +217,10 @@ public class ProcessAvatar {
 
 
     public void terminate(){
+
+        if (status.get() == ProcessAvatarStatus.TERMINATED) return;
+
+
         lastModified.set(Instant.now());
         setStatus(ProcessAvatarStatus.TERMINATED);
 

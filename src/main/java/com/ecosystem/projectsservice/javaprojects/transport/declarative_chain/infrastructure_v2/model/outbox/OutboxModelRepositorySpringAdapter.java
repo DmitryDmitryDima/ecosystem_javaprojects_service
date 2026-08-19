@@ -14,7 +14,12 @@ import java.util.UUID;
 public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository {
 
 
+    private static final long DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS = 10;
+
+
     private OutboxModelJpaRepository outboxModelJpaRepository;
+
+
 
 
     private TransactionTemplate transaction;
@@ -481,7 +486,8 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
         catch (Exception e){
 
-            throw new OutboxRepositoryException("Ошибка чтения многократно зависших шагов. "+e.getMessage());
+            throw new OutboxRepositoryException("Ошибка чтения многократно зависших шагов. "
+                    +e.getMessage());
         }
 
 
@@ -515,6 +521,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                 entities.forEach(entity -> {
                     entity.setAllReadProcessingVersion(entity.getAllReadProcessingVersion()+1);
                     entity.setAllReadVersion(entity.getAllReadVersion()+1);
+
+                    // time lock, чтобы missing processing поток не прочитал ивент во время компенсации
+                    entity.setLockedUntil(Instant.now().plusSeconds(DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS));
 
                     // явный компенсационный сценарий помечается атомарно
                     entity.setCompensation(true);

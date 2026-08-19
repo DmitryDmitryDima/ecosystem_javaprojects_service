@@ -50,6 +50,8 @@ public class OutboxModelJpaEntity implements OutboxModel {
 
     private boolean compensation;
 
+    private Instant lockedUntil;
+
 
 
 
@@ -114,6 +116,10 @@ public class OutboxModelJpaEntity implements OutboxModel {
         return compensation;
     }
 
+    @Override
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
 
 
 }

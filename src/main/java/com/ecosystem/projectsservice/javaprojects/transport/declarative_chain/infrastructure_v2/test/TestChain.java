@@ -45,6 +45,7 @@ public class TestChain extends DeclarativeChainSpringAdapter<TestChainEvent> {
 
 
     @Opening(name = "opening", next = "ending")
+    @TimeLimit(time = 2)
     public void opening(TestChainEvent event, ProcessAvatar avatar){
 
 
@@ -59,7 +60,6 @@ public class TestChain extends DeclarativeChainSpringAdapter<TestChainEvent> {
 
 
     @Ending(name = "ending")
-    @WaitingForSignal(time = 100)
     public void ending(TestChainEvent event){
 
 
@@ -88,8 +88,10 @@ public class TestChain extends DeclarativeChainSpringAdapter<TestChainEvent> {
 
 
         try {
-            Thread.sleep(2000);
+            Thread.sleep(200000);
         } catch (InterruptedException e) {
+
+            System.out.println("компенсация прервана");
             throw new RuntimeException(e);
         }
 

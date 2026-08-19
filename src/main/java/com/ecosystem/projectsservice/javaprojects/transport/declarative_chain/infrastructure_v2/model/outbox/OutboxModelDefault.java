@@ -8,17 +8,11 @@ public class OutboxModelDefault implements OutboxModel{
 
 
     private UUID outboxUUID;
-
-
-
     private UUID processUUID;
 
 
     private OutboxStatus status;
-
     private String type;
-
-
     private String payload;
 
     private Instant lastUpdate;
@@ -35,6 +29,8 @@ public class OutboxModelDefault implements OutboxModel{
 
     private boolean compensation;
 
+
+    private Instant lockedUntil;
 
 
 
@@ -132,6 +128,15 @@ public class OutboxModelDefault implements OutboxModel{
     @Override
     public boolean isCompensation() {
         return compensation;
+    }
+
+    @Override
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
+
+    public void setLockedUntil(Instant until){
+        this.lockedUntil = until;
     }
 
     public void setCompensation(boolean compensation) {

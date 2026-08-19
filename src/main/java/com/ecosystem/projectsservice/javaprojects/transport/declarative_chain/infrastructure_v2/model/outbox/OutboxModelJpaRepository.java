@@ -57,7 +57,9 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
     @NativeQuery("select * from  outbox_model entity  where entity.status = 'PROCESSING' " +
             "and entity.all_read_processing_version >0  and entity.performance_limit_time is not null " +
-            "and entity.last_update + (entity.performance_limit_time * interval '1 ms' )<now() for update skip locked")
+            "and entity.last_update + (entity.performance_limit_time * interval '1 ms' )<now()" +
+            "and entity.locked_until<now()" +
+            " for update skip locked")
     List<OutboxModelJpaEntity> readMissedEventsExpiredByPerformance();
 
 
