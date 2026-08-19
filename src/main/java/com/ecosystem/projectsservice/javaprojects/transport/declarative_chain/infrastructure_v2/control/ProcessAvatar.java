@@ -245,6 +245,11 @@ public class ProcessAvatar {
     }
 
 
+    public boolean isStopped(){
+        return status.get() == ProcessAvatarStatus.STOPPED;
+    }
+
+
 
 
 

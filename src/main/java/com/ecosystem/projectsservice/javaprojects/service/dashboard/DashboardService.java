@@ -37,16 +37,23 @@ public class DashboardService {
 
     public void runTestButton(){
 
-        directoryAddTestChain.init(getChainEvent());
-
-        /*
-        var testEvent = new TestChainEvent();
-        testEvent.setProcessId(UUID.randomUUID());
-
-        testChain.init(testEvent);
+        //directoryAddTestChain.init(getChainEvent());
 
 
-         */
+        if (avatarStorage.getAll().isEmpty()){
+            var testEvent = new TestChainEvent();
+            testEvent.setProcessId(UUID.randomUUID());
+
+            testChain.init(testEvent);
+        }
+
+
+        else {
+            avatarStorage.getAll().forEach(ProcessAvatar::stop);
+        }
+
+
+
 
 
 

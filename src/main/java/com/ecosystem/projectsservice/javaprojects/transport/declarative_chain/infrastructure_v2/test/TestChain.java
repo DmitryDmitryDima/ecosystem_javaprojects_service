@@ -1,12 +1,17 @@
 package com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test;
 
 
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.Everlasting;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.Retry;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.TimeLimit;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.control.WaitingForSignal;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.DeclarativeChainSpringAdapter;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.structure.exception.StepStoppedDuringExecutionException;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarIndex;
+import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.control.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -40,42 +45,31 @@ public class TestChain extends DeclarativeChainSpringAdapter<TestChainEvent> {
 
 
     @Opening(name = "opening", next = "ending")
-    @TimeLimit(time = 2)
-    public void opening(TestChainEvent event){
+    public void opening(TestChainEvent event, ProcessAvatar avatar){
 
 
-        System.out.println("hello from opening - test chain");
-
-        System.out.println(Thread.currentThread().threadId());
-
-
-        while (!Thread.currentThread().isInterrupted()){
-
-            System.out.println("opening");
-
-            try {
-                Thread.sleep(2000);
-            }
-
-            catch (Exception e){
-                break;
-            }
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
-
 
 
     }
 
 
     @Ending(name = "ending")
+    @WaitingForSignal(time = 100)
     public void ending(TestChainEvent event){
 
-        System.out.println("hello from ending - test chain");
+
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+
 
 
     }

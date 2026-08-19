@@ -643,12 +643,46 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
         try {
-            // todo добавить возможность инъекции аватара в метод,
-            //  чтобы пользователю было удобно получать доступ к нему
 
 
-            //
-            step.getMethod().invoke(this, event);
+            /*
+            для добавления возможности создавать инъекцию аватара
+            нужно сформировать Object[] массив ровно в том порядке,
+            что был указан пользователем
+            Для этого нужно проанализировать аргументы метода
+             */
+
+            Method method = step.getMethod();
+
+            Class<?>[] parameterTypes = method.getParameterTypes();
+
+            Object[] args = new Object[parameterTypes.length];
+
+            for (int i = 0; i<parameterTypes.length; i++){
+
+                Class<?> parameterType = parameterTypes[i];
+
+                if (parameterType == event.getClass()){
+                    args[i] = event;
+                }
+
+                else if (parameterType == ProcessAvatar.class){
+
+                    args[i] = avatar;
+                }
+
+                // неизвестный тип
+                else {
+                    args[i] = null;
+                }
+            }
+
+
+
+
+
+
+            method.invoke(this, args);
 
 
 

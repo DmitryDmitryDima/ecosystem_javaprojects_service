@@ -186,7 +186,7 @@ public class OutboxReaderDefault implements OutboxReader{
     public void readEverlastingProcessingEvents() {
 
 
-        //System.out.println("READING everlasting EVENTS");
+
 
         List<? extends OutboxModel> everlastingProcessingEvents = repository
                 .readEverlastingProcessingEvents();

@@ -73,6 +73,7 @@ public class DirectoryAddTestChain
 
 
     @Opening(name = "opening", next = "middle")
+
     public void opening(DirectoryAddTestEvent event){
         System.out.println("hello from opening - directory add chain");
 
