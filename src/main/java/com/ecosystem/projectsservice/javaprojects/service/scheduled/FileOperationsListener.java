@@ -1,30 +1,21 @@
 package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 
-import com.ecosystem.projectsservice.javaprojects.dto.projects.actions.reading.FileDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
 import com.ecosystem.projectsservice.javaprojects.model.File;
-import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
 import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
-import com.ecosystem.projectsservice.javaprojects.transport.broadcast.BroadcastException;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromSystemContext;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromSystem;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;

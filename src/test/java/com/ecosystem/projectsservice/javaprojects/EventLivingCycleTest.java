@@ -2,14 +2,14 @@ package com.ecosystem.projectsservice.javaprojects;
 
 
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddExternalData;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.chain.output.OutputProcessor;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.mapper.MapperComponent;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox.OutboxModel;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox.OutboxModelDefault;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox.OutboxModelRepository;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.model.outbox.OutboxStatus;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.DirectoryAddTestEvent;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputProcessor;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.mapper.MapperComponent;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModel;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelDefault;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
+import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.DirectoryAddTestEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;

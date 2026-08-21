@@ -3,10 +3,10 @@ package com.ecosystem.projectsservice.javaprojects;
 
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddExternalData;
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.EventQualifier;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEvent;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ChainEventProcessingInfo;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.events.ExternallyConnectedChainEvent;
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.test.DirectoryAddTestEvent;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEventProcessingInfo;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.events.ExternallyConnectedChainEvent;
+import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.DirectoryAddTestEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

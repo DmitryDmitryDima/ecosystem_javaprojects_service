@@ -1,7 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.service.processes.dead_letter;
 
 
-import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.infrastructure_v2.managers.dead_letter.DeadLetter;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.dead_letter.DeadLetter;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 

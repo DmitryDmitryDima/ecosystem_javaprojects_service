@@ -1,0 +1,5 @@
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.output_actions;
+
+public class ChainStop extends OutputAction{
+
+}

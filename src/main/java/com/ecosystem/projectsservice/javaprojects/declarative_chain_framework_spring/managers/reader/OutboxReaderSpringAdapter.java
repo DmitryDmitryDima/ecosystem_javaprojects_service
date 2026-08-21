@@ -1,0 +1,60 @@
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.managers.reader;
+
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_manager.EventManager;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.outbox_reader.OutboxReaderDefault;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
+import org.springframework.scheduling.annotation.Scheduled;
+
+public class OutboxReaderSpringAdapter extends OutboxReaderDefault
+{
+
+
+    public OutboxReaderSpringAdapter(OutboxModelRepository repository,
+                                     EventManager manager) {
+        super(repository, manager);
+    }
+
+    @Override
+    @Scheduled(fixedDelayString = "${reader.waiting.events:500}")
+    public void readWaitingEvents() {
+        super.readWaitingEvents();
+    }
+
+    @Override
+    @Scheduled(fixedDelayString = "${reader.waiting.events.expired:2000}")
+    public void readExpiredWaitingEvents() {
+        super.readExpiredWaitingEvents();
+    }
+
+    @Override
+    @Scheduled(fixedDelayString = "${reader.processing.events.expired:2000}")
+    public void readExpiredProcessingEvents() {
+        super.readExpiredProcessingEvents();
+    }
+
+
+
+    @Override
+    @Scheduled(fixedDelayString = "${reader.processing.events.everlasting:2000}")
+    public void readEverlastingProcessingEvents() {
+        super.readEverlastingProcessingEvents();
+    }
+
+    @Override
+    @Scheduled(fixedDelayString = "${reader.processing.events.missed:2000}")
+    public void readMissedExpiredProcessingEvents() {
+        super.readMissedExpiredProcessingEvents();
+    }
+
+    @Override
+    @Scheduled(fixedDelayString = "${reader.manager.crashed.events:2000}")
+    public void readManagerCrashedEvents() {
+        super.readManagerCrashedEvents();
+    }
+
+    @Override
+    @Scheduled(fixedDelayString = "${reader.waiting.for.signal.events:2000}")
+    public void readExpiredWaitingForSignalEvents() {
+        super.readExpiredWaitingForSignalEvents();
+    }
+}

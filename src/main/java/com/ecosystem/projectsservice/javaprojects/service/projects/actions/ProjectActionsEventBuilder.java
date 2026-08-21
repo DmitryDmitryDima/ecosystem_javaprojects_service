@@ -18,25 +18,21 @@ import com.ecosystem.projectsservice.javaprojects.service.processes.directories.
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal.DirectoryRemovalEvent;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal.DirectoryRemovalExternalData;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_removal.DirectoryRemovalInternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_add.FileAddExternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move.FileMoveEvent;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move.FileMoveExternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_move.FileMoveInternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal.FileRemovalExternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveExternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_add.FileAddExternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_move.FileMoveEvent;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_move.FileMoveExternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_move.FileMoveInternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_removal.FileRemovalExternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.filesave.FileSaveExternalData;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddEvent;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddInternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_add.FileAddEvent;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_add.FileAddInternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal.FileRemovalEvent;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.file_removal.FileRemovalInternalData;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveEvent;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files.filesave.FileSaveInternalData;
-import com.ecosystem.projectsservice.javaprojects.service.external_values.ExternalValues;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_add.FileAddEvent;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_add.FileAddInternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_removal.FileRemovalEvent;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.file_removal.FileRemovalInternalData;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.filesave.FileSaveEvent;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.filesave.FileSaveInternalData;
 import org.springframework.stereotype.Service;
-
-import java.nio.file.Path;
 
 @Service
 public class ProjectActionsEventBuilder {
