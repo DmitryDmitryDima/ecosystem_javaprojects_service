@@ -1,0 +1,27 @@
+package com.ecosystem.projectsservice.javaprojects.external_messaging.types;
+
+public enum MessageType {
+    JAVA_PROJECT_FILE_SAVE("java_project_file_save"),
+    JAVA_PROJECT_FILE_SAVE_SYSTEM("java_project_file_save_system"),
+    JAVA_PROJECT_FILE_SAVE_BATCHED("java_project_file_save_batched"),
+    JAVA_PROJECT_CREATION_FROM_TEMPLATE("java_project_creation_from_template"),
+    JAVA_PROJECT_CREATION_FROM_SYSTEM_INSTRUCTION("java_project_creation_from_system_instruction"),
+    JAVA_PROJECT_REMOVAL("java_project_removal"),
+
+    JAVA_PROJECT_FILE_REMOVAL("java_project_file_removal"),
+    JAVA_PROJECT_ADD_PARTICIPANT("java_project_participant_add"),
+    JAVA_PROJECT_FILE_ADD("java_project_file_add"),
+    JAVA_PROJECT_REMOVE_PARTICIPANT("java_project_participant_remove"),
+    JAVA_PROJECT_ADD_DIRECTORY("java_project_directory_add"),
+    JAVA_PROJECT_FILE_MOVE("java_project_file_move"),
+    JAVA_PROJECT_DIRECTORY_MOVE("java_project_directory_move"),
+    JAVA_PROJECT_REMOVE_DIRECTORY("java_project_directory_removal");
+
+    private final String name;
+
+    MessageType(String name){
+        this.name = name;
+    }
+
+    public String getName(){return name;}
+}

@@ -77,6 +77,8 @@ public class DashboardService {
 
         TestData data = new TestData();
 
+        data.setData("some data");
+
 
 
 

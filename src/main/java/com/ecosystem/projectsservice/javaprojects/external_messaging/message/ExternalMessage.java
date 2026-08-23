@@ -24,8 +24,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public abstract class ExternalMessage<C extends ExternalContext,
-        D extends ExternalData>  {
+public abstract class ExternalMessage {
 
 
     // текстовое сообщение
@@ -39,9 +38,9 @@ public abstract class ExternalMessage<C extends ExternalContext,
 
 
     // контекст может использоваться сервисами посредниками
-    private C context;
+    private ExternalContext context;
 
-    private D data;
+    private ExternalData data;
 
 
 

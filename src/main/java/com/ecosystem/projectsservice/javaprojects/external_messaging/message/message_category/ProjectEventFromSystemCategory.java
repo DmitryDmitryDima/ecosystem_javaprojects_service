@@ -9,8 +9,9 @@ import lombok.Setter;
 // автор ивента - система (к примеру - запущенный проект), попадает в комнату проекта
 @Getter
 @Setter
-public class ProjectEventFromSystemCategory <D extends ExternalData>
-        extends ExternalMessage<ProjectEventFromSystemContextCategory, D> {
+public class ProjectEventFromSystemCategory
+        extends ExternalMessage {
 
 
 }
+
