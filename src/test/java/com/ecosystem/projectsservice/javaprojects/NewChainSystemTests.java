@@ -5,8 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.service.processes.directories.
 import com.ecosystem.projectsservice.javaprojects.transport.declarative_chain.annotations.events.EventQualifier;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEventProcessingInfo;
-import com.ecosystem.projectsservice.javaprojects.external_messaging.events.ExternallyConnectedChainEvent;
-import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.DirectoryAddTestEvent;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.ExternallyConnectedChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

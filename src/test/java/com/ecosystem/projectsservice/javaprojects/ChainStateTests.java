@@ -2,8 +2,6 @@ package com.ecosystem.projectsservice.javaprojects;
 
 
 
-import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.DirectoryAddTestChain;
-import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.DirectoryAddTestEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

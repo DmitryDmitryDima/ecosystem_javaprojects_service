@@ -1,21 +1,24 @@
-package com.ecosystem.projectsservice.javaprojects.transport.external_events.context;
+package com.ecosystem.projectsservice.javaprojects.external_messaging.context;
 
 
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.AlarmStrategy;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.routing_strategies.NotificationStrategy;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
-
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @SuperBuilder
-public abstract class ExternalEventContext {
+public abstract class ExternalContext {
+
 
     // correlation id процесса - каждый процесс в системе должен иметь свой correlation id
     private UUID correlationId;
@@ -31,6 +34,7 @@ public abstract class ExternalEventContext {
 
     // ПРИМЕЧАНИЕ - ALARM STRATEGY И NOTIFICATION STRATEGY ЯВЛЯЮТСЯ ДОПОЛНЕНИЕМ
     // К ДЕФОЛТНОМУ ПОВЕДЕНИЮ КАЖДОЙ ИЗ КАТЕГОРИЙ.
+
 
 
 }

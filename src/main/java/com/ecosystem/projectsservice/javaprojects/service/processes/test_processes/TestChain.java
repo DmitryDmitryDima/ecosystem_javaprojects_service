@@ -81,13 +81,7 @@ public class TestChain extends DeclarativeChainSpringAdapter<TestChainEvent> {
         System.out.println(event.getProcessingInfo().getCurrentStep()+" шаг в компенсации");
 
 
-        try {
-            Thread.sleep(200000);
-        } catch (InterruptedException e) {
 
-            System.out.println("компенсация прервана");
-            throw new RuntimeException(e);
-        }
 
 
 

@@ -9,7 +9,6 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.mo
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelDefault;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
-import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.DirectoryAddTestEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;

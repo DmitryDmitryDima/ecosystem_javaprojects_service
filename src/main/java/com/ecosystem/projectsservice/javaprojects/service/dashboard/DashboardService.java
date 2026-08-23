@@ -4,11 +4,14 @@ package com.ecosystem.projectsservice.javaprojects.service.dashboard;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarsWithIndexes;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.IndexGroupDTO;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.context.context_category.ProjectEventFromSystemContextCategory;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.data.ExternalData;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestData;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestEvent;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestModifiedChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddExternalData;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarStorage;
-import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.DirectoryAddTestChain;
-import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.DirectoryAddTestEvent;
 import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.TestChain;
 import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.TestChainEvent;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
@@ -26,16 +29,21 @@ public class DashboardService {
     private ProcessAvatarStorage avatarStorage;
 
 
-    @Autowired
-    private DirectoryAddTestChain directoryAddTestChain;
+
 
 
     @Autowired
     private TestChain testChain;
 
+    @Autowired
+    private TestModifiedChain modifiedChain;
+
 
 
     public void runTestButton(){
+
+
+        /*
 
         //directoryAddTestChain.init(getChainEvent());
 
@@ -52,6 +60,22 @@ public class DashboardService {
             avatarStorage.getAll().forEach(ProcessAvatar::stop);
         }
 
+         */
+
+
+
+        UUID uuid = UUID.randomUUID();
+
+
+        TestEvent testEvent = new TestEvent();
+        testEvent.setProcessId(uuid);
+
+        ProjectEventFromSystemContextCategory contextCategory
+                = new ProjectEventFromSystemContextCategory();
+
+        contextCategory.setCorrelationId(uuid);
+
+        TestData data = new TestData();
 
 
 
@@ -60,41 +84,29 @@ public class DashboardService {
 
 
 
-
-    }
-
-
-
-    private DirectoryAddTestEvent getChainEvent(){
-
-        DirectoryAddTestEvent testEvent = new DirectoryAddTestEvent();
-
-        testEvent.setMessage("Hello i am test event");
-
-        testEvent.setProcessId(UUID.randomUUID());
-
-        ProjectEventFromUserContext externalContext = new ProjectEventFromUserContext();
-
-        externalContext.setUsername("user");
-        externalContext.setUserUUID(UUID.randomUUID());
-        externalContext.setRenderId(UUID.randomUUID());
-        externalContext.setCorrelationId(testEvent.getProcessId());
-        externalContext.setProjectId(UUID.randomUUID());
-
-
-        testEvent.setExternalContext(externalContext );
-
-
-        DirectoryAddExternalData data = new DirectoryAddExternalData(UUID.randomUUID(),
-                "new_folder", UUID.randomUUID());
-
-
-
+        testEvent.setExternalContext(contextCategory);
         testEvent.setExternalData(data);
-        return testEvent;
+
+        modifiedChain.init(testEvent);
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     }
+
+
+
+
 
 
 
