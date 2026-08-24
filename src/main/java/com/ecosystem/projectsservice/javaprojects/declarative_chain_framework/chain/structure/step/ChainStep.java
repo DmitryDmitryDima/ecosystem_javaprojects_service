@@ -1,13 +1,15 @@
-package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure;
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step;
 
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.ChainTimeUnit;
 
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 
-public class ChainStep <Extension> {
+public class ChainStep  {
 
 
     // main info
@@ -36,7 +38,9 @@ public class ChainStep <Extension> {
 
     // additionals
 
-    private Extension extensions;
+
+    // extension заносится при чтении шагов, обрабатывается в хуках
+    private List<StepExtension> extensions = new ArrayList<>();
 
 
 
@@ -85,7 +89,7 @@ public class ChainStep <Extension> {
     }
 
 
-    public Extension getExtensions() {
+    public List<StepExtension>getExtensions() {
         return this.extensions;
     }
 
@@ -135,7 +139,7 @@ public class ChainStep <Extension> {
     }
 
 
-    public void setExtensions(final Extension extensions) {
+    public void setExtensions(final List<StepExtension> extensions) {
         this.extensions = extensions;
     }
 
@@ -149,7 +153,7 @@ public class ChainStep <Extension> {
                      final ChainTimeUnit waitingForSignalUnit,
                      final Long waitingForSignal,
                      final boolean everlasting,
-                     final Extension extensions) {
+                     final List<StepExtension> extensions) {
         this.name = name;
         this.next = next;
         this.method = method;

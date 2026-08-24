@@ -2,7 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.c
 
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.output_actions.OutputAction;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.ChainStep;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
 
 
 
@@ -13,7 +13,7 @@ public class OutputMetadata<V> {
     private OutputAction action;
 
     // параметры выполненного шага
-    private ChainStep<?> executedStep;
+    private ChainStep executedStep;
 
     // пространство для расширения
     private V value;
@@ -28,7 +28,7 @@ public class OutputMetadata<V> {
     }
 
 
-    public ChainStep<?> getExecutedStep() {
+    public ChainStep getExecutedStep() {
         return this.executedStep;
     }
 
@@ -43,7 +43,7 @@ public class OutputMetadata<V> {
     }
 
 
-    public void setExecutedStep(final ChainStep<?> executedStep) {
+    public void setExecutedStep(final ChainStep executedStep) {
         this.executedStep = executedStep;
     }
 
@@ -55,7 +55,7 @@ public class OutputMetadata<V> {
 
 
     public OutputMetadata(final OutputAction action,
-                          final ChainStep<?> executedStep,
+                          final ChainStep executedStep,
                           final V value) {
         this.action = action;
         this.executedStep = executedStep;

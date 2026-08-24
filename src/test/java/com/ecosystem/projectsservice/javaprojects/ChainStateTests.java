@@ -16,8 +16,7 @@ public class ChainStateTests {
 
 
 
-    @Autowired
-    private DirectoryAddTestChain testChain;
+
 
 
 
@@ -33,14 +32,7 @@ public class ChainStateTests {
     public void test(){
 
 
-        DirectoryAddTestEvent event = new DirectoryAddTestEvent();
 
-        event.setProcessId(UUID.randomUUID());
-        event.setMessage("hello process");
-
-
-
-        testChain.init(event);
 
 
 

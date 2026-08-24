@@ -1,20 +1,21 @@
 package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure;
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.InvalidStructureException;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
 
 import java.util.Map;
 
 public class BasicStructureValidator {
 
-    private ChainStep<?> opening;
+    private ChainStep opening;
 
-    private Map<String, ChainStep<?>> body;
+    private Map<String, ChainStep> body;
 
-    private ChainStep<?> ending;
+    private ChainStep ending;
 
 
-    public BasicStructureValidator(ChainStep<?> opening,
-                                   Map<String, ChainStep<?>> body, ChainStep<?> ending){
+    public BasicStructureValidator(ChainStep opening,
+                                   Map<String, ChainStep> body, ChainStep ending){
 
         this.body = body;
         this.ending = ending;

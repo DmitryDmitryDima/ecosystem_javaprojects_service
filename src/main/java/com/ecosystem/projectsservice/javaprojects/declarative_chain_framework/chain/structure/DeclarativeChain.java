@@ -8,6 +8,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.an
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.utils.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputResult;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.output_actions.*;
@@ -58,12 +59,12 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
     // прочитанное тело цепи, ассоциированное по имени
-    private Map<String, ChainStep<?>> chainBody = new HashMap<>();
+    private Map<String, ChainStep> chainBody = new HashMap<>();
 
     // каждая цепь имеет точку входа и точку выхода
-    private ChainStep<?> opening;
+    private ChainStep opening;
 
-    private ChainStep<?> ending;
+    private ChainStep ending;
 
 
 
@@ -100,15 +101,15 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     }
 
 
-    protected Map<String, ChainStep<?>> getChainBody() {
+    protected Map<String, ChainStep> getChainBody() {
         return chainBody;
     }
 
-    protected ChainStep<?> getOpening() {
+    protected ChainStep getOpening() {
         return opening;
     }
 
-    protected ChainStep<?> getEnding() {
+    protected ChainStep getEnding() {
         return ending;
     }
 
@@ -259,7 +260,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             Everlasting everlasting = method.getAnnotation(Everlasting.class);
 
 
-            ChainStep<?> chainStep = new ChainStep<>();
+            ChainStep chainStep = new ChainStep();
 
             chainStep.setMethod(method);
             chainStep.setRetry(retry==null?0: retry.maxCount());
@@ -317,7 +318,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     }
 
     // хук, срабатывающий при чтении шагов, позволяет добавить расширения для шагов
-    protected void onStepRead(ChainStep<?> aReadStep){
+    protected void onStepRead(ChainStep aReadStep){
 
         // aReadStep.setExtensions
     }
@@ -333,6 +334,37 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                 .validateStructure();
 
     }
+
+
+
+    // хуки жизненного цикла
+
+    protected void afterStepHook(E event,
+                                 ChainStep step,
+                                 ProcessAvatar avatar,
+                                 OutputResult result){
+
+
+
+    }
+
+
+    protected void chainFinalHook(E event,
+                                  ChainStep step,
+                                  ProcessAvatar avatar,
+                                  OutputResult result){
+
+    }
+
+    protected void beforeStepHook(E event,
+                                  ChainStep step,
+                                  ProcessAvatar avatar){
+
+
+
+    }
+
+
 
 
 
@@ -617,7 +649,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         var info = event.getProcessingInfo();
 
 
-        ChainStep<?> step = findStepByName(info.getCurrentStep());
+        ChainStep step = findStepByName(info.getCurrentStep());
 
         if (step == null) throw new ChainStepExecutionException("не найден шаг для выполнения");
 
@@ -680,7 +712,12 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
+            try {
+                beforeStepHook(event, step, avatar);
+            }
+            catch (Exception e){
 
+            }
 
             method.invoke(this, args);
 
@@ -758,7 +795,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     // todo хук завершения всего процесса
     protected void stepExecutionSuccessEndingScenario(E event,
                                                       ProcessAvatar avatar,
-                                                      ChainStep<?> step){
+                                                      ChainStep step){
 
 
 
@@ -773,7 +810,21 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                 .build();
 
 
-        onPublishChainOutput(chainOutput, metadata, avatar);
+        OutputResult outputResult = onPublishChainOutput(chainOutput, metadata, avatar);
+
+
+
+
+        try {
+            afterStepHook(event, step, avatar, outputResult);
+
+            // хук конца цепи
+            chainFinalHook(event, step, avatar, outputResult);
+        }
+
+        catch (Exception e){
+
+        }
 
 
 
@@ -786,7 +837,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     protected void stepExecutionSuccessStepScenario(E event,
                                                     ProcessAvatar avatar,
-                                                    ChainStep<?> step){
+                                                    ChainStep step){
 
         // не забываем сбросить счетчик ретраев для следующего шага
 
@@ -794,7 +845,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         // todo Учитываем, что при ошибке публикации в ивенте в current будет именно следующий шаг
 
 
-        ChainStep<?> next = findStepByName(step.getNext());
+        ChainStep next = findStepByName(step.getNext());
 
         ChainEventProcessingInfo info = event.getProcessingInfo();
 
@@ -840,7 +891,18 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-        onPublishChainOutput(output, meta, avatar);
+        OutputResult outputResult = onPublishChainOutput(output, meta, avatar);
+
+
+
+
+        try {
+            afterStepHook(event, step, avatar, outputResult);
+        }
+        catch (Exception e){
+
+        }
+
 
 
 
@@ -849,7 +911,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     // выполнение шага завершилось ошибкой
     protected void stepExecutionErrorScenario(E event,
                                               ProcessAvatar avatar,
-                                              ChainStep<?> step,
+                                              ChainStep step,
                                               Exception e){
 
 
@@ -957,7 +1019,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     // если пользователь не использовал мониторинг аватара при выполнении шага
     protected void stepStopAfterStepExecutionScenario(E event,
                                                       ProcessAvatar avatar,
-                                                      ChainStep<?> step
+                                                      ChainStep step
                                                                ){
 
         event.setMessage("Остановка процесса после выполнения шага "+event.getProcessingInfo().getCurrentStep());
@@ -1001,7 +1063,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     protected void stepStopDuringExecutionScenario(E event,
                                                    ProcessAvatar avatar,
-                                                   ChainStep<?> step){
+                                                   ChainStep step){
 
         event.setMessage("Остановка процесса во время шага "+event.getProcessingInfo().getCurrentStep());
 
@@ -1047,7 +1109,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     protected void stepStopBeforeExecutionScenario(E event,
                                                    ProcessAvatar avatar,
-                                                   ChainStep<?> step){
+                                                   ChainStep step){
 
 
         event.setMessage("Остановка процесса до шага "+event
@@ -1161,7 +1223,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     // метод поиска мета информации о шаге согласно имени
 
 
-    protected ChainStep<?> findStepByName(String name){
+    protected ChainStep findStepByName(String name){
 
          if (opening.getName().equals(name)) return opening;
 
