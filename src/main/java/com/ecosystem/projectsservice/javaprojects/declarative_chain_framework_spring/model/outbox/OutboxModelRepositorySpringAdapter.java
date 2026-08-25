@@ -379,6 +379,21 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         }
     }
 
+    @Override
+    public void receiveSignal(UUID processUUID) {
+
+        // все делается атомарно
+
+        // поиск (pessimistic write) - process uuid + waiting_for_signal status
+
+        // вычисляем новый read_expiration и lock_until на основании read_expiration_period и read_lock_period
+
+
+
+        //
+
+    }
+
 
     // обновляем readVersion, атомарно меняем статус на processing
     @Override

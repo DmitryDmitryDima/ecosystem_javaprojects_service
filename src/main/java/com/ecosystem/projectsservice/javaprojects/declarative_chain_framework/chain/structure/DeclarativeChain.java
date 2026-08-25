@@ -1,10 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure;
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.ChainTimeUnit;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.Everlasting;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.Retry;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.TimeLimit;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.WaitingForSignal;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.*;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
@@ -260,6 +257,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             Everlasting everlasting = method.getAnnotation(Everlasting.class);
 
 
+            ReadExpiration readExpirationPeriod = method.getAnnotation(ReadExpiration.class);
+            ReadLock readLockPeriod = method.getAnnotation(ReadLock.class);
+
+
             ChainStep chainStep = new ChainStep();
 
             chainStep.setMethod(method);
@@ -270,6 +271,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             chainStep.setTimeLimit(timeLimit==null?
                     DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS: timeLimit.time());
             chainStep.setTimeLimitUnit(timeLimit == null? ChainTimeUnit.SEC : timeLimit.timeUnit());
+
             if (everlasting!=null){
                 chainStep.setEverlasting(true);
             }
@@ -281,6 +283,13 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             chainStep
                     .setWaitingForSignalUnit(waitingForSignal == null? null
                             : waitingForSignal.timeUnit());
+
+
+            chainStep.setReadLock(readLockPeriod == null? null:readLockPeriod.time());
+            chainStep.setReadLockUnit(readLockPeriod == null? null:readLockPeriod.timeUnit());
+
+            chainStep.setReadExpiration(readExpirationPeriod == null? null:readExpirationPeriod.time());
+            chainStep.setReadExpirationUnit(readExpirationPeriod == null? null:readExpirationPeriod.timeUnit());
 
 
 

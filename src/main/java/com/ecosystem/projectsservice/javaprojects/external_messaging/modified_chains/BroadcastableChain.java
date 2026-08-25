@@ -120,7 +120,7 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
 
     @Override
     protected void afterStepHook(E event, ChainStep step, ProcessAvatar avatar, OutputResult result) {
-        super.beforeStepHook(event, step, avatar);
+        super.afterStepHook(event, step, avatar, result);
 
         List<StepExtension> extensions = step.getExtensions();
 

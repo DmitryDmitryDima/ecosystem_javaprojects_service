@@ -33,8 +33,20 @@ public class OutboxModelDefault implements OutboxModel{
     private Instant lockedUntil;
 
 
+    // поля используются при сохранении waiting for signal ивента
+    private Long readLockPeriod;
+
+    // поля используются при сохранении waiting for signal ивента
+    private Long readExpirationPeriod;
 
 
+    public void setReadLockPeriod(Long readLockPeriod) {
+        this.readLockPeriod = readLockPeriod;
+    }
+
+    public void setReadExpirationPeriod(Long readExpirationPeriod) {
+        this.readExpirationPeriod = readExpirationPeriod;
+    }
 
     public void setOutboxUUID(UUID outboxUUID) {
         this.outboxUUID = outboxUUID;
@@ -133,6 +145,16 @@ public class OutboxModelDefault implements OutboxModel{
     @Override
     public Instant getLockedUntil() {
         return lockedUntil;
+    }
+
+    @Override
+    public Long getReadLockPeriod() {
+        return this.readLockPeriod;
+    }
+
+    @Override
+    public Long getReadExpirationPeriod() {
+        return this.readExpirationPeriod;
     }
 
     public void setLockedUntil(Instant until){

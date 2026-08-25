@@ -25,15 +25,33 @@ public class ChainStep  {
 
     private Long retry;
 
-    private ChainTimeUnit timeLimitUnit;
 
+
+    private ChainTimeUnit timeLimitUnit;
     private Long timeLimit;
 
-    private ChainTimeUnit waitingForSignalUnit;
 
+
+    private ChainTimeUnit waitingForSignalUnit;
     private Long waitingForSignal;
 
+
+    private ChainTimeUnit readExpirationUnit;
+    private Long readExpiration;
+
+    private ChainTimeUnit readLockUnit;
+    private Long readLock;
+
+
+
+
+
+
     private boolean everlasting;
+
+
+
+
 
 
     // additionals
@@ -143,29 +161,67 @@ public class ChainStep  {
         this.extensions = extensions;
     }
 
+    public Long getReadExpiration() {
+        return readExpiration;
+    }
 
-    public ChainStep(final String name,
-                     final String next,
-                     final Method method,
-                     final Long retry,
-                     final ChainTimeUnit timeLimitUnit,
-                     final Long timeLimit,
-                     final ChainTimeUnit waitingForSignalUnit,
-                     final Long waitingForSignal,
-                     final boolean everlasting,
-                     final List<StepExtension> extensions) {
-        this.name = name;
+    public void setReadExpiration(Long readExpiration) {
+        this.readExpiration = readExpiration;
+    }
+
+    public ChainTimeUnit getReadExpirationUnit() {
+        return readExpirationUnit;
+    }
+
+    public void setReadExpirationUnit(ChainTimeUnit readExpirationUnit) {
+        this.readExpirationUnit = readExpirationUnit;
+    }
+
+    public ChainTimeUnit getReadLockUnit() {
+        return readLockUnit;
+    }
+
+    public void setReadLockUnit(ChainTimeUnit readLockUnit) {
+        this.readLockUnit = readLockUnit;
+    }
+
+    public Long getReadLock() {
+        return readLock;
+    }
+
+    public void setReadLock(Long readLock) {
+        this.readLock = readLock;
+    }
+
+    public ChainStep(String next,
+                     Method method,
+                     String name,
+                     Long retry,
+                     ChainTimeUnit timeLimitUnit,
+                     Long timeLimit,
+                     ChainTimeUnit waitingForSignalUnit,
+                     Long waitingForSignal,
+                     ChainTimeUnit readExpirationUnit,
+                     Long readExpiration,
+                     ChainTimeUnit readLockUnit,
+                     Long readLock,
+                     boolean everlasting,
+                     List<StepExtension> extensions) {
         this.next = next;
         this.method = method;
+        this.name = name;
         this.retry = retry;
         this.timeLimitUnit = timeLimitUnit;
         this.timeLimit = timeLimit;
         this.waitingForSignalUnit = waitingForSignalUnit;
         this.waitingForSignal = waitingForSignal;
+        this.readExpirationUnit = readExpirationUnit;
+        this.readExpiration = readExpiration;
+        this.readLockUnit = readLockUnit;
+        this.readLock = readLock;
         this.everlasting = everlasting;
         this.extensions = extensions;
     }
-
 
     public ChainStep() {
     }

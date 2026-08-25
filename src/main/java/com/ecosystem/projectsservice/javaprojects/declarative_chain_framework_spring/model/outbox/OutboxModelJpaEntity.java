@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.model.outbox;
 
 
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModel;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
 import jakarta.persistence.*;
@@ -48,6 +49,13 @@ public class OutboxModelJpaEntity implements OutboxModel {
     private boolean compensation;
 
     private Instant lockedUntil;
+
+
+    // поля используются при сохранении waiting for signal ивента
+    private Long readLockPeriod;
+
+    // поля используются при сохранении waiting for signal ивента
+    private Long readExpirationPeriod;
 
 
 
@@ -118,6 +126,15 @@ public class OutboxModelJpaEntity implements OutboxModel {
         return lockedUntil;
     }
 
+    @Override
+    public Long getReadLockPeriod() {
+        return readLockPeriod;
+    }
+
+    @Override
+    public Long getReadExpirationPeriod() {
+        return readExpirationPeriod;
+    }
 
 
     @Override
@@ -134,6 +151,14 @@ public class OutboxModelJpaEntity implements OutboxModel {
         return new OutboxModelJpaEntityBuilder();
     }
 
+
+    public void setReadExpirationPeriod(Long readExpirationPeriod) {
+        this.readExpirationPeriod = readExpirationPeriod;
+    }
+
+    public void setReadLockPeriod(Long readLockPeriod) {
+        this.readLockPeriod = readLockPeriod;
+    }
 
     public void setOutboxUUID(final UUID outboxUUID) {
         this.outboxUUID = outboxUUID;
@@ -216,7 +241,10 @@ public class OutboxModelJpaEntity implements OutboxModel {
                                 final Long allReadProcessingVersion,
                                 final String message,
                                 final boolean compensation,
-                                final Instant lockedUntil) {
+                                final Instant lockedUntil,
+                                final Long readLockPeriod,
+                                final Long readExpirationPeriod
+                                ) {
         this.outboxUUID = outboxUUID;
         this.processUUID = processUUID;
         this.status = status;
@@ -230,6 +258,10 @@ public class OutboxModelJpaEntity implements OutboxModel {
         this.message = message;
         this.compensation = compensation;
         this.lockedUntil = lockedUntil;
+        this.readLockPeriod = readLockPeriod;
+        this.readExpirationPeriod = readExpirationPeriod;
+
+
     }
 
 
@@ -262,6 +294,15 @@ public class OutboxModelJpaEntity implements OutboxModel {
         private boolean compensation;
 
         private Instant lockedUntil;
+
+
+        // поля используются при сохранении waiting for signal ивента
+        private Long readLockPeriod;
+
+        // поля используются при сохранении waiting for signal ивента
+        private Long readExpirationPeriod;
+
+
 
 
         OutboxModelJpaEntityBuilder() {
@@ -347,7 +388,36 @@ public class OutboxModelJpaEntity implements OutboxModel {
 
 
         public OutboxModelJpaEntity build() {
-            return new OutboxModelJpaEntity(this.outboxUUID, this.processUUID, this.status, this.type, this.payload, this.lastUpdate, this.readExpiration, this.performanceLimitTime, this.allReadVersion, this.allReadProcessingVersion, this.message, this.compensation, this.lockedUntil);
+            return new OutboxModelJpaEntity(this.outboxUUID,
+                    this.processUUID,
+                    this.status,
+                    this.type,
+                    this.payload,
+                    this.lastUpdate,
+                    this.readExpiration,
+                    this.performanceLimitTime,
+                    this.allReadVersion,
+                    this.allReadProcessingVersion,
+                    this.message,
+                    this.compensation,
+                    this.lockedUntil,
+                    this.readLockPeriod,
+                    this.readExpirationPeriod);
+        }
+
+
+        public OutboxModelJpaEntityBuilder readExpirationPeriod(final Long readExpirationPeriod){
+
+            this.readExpirationPeriod = readExpirationPeriod;
+
+
+            return this;
+        }
+
+        public OutboxModelJpaEntityBuilder readLockPeriod(final Long readLockPeriod){
+            this.readLockPeriod = readLockPeriod;
+
+            return this;
         }
 
 

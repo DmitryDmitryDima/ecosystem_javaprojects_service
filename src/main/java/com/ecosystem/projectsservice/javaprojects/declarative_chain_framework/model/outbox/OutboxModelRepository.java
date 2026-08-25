@@ -37,10 +37,19 @@ public interface OutboxModelRepository {
 
 
 
+
+
+
     // проставление статуса с учетом последней версии, с сообщением
     void changeStatusAndMessageForGivenAllReadVersion(UUID uuid,
                                                       OutboxStatus toStatus, String message,
                                                       Long forAllReadVersion);
+
+
+
+    // получаем внешний сигнал, проставляя waiting for signal в waiting
+    // и перенастраивая read_expiration
+    void receiveSignal(UUID processUUID);
 
 
 

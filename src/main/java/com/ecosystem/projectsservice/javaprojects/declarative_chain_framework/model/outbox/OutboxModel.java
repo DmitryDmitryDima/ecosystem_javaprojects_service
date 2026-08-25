@@ -49,8 +49,29 @@ public interface OutboxModel {
     boolean isCompensation();
 
 
-    // time lock
+    // time lock (значение времени)
     Instant getLockedUntil();
+
+
+    // проставляется, когда публикуется waiting_for_signal ивент
+    // time lock period - для ситуации,
+    // когда значение locked_until должно быть посчитано не при создании изначального ивента (не в цепи)
+    Long getReadLockPeriod();
+
+
+    // проставляется, когда публикуется waiting_for_signal ивент
+    // read expiration period - для ситуации, когда значение read_expiration должно быть посчитано
+    // не при создании изначального ивента
+    Long getReadExpirationPeriod();
+
+
+
+
+
+
+
+
+
 
 
 

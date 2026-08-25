@@ -26,6 +26,16 @@ public class ChainOutput {
     private Long performanceExpirationPeriod;
 
 
+    // для waiting ивента lock until высчитывается сразу
+    private Instant lockUntil;
+
+    // проставляется, когда публикуется waiting for signal
+    private Long readExpirationPeriod;
+
+    // проставляется, когда публикуется waiting for signal
+    private Long readLockPeriod;
+
+
 
     public ChainOutput(){}
 
@@ -33,12 +43,19 @@ public class ChainOutput {
                        final OutboxStatus status,
                        final Instant last_update,
                        final Instant readExpiration,
-                       final Long performanceExpirationPeriod) {
+                       final Long performanceExpirationPeriod,
+                       final Instant lockUntil,
+                       final Long readLockPeriod,
+                       final Long readExpirationPeriod) {
+
         this.event = event;
         this.status = status;
         this.last_update = last_update;
         this.readExpiration = readExpiration;
         this.performanceExpirationPeriod = performanceExpirationPeriod;
+        this.readLockPeriod = readLockPeriod;
+        this.readExpirationPeriod = readExpirationPeriod;
+        this.lockUntil = lockUntil;
     }
 
 
@@ -114,7 +131,29 @@ public class ChainOutput {
     }
 
 
+    public Long getReadExpirationPeriod() {
+        return readExpirationPeriod;
+    }
 
+    public void setReadExpirationPeriod(final Long readExpirationPeriod) {
+        this.readExpirationPeriod = readExpirationPeriod;
+    }
+
+    public Long getReadLockPeriod() {
+        return readLockPeriod;
+    }
+
+    public void setReadLockPeriod(final Long readLockPeriod) {
+        this.readLockPeriod = readLockPeriod;
+    }
+
+    public Instant getLockUntil() {
+        return lockUntil;
+    }
+
+    public void setLockUntil(Instant lockUntil) {
+        this.lockUntil = lockUntil;
+    }
 
     public static class ChainOutputBuilder {
 
@@ -128,6 +167,14 @@ public class ChainOutput {
 
         private Long performanceExpirationPeriod;
 
+        private Instant lockUntil;
+
+        // проставляется, когда публикуется waiting for signal
+        private Long readExpirationPeriod;
+
+        // проставляется, когда публикуется waiting for signal
+        private Long readLockPeriod;
+
 
 
 
@@ -140,6 +187,11 @@ public class ChainOutput {
 
         public ChainOutputBuilder event(final ChainEvent event) {
             this.event = event;
+            return this;
+        }
+
+        public ChainOutputBuilder lockUntil(final Instant lockUntil){
+            this.lockUntil = lockUntil;
             return this;
         }
 
@@ -167,9 +219,31 @@ public class ChainOutput {
             return this;
         }
 
+        public ChainOutputBuilder readExpirationPeriod(final Long readExpirationPeriod){
+
+            this.readExpirationPeriod = readExpirationPeriod;
+
+
+            return this;
+        }
+
+        public ChainOutputBuilder readLockPeriod(final Long readLockPeriod){
+            this.readLockPeriod = readLockPeriod;
+
+            return this;
+        }
+
 
         public ChainOutput build() {
-            return new ChainOutput(this.event, this.status, this.last_update, this.readExpiration, this.performanceExpirationPeriod);
+            return new ChainOutput(this.event,
+                    this.status,
+                    this.last_update,
+                    this.readExpiration,
+                    this.performanceExpirationPeriod,
+                    this.lockUntil,
+                    this.readLockPeriod,
+                    this.readExpirationPeriod
+                    );
         }
     }
 
