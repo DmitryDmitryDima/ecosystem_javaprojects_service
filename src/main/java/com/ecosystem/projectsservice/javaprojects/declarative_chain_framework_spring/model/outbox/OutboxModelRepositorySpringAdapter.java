@@ -18,7 +18,7 @@ import java.util.UUID;
 public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository {
 
 
-    private static final long DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS = 10;
+    private static final long DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS_FOR_PROCESSING_STATUS_READERS = 10;
 
 
     private OutboxModelJpaRepository outboxModelJpaRepository;
@@ -71,6 +71,12 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                     .allReadVersion(0L)
                     .allReadProcessingVersion(0L)
                     .message(model.getMessage())
+
+                    .lockedUntil(model.getLockedUntil())
+                    .readExpirationPeriod(model.getReadExpirationPeriod())
+                    .readLockPeriod(model.getReadLockPeriod())
+
+
                     .build();
 
             // создаем запись в реестре, в случае успеха - сохраняем outbox model
@@ -125,6 +131,11 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                 .allReadVersion(0L)
                 .allReadProcessingVersion(0L)
                 .message(model.getMessage())
+
+                .lockedUntil(model.getLockedUntil())
+                .readExpirationPeriod(model.getReadExpirationPeriod())
+                .readLockPeriod(model.getReadLockPeriod())
+
                 .build();
 
         try {
@@ -396,6 +407,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
 
     // обновляем readVersion, атомарно меняем статус на processing
+
+
+    // update - учитываем lock_until поле
     @Override
     public List<? extends OutboxModel> readActualWaitingEvents() {
 
@@ -542,7 +556,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                     entity.setAllReadVersion(entity.getAllReadVersion()+1);
 
                     // time lock, чтобы missing processing поток не прочитал ивент во время компенсации
-                    entity.setLockedUntil(Instant.now().plusSeconds(DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS));
+                    entity.setLockedUntil(Instant.now().plusSeconds(DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS_FOR_PROCESSING_STATUS_READERS));
 
                     // явный компенсационный сценарий помечается атомарно
                     entity.setCompensation(true);

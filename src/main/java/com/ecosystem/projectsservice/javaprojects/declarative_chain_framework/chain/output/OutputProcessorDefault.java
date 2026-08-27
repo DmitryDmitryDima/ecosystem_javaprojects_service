@@ -68,6 +68,15 @@ public class OutputProcessorDefault implements OutputProcessor {
         model.setReadExpiration(output.getReadExpiration());
         model.setPerformanceLimitTime(output.getPerformanceExpirationPeriod());
 
+        model.setLockedUntil(output.getLockUntil());
+
+        // параметры выставляются в случае, если статус waiting for signal
+        model.setReadLockPeriod(output.getReadLockPeriod());
+        model.setReadExpirationPeriod(output.getReadExpirationPeriod());
+
+
+
+
 
 
         return model;

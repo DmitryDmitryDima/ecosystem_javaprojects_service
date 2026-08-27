@@ -1,5 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.external_messaging.test;
 
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadExpiration;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadLock;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.WaitingForSignal;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
@@ -39,6 +42,11 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     @Override
     protected void compensationStrategy(TestEvent event) {
+
+
+        System.out.println(event.getProcessingInfo().getDeliveryStatus());
+
+        System.out.println(event.getProcessingInfo().getPerformanceStatus());
 
 
 

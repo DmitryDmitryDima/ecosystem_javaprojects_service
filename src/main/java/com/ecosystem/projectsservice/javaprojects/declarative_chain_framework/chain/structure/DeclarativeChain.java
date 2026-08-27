@@ -405,15 +405,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             event.setProcessingInfo(startingSettings);
 
 
-            // duration первого шага
-            // если everlasting, то значение остается null
-            // в противном случае указывается время на основании
-            // пользовательского значения, или дефолт
-            Long duration = null;
-            if (!opening.isEverlasting()){
-                duration = ChainUtils.convertToMillis(opening.getTimeLimit(),
-                        opening.getTimeLimitUnit());
-            }
+
 
 
             // создаем runtime аватар процесса
@@ -435,14 +427,116 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
+
+            // duration первого шага
+            // если everlasting, то значение остается null
+            // в противном случае указывается время на основании
+            // пользовательского значения, или дефолт
+            Long duration = null;
+            if (!opening.isEverlasting()){
+                duration = ChainUtils.convertToMillis(opening.getTimeLimit(),
+                        opening.getTimeLimitUnit());
+            }
+
+
+            /*
+             расчет времени, до которого должен быть прочитан ивент, зависит от:
+             - read lock аннотации
+             - waiting for signal аннотации
+             */
+
+
+
+
+            // НЕ ПИШЕМ В БД,
+            // ЧТО НЕ БУДЕТ ИСПОЛЬЗОВАТЬСЯ В РАСЧЕТАХ ДЛЯ ДАННОГО СТАТУСА, ДАЖЕ ЕСЛИ ЕСТЬ ДЕФОЛТ
+
+            Instant currentReadExpiration;
+
+            Instant lockUntil = null;
+
+            Long readExpirationPeriod
+                    = ChainUtils.convertToMillis(opening.getReadExpiration(),
+                    opening.getReadExpirationUnit());
+
+
+
+            Long waitingForSignalPeriod = ChainUtils.convertToMillis(opening.getWaitingForSignal(),
+                    opening.getWaitingForSignalUnit());
+
+            Long readLockPeriod = ChainUtils.convertToMillis(opening.getReadLock(), opening.getReadLockUnit());
+
+
+
+            // если есть waiting for signal, мы сохраняем в сущности период readlock и read expiration,
+            // не вычисляя lock_until сразу
+            if (waitingForSignalPeriod!=null){
+                currentReadExpiration = Instant.now().plusMillis(waitingForSignalPeriod);
+            }
+
+
+            else {
+
+                currentReadExpiration = Instant.now();
+
+
+
+                if (readLockPeriod!=null){
+                    // сохраняем это значение в lock_until
+                    // при этом увеличиваем само значение current read expiration
+                    lockUntil = currentReadExpiration.plusMillis(readLockPeriod);
+                    currentReadExpiration = currentReadExpiration.plusMillis(readLockPeriod);
+
+
+
+                }
+
+
+
+                if (readExpirationPeriod!=null){
+                    currentReadExpiration = currentReadExpiration.plusMillis(readExpirationPeriod);
+
+                }
+
+                else {
+                    // выставляем дефолтное значение, если не указано в аннотации
+                    currentReadExpiration = currentReadExpiration
+                            .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS);
+
+                }
+
+
+
+            }
+
+            System.out.println(Instant.now());
+            System.out.println(currentReadExpiration+" current read expiration and current lock "+lockUntil);
+
+
+
+
+
+
+
+
+
+
+
             // если performance expiration == null, то это означает Everlasting шаг
+
+
             ChainOutput output = ChainOutput.builder()
                     .event(event)
-                    .status(OutboxStatus.WAITING)
+                    .status(waitingForSignalPeriod==null?OutboxStatus.WAITING
+                            :OutboxStatus.WAITING_FOR_SIGNAL)
                     .last_update(Instant.now())
-                    .readExpiration(Instant.now()
-                            .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                    .readExpiration(currentReadExpiration)
                     .performanceExpirationPeriod(duration)
+                    .lockUntil(lockUntil)
+
+                    .readExpirationPeriod(readExpirationPeriod)
+                    .readLockPeriod(readLockPeriod)
+
                     .build();
 
 
@@ -727,6 +821,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             catch (Exception e){
 
             }
+
+
+            // выполнение шага
 
             method.invoke(this, args);
 
