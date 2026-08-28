@@ -71,7 +71,7 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
 
 
-
+    /*
     // SKIP LOCKED - чтобы пропустить УЖЕ БЛОКНУТЫЕ СТРОКИ
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = :status " +
@@ -80,6 +80,17 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
     List<OutboxModelJpaEntity>
     readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus status);
+
+     */
+
+
+    // SKIP LOCKED - чтобы пропустить УЖЕ БЛОКНУТЫЕ СТРОКИ
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = 'WAITING' " +
+            "and entity.readExpiration>CURRENT_TIMESTAMP and entity.lockedUntil<CURRENT_TIMESTAMP ")
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
+    List<OutboxModelJpaEntity>
+    readAllWaitingEntitiesWhereReadExpirationNotReachedAndReadLockFree();
 
 
 

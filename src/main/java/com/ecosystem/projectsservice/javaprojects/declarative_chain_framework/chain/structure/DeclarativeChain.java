@@ -23,6 +23,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ev
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarIndex;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEventProcessingInfo;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
+import jakarta.persistence.criteria.CriteriaBuilder;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -36,10 +37,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-    private static final long DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS = 10;
 
-
-    private static final long DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS = 10;
 
 
 
@@ -269,7 +267,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             // сразу проставляем дефолт в случае отсутствия аннотации
             // значение лимита на выполнение игнорируется при наличии EVERLASTING
             chainStep.setTimeLimit(timeLimit==null?
-                    DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS: timeLimit.time());
+                    ChainDefaults.DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS: timeLimit.time());
             chainStep.setTimeLimitUnit(timeLimit == null? ChainTimeUnit.SEC : timeLimit.timeUnit());
 
             if (everlasting!=null){
@@ -428,94 +426,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-            // duration первого шага
-            // если everlasting, то значение остается null
-            // в противном случае указывается время на основании
-            // пользовательского значения, или дефолт
-            Long duration = null;
-            if (!opening.isEverlasting()){
-                duration = ChainUtils.convertToMillis(opening.getTimeLimit(),
-                        opening.getTimeLimitUnit());
-            }
-
-
-            /*
-             расчет времени, до которого должен быть прочитан ивент, зависит от:
-             - read lock аннотации
-             - waiting for signal аннотации
-             */
 
 
 
-
-            // НЕ ПИШЕМ В БД,
-            // ЧТО НЕ БУДЕТ ИСПОЛЬЗОВАТЬСЯ В РАСЧЕТАХ ДЛЯ ДАННОГО СТАТУСА, ДАЖЕ ЕСЛИ ЕСТЬ ДЕФОЛТ
-
-            Instant currentReadExpiration;
-
-            Instant lockUntil = null;
-
-            Long readExpirationPeriod
-                    = ChainUtils.convertToMillis(opening.getReadExpiration(),
-                    opening.getReadExpirationUnit());
-
-
-
-            Long waitingForSignalPeriod = ChainUtils.convertToMillis(opening.getWaitingForSignal(),
-                    opening.getWaitingForSignalUnit());
-
-            Long readLockPeriod = ChainUtils.convertToMillis(opening.getReadLock(), opening.getReadLockUnit());
-
-
-
-            // если есть waiting for signal, мы сохраняем в сущности период readlock и read expiration,
-            // не вычисляя lock_until сразу
-            if (waitingForSignalPeriod!=null){
-                currentReadExpiration = Instant.now().plusMillis(waitingForSignalPeriod);
-            }
-
-
-            else {
-
-                currentReadExpiration = Instant.now();
-
-
-
-                if (readLockPeriod!=null){
-                    // сохраняем это значение в lock_until
-                    // при этом увеличиваем само значение current read expiration
-                    lockUntil = currentReadExpiration.plusMillis(readLockPeriod);
-                    currentReadExpiration = currentReadExpiration.plusMillis(readLockPeriod);
-
-
-
-                }
-
-
-
-                if (readExpirationPeriod!=null){
-                    currentReadExpiration = currentReadExpiration.plusMillis(readExpirationPeriod);
-
-                }
-
-                else {
-                    // выставляем дефолтное значение, если не указано в аннотации
-                    currentReadExpiration = currentReadExpiration
-                            .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS);
-
-                }
-
-
-
-            }
-
-            System.out.println(Instant.now());
-            System.out.println(currentReadExpiration+" current read expiration and current lock "+lockUntil);
-
-
-
-
-
+            var times = ChainUtils.countTimeForNextStep(opening);
 
 
 
@@ -527,16 +441,14 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             ChainOutput output = ChainOutput.builder()
                     .event(event)
-                    .status(waitingForSignalPeriod==null?OutboxStatus.WAITING
+                    .status(opening.getWaitingForSignal()==null?OutboxStatus.WAITING
                             :OutboxStatus.WAITING_FOR_SIGNAL)
-                    .last_update(Instant.now())
-                    .readExpiration(currentReadExpiration)
-                    .performanceExpirationPeriod(duration)
-                    .lockUntil(lockUntil)
-
-                    .readExpirationPeriod(readExpirationPeriod)
-                    .readLockPeriod(readLockPeriod)
-
+                    .last_update(times.getLastUpdate())
+                    .readExpiration(times.getCurrentReadExpiration())
+                    .performanceExpirationPeriod(times.getDuration())
+                    .lockUntil(times.getLockUntil())
+                    .readExpirationPeriod(times.getReadExpirationPeriod())
+                    .readLockPeriod(times.getReadLockPeriod())
                     .build();
 
 
@@ -968,7 +880,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         meta.setAction(new ChainOpeningOrMiddleStep());
 
 
-
+        /*
         Long duration = null;
         if (!next.isEverlasting()){
             duration = ChainUtils.convertToMillis(next.getTimeLimit(),
@@ -980,19 +892,28 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // для waiting for signal (external) необходима конвертация
         Instant readExpiration = next.getWaitingForSignal()
-                == null?Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS)
+                == null?Instant.now().plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS)
                 :Instant.now().plusMillis(ChainUtils.convertToMillis(next.getWaitingForSignal(),
                 next.getWaitingForSignalUnit()));
 
+
+         */
+
+        var times = ChainUtils.countTimeForNextStep(next);
 
 
         ChainOutput output = ChainOutput.builder()
                 .event(event)
                 .status(next.getWaitingForSignal() == null?OutboxStatus.WAITING
                         :OutboxStatus.WAITING_FOR_SIGNAL)
-                .last_update(Instant.now())
-                .readExpiration(readExpiration)
-                .performanceExpirationPeriod(duration)
+                .last_update(times.getLastUpdate())
+                .readExpiration(times.getCurrentReadExpiration())
+                .performanceExpirationPeriod(times.getDuration())
+
+                .lockUntil(times.getLockUntil())
+                .readExpirationPeriod(times.getReadExpirationPeriod())
+                .readLockPeriod(times.getReadLockPeriod())
+
                 .build();
 
 
@@ -1037,14 +958,17 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             info.setPerformanceStatus(PerformanceStatus.CRASHED);
 
+
+
             ChainOutput output = ChainOutput.builder()
                     .event(event)
                     .status(OutboxStatus.WAITING)
                     .last_update(Instant.now())
                     .readExpiration(Instant.now()
-                            .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                            .plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
                     .performanceExpirationPeriod(
-                            ChainUtils.convertToMillis(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                            ChainUtils.convertToMillis(ChainDefaults
+                                            .DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
                                     ChainTimeUnit.SEC))
                     .build();
 
@@ -1064,7 +988,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         }
 
-        // можно отправить на ретрай
+        // todo ретрай не должен учитывать read lock и waiting for
+        // так как сигнал уже получен, и соответственно вся информация получена
         else {
 
             // обновляем счетчик
@@ -1082,7 +1007,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             // для waiting for signal (external) необходима конвертация
             Instant readExpiration = step.getWaitingForSignal()
-                    == null?Instant.now().plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS)
+                    == null?Instant.now().plusSeconds(ChainDefaults
+                    .DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS)
                     :Instant.now().plusMillis(ChainUtils.convertToMillis(step.getWaitingForSignal(),
                     step.getWaitingForSignalUnit()));
 
@@ -1143,9 +1069,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                 .status(OutboxStatus.WAITING)
                 .last_update(Instant.now())
                 .readExpiration(Instant.now()
-                        .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                        .plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
                 .performanceExpirationPeriod(ChainUtils
-                        .convertToMillis(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                        .convertToMillis(ChainDefaults.DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
                         ChainTimeUnit.SEC))
                 .build();
 
@@ -1186,9 +1112,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                 .status(OutboxStatus.WAITING)
                 .last_update(Instant.now())
                 .readExpiration(Instant.now()
-                        .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                        .plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
                 .performanceExpirationPeriod(ChainUtils
-                        .convertToMillis(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                        .convertToMillis(ChainDefaults.DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
                         ChainTimeUnit.SEC))
                 .build();
 
@@ -1236,9 +1162,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                 .status(OutboxStatus.WAITING)
                 .last_update(Instant.now())
                 .readExpiration(Instant.now()
-                        .plusSeconds(DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                        .plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
                 .performanceExpirationPeriod(ChainUtils
-                        .convertToMillis(DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                        .convertToMillis(ChainDefaults.DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
                         ChainTimeUnit.SEC))
                 .build();
 

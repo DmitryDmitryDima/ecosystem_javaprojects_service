@@ -416,18 +416,26 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         try {
             return
                     transaction.execute(status -> {
+                        /*
+                                List<OutboxModelJpaEntity> jpaEntities
+                                        = outboxModelJpaRepository
+                                        .readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus
+                                                .WAITING);
 
-                                List<OutboxModelJpaEntity> jpaEntities = outboxModelJpaRepository
-                                        .readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus.WAITING);
+                         */
+
+                        List<OutboxModelJpaEntity> jpaEntities = outboxModelJpaRepository
+                                .readAllWaitingEntitiesWhereReadExpirationNotReachedAndReadLockFree();
 
 
 
-                                // при чтении статус меняется на processing,
+                        // при чтении статус меняется на processing,
                                 // обновляется last update,
                                 // а также происходит обновление readVersion
-                                jpaEntities.forEach(outboxModelJpaEntity -> {
+                        jpaEntities.forEach(outboxModelJpaEntity -> {
                                     outboxModelJpaEntity.setLastUpdate(Instant.now());
-                                    outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion() + 1);
+                                    outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity
+                                            .getAllReadVersion() + 1);
                                     outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
 
 
@@ -556,7 +564,8 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
                     entity.setAllReadVersion(entity.getAllReadVersion()+1);
 
                     // time lock, чтобы missing processing поток не прочитал ивент во время компенсации
-                    entity.setLockedUntil(Instant.now().plusSeconds(DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS_FOR_PROCESSING_STATUS_READERS));
+                    entity.setLockedUntil(Instant.now()
+                            .plusSeconds(DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS_FOR_PROCESSING_STATUS_READERS));
 
                     // явный компенсационный сценарий помечается атомарно
                     entity.setCompensation(true);

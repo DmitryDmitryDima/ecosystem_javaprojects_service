@@ -55,6 +55,7 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     @Opening(name = "op", next = "middle")
     @MessageBefore
     @MessageAfter
+    @ReadLock(time = 20)
     public void op(TestEvent event){
 
         System.out.println("opening mod");
