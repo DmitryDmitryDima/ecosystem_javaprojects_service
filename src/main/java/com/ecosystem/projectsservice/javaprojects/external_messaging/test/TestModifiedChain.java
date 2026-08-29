@@ -49,6 +49,8 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
         System.out.println(event.getProcessingInfo().getPerformanceStatus());
 
+        throw new IllegalStateException("sudden crash inside compensation");
+
 
 
     }
@@ -56,9 +58,9 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     @Opening(name = "op", next = "middle")
     @MessageBefore
     @MessageAfter
-    //@ReadLock(time = 10)
+    //@ReadLock(time = 5)
 
-    @WaitingForSignal(time = 100)
+
     public void op(TestEvent event){
 
         System.out.println("opening mod");
@@ -67,14 +69,14 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     @Step(name = "middle", next = "end")
     @MessageAfter
-    //@ReadLock(time = 15)
-    @ReadExpiration(time = 300)
-    @Retry(maxCount = 1)
+    //@ReadLock(time = 5)
 
-    @WaitingForSignal(time = 100)
-    public void middle(TestEvent event, ProcessAvatar avatar){
+    public void middle(TestEvent event,
+                       ProcessAvatar avatar){
 
         System.out.println("middle mod");
+
+        throw new IllegalStateException("suka blyat");
 
 
 
@@ -89,8 +91,7 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     @Ending(name = "end")
     @MessageBefore
     @MessageAfter
-    //@ReadLock(time=20)
-    @WaitingForSignal(time = 100)
+    //@ReadLock(time=5)
     public void end(TestEvent event){
 
         Class<? extends ExternalMessage> bound = messageBind();

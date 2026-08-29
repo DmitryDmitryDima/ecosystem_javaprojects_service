@@ -139,11 +139,26 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         avatar.compensationOnStart();
 
+
+
     }
 
 
     protected void onCompensationEnd(E event, CompensationResult result,
                                      ProcessAvatar avatar){
+
+
+
+
+
+        try {
+            afterCompensationHook(event, avatar, result);
+
+
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
 
 
         OutputMetadata<?> meta = new OutputMetadata<>();
@@ -165,6 +180,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     }
 
     protected void compensationDecorator(E event, ProcessAvatar avatar){
+
+
         onCompensationStart(event, avatar);
 
 
@@ -369,6 +386,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                                   ProcessAvatar avatar){
 
 
+
+    }
+
+    protected void afterCompensationHook(E event, ProcessAvatar avatar, CompensationResult result){
 
     }
 
@@ -881,24 +902,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         meta.setAction(new ChainOpeningOrMiddleStep());
 
 
-        /*
-        Long duration = null;
-        if (!next.isEverlasting()){
-            duration = ChainUtils.convertToMillis(next.getTimeLimit(),
-                    next.getTimeLimitUnit());
-        }
 
-
-        // todo учесть, что шаг может быть waiting for signal
-
-        // для waiting for signal (external) необходима конвертация
-        Instant readExpiration = next.getWaitingForSignal()
-                == null?Instant.now().plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS)
-                :Instant.now().plusMillis(ChainUtils.convertToMillis(next.getWaitingForSignal(),
-                next.getWaitingForSignalUnit()));
-
-
-         */
 
         var times = ChainUtils.countTimeForNextStep(next);
 
@@ -948,7 +952,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         // todo причина ошибки
         event.setMessage("Выполнение шага "+info.getCurrentStep()+
 
-                "завершилось ошибкой "
+                " завершилось ошибкой "
                 );
 
 
@@ -1020,28 +1024,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                         step.getTimeLimitUnit());
             }
 
-            /*
 
-            // для waiting for signal (external) необходима конвертация
-            Instant readExpiration = step.getWaitingForSignal()
-                    == null?Instant.now().plusSeconds(ChainDefaults
-                    .DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS)
-                    :Instant.now().plusMillis(ChainUtils.convertToMillis(step.getWaitingForSignal(),
-                    step.getWaitingForSignalUnit()));
-
-
-            // если performance expiration == null, то это означает Everlasting шаг
-            ChainOutput output = ChainOutput.builder()
-                    .event(event)
-                    .status(step.getWaitingForSignal()==null?OutboxStatus.WAITING
-                            :OutboxStatus.WAITING_FOR_SIGNAL)
-                    .last_update(Instant.now())
-                    .readExpiration(readExpiration)
-                    .performanceExpirationPeriod(duration)
-                    .build();
-
-
-             */
 
             StepCountedTime times= ChainUtils.countDefaultTimes();
 

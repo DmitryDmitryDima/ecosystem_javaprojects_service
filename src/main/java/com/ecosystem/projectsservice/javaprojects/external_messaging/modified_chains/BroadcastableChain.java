@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains;
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputResult;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.CompensationResult;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.StepExtension;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
@@ -98,6 +99,17 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
 
             System.out.println("Публикация соообщения об успешном завершении процесса!");
         }
+    }
+
+    @Override
+    protected void afterCompensationHook(E event, ProcessAvatar avatar, CompensationResult result) {
+        super.afterCompensationHook(event, avatar, result);
+
+
+
+
+        System.out.println("Сообщение об ошибке. Последнее сообщение - "+event.getMessage()+"." +
+                " Статус компенсации: "+result.getException());
     }
 
     @Override
