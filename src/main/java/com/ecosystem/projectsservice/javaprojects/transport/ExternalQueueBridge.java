@@ -74,7 +74,9 @@ public class ExternalQueueBridge {
     public void catchProjectSystemEvent(ProjectEventFromSystem projectEventFromSystem){
         try {
             MessagePostProcessor postProcessor = (message )->{
-                message.getMessageProperties().setHeader("event_type", projectEventFromSystem.getType());
+                message
+                        .getMessageProperties().setHeader("event_type",
+                                projectEventFromSystem.getType());
                 return message;
             };
 

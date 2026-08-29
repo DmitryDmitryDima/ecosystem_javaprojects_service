@@ -1,10 +1,9 @@
-package com.ecosystem.projectsservice.javaprojects.transport;
+package com.ecosystem.projectsservice.javaprojects.external_messaging;
 
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.core.task.VirtualThreadTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
