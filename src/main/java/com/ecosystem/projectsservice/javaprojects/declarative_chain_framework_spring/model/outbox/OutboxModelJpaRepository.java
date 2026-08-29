@@ -38,7 +38,7 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     @Query("SELECT entity FROM OutboxModelJpaEntity " +
             "entity WHERE entity.status = :status AND entity.processUUID = :processId")
     Optional<OutboxModelJpaEntity>
-    findByStatusAndCorrelationIdForUpdate(OutboxStatus status,
+    findByStatusAndProcessIdForUpdate(OutboxStatus status,
                                           UUID processId);
 
 
@@ -91,6 +91,9 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
     List<OutboxModelJpaEntity>
     readAllWaitingEntitiesWhereReadExpirationNotReachedAndReadLockFree();
+
+
+
 
 
 

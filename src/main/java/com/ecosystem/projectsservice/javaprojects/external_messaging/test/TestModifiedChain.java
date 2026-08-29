@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.external_messaging.test;
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadExpiration;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadLock;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.Retry;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.WaitingForSignal;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
@@ -55,7 +56,9 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     @Opening(name = "op", next = "middle")
     @MessageBefore
     @MessageAfter
-    @ReadLock(time = 20)
+    //@ReadLock(time = 10)
+
+    @WaitingForSignal(time = 100)
     public void op(TestEvent event){
 
         System.out.println("opening mod");
@@ -64,14 +67,30 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     @Step(name = "middle", next = "end")
     @MessageAfter
+    //@ReadLock(time = 15)
+    @ReadExpiration(time = 300)
+    @Retry(maxCount = 1)
+
+    @WaitingForSignal(time = 100)
     public void middle(TestEvent event, ProcessAvatar avatar){
 
         System.out.println("middle mod");
+
+
+
+
+
+
+
+
+
     }
 
     @Ending(name = "end")
     @MessageBefore
     @MessageAfter
+    //@ReadLock(time=20)
+    @WaitingForSignal(time = 100)
     public void end(TestEvent event){
 
         Class<? extends ExternalMessage> bound = messageBind();

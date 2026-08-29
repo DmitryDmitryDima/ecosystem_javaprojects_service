@@ -24,12 +24,42 @@ public class ChainUtils {
 
 
 
-    // todo
-    // getTimeForDefaults
 
+
+    // выставляем дефолтные значения для всех параметров времени
 
     public static StepCountedTime countDefaultTimes(){
         StepCountedTime time = new StepCountedTime();
+
+        Long readExpirationPeriod = ChainUtils.convertToMillis(ChainDefaults
+                        .DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS,
+                ChainTimeUnit.SEC);
+
+        Long duration = ChainUtils.convertToMillis(ChainDefaults
+                        .DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
+                ChainTimeUnit.SEC);
+
+        Long readLockPeriod = 0L;
+
+        Instant now = Instant.now();
+
+        Instant readExpiration = Instant.now()
+                .plusMillis(readExpirationPeriod);
+
+
+
+
+
+
+        time.setLastUpdate(now);
+
+        time.setDuration(duration);
+        time.setLockUntil(now);
+        time.setReadLockPeriod(readLockPeriod);
+        time.setCurrentReadExpiration(readExpiration);
+        time.setReadExpirationPeriod(readExpirationPeriod);
+
+
 
         return time;
     }

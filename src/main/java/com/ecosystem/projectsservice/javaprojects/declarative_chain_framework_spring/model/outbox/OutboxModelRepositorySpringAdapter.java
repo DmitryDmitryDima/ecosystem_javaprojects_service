@@ -400,6 +400,69 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         // вычисляем новый read_expiration и lock_until на основании read_expiration_period и read_lock_period
 
 
+        try {
+
+
+            transaction.execute(status -> {
+
+                System.out.println("find waiting for with "+processUUID);
+
+
+                Optional<OutboxModelJpaEntity> processCheck = outboxModelJpaRepository
+                        .findByStatusAndProcessIdForUpdate(OutboxStatus.WAITING_FOR_SIGNAL, processUUID);
+
+
+                if (processCheck.isEmpty()){
+                    throw new IllegalStateException("ожидающий процесс не найден");
+
+                }
+
+                var entity = processCheck.get();
+
+                entity.setAllReadVersion(entity.getAllReadVersion()+1);
+                entity.setStatus(OutboxStatus.WAITING);
+
+
+
+
+                Instant now = Instant.now();
+
+                entity.setLastUpdate(now);
+
+
+                // пересчет параметров с использованием сохраненных в сущности периодов
+
+                Long readLockPeriod = entity.getReadLockPeriod();
+                Long readExpirationPeriod = entity.getReadExpirationPeriod();
+
+
+                Instant lockUntil = now.plusMillis(readLockPeriod);
+                Instant readExpiration = lockUntil.plusMillis(readExpirationPeriod);
+
+
+                entity.setReadExpiration(readExpiration);
+                entity.setLockedUntil(lockUntil);
+
+
+
+
+
+
+
+                return null;
+
+            });
+
+
+        }
+
+
+        catch (Exception e){
+            throw
+                    new OutboxRepositoryException("ошибка транзакции получения сигнала " + e.getMessage());
+        }
+
+
 
         //
 

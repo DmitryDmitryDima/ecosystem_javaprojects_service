@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.service.dashboard;
 
 
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarsWithIndexes;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.IndexGroupDTO;
@@ -9,6 +10,7 @@ import com.ecosystem.projectsservice.javaprojects.external_messaging.data.Extern
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestData;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestEvent;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestModifiedChain;
+import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
 import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddExternalData;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarStorage;
@@ -27,6 +29,9 @@ public class DashboardService {
 
     @Autowired
     private ProcessAvatarStorage avatarStorage;
+
+    @Autowired
+    private OutboxModelRepository repo;
 
 
 
@@ -64,6 +69,21 @@ public class DashboardService {
 
 
 
+        if (!avatarStorage.getAll().isEmpty()){
+
+            avatarStorage.getAll().forEach(avatar -> {
+
+
+                UUID processId = avatar.getCorrelationId();
+
+                repo.receiveSignal(processId);
+
+
+
+            });
+
+            return;
+        }
         UUID uuid = UUID.randomUUID();
 
 

@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.an
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.StepCountedTime;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.utils.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputResult;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.output_actions.*;
@@ -953,23 +954,29 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-        // количество ретраев исчерпано - процесс получает статус crashed, генерируется компенсационный ивент
+        // количество ретраев исчерпано
+        // - процесс получает статус crashed, генерируется компенсационный ивент
         if (info.getCurrentRetry()>=step.getRetry()){
 
             info.setPerformanceStatus(PerformanceStatus.CRASHED);
+
+
+            // для компенсационного ивента выставляются дефолтные периоды времени
+            StepCountedTime times = ChainUtils.countDefaultTimes();
 
 
 
             ChainOutput output = ChainOutput.builder()
                     .event(event)
                     .status(OutboxStatus.WAITING)
-                    .last_update(Instant.now())
-                    .readExpiration(Instant.now()
-                            .plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
+                    .last_update(times.getLastUpdate())
+                    .readExpiration(times.getCurrentReadExpiration())
                     .performanceExpirationPeriod(
-                            ChainUtils.convertToMillis(ChainDefaults
-                                            .DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
-                                    ChainTimeUnit.SEC))
+                            times.getDuration())
+
+                    .readLockPeriod(times.getReadLockPeriod())
+                    .lockUntil(times.getLockUntil())
+                    .readExpirationPeriod(times.getReadExpirationPeriod())
                     .build();
 
 
@@ -989,8 +996,14 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         }
 
         // todo ретрай не должен учитывать read lock и waiting for
-        // так как сигнал уже получен, и соответственно вся информация получена
+
+
+        // другими словами,
+        // ретрай политика формирует обычный ивент с игнорированием waiting for и read lock
         else {
+
+
+            System.out.println("crash. Retry will start soon");
 
             // обновляем счетчик
             info.setCurrentRetry(info.getCurrentRetry()+1);
@@ -999,11 +1012,15 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             info.setPerformanceStatus(PerformanceStatus.STEP_RETRY);
 
 
+
+
             Long duration = null;
             if (!step.isEverlasting()){
                 duration = ChainUtils.convertToMillis(step.getTimeLimit(),
                         step.getTimeLimitUnit());
             }
+
+            /*
 
             // для waiting for signal (external) необходима конвертация
             Instant readExpiration = step.getWaitingForSignal()
@@ -1022,6 +1039,27 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                     .readExpiration(readExpiration)
                     .performanceExpirationPeriod(duration)
                     .build();
+
+
+             */
+
+            StepCountedTime times= ChainUtils.countDefaultTimes();
+
+
+
+            ChainOutput output = ChainOutput.builder()
+                    .event(event)
+                    .status(OutboxStatus.WAITING)
+                    .last_update(times.getLastUpdate())
+                    .readExpiration(times.getCurrentReadExpiration())
+                    .performanceExpirationPeriod(duration) // только duration берется не из дефолта
+
+                    .readLockPeriod(times.getReadLockPeriod()) // 0 - дефолт для ретрая
+                    .lockUntil(times.getLockUntil()) // 0 - дефолт для ретрая
+                    .readExpirationPeriod(times.getReadExpirationPeriod()) // дефолтное значение
+
+                    .build();
+
 
 
 
@@ -1061,18 +1099,26 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         // настройки времени берутся не от шага, а от компенсации (сейчас - дефолтные)
 
         // компенсация не может быть everlasting
+
+
+        StepCountedTime times = ChainUtils.countDefaultTimes();
+
         ChainOutput output = ChainOutput.builder()
 
 
 
                 .event(event)
                 .status(OutboxStatus.WAITING)
-                .last_update(Instant.now())
-                .readExpiration(Instant.now()
-                        .plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
-                .performanceExpirationPeriod(ChainUtils
-                        .convertToMillis(ChainDefaults.DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
-                        ChainTimeUnit.SEC))
+                .last_update(times.getLastUpdate())
+                .readExpiration(times.getCurrentReadExpiration())
+                .performanceExpirationPeriod(times.getDuration())
+
+
+                .readLockPeriod(times.getReadLockPeriod())
+                .lockUntil(times.getLockUntil())
+                .readExpirationPeriod(times.getReadExpirationPeriod())
+
+
                 .build();
 
 
@@ -1103,6 +1149,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // настройки времени берутся не от шага, а от компенсации (сейчас - дефолтные)
 
+
+        StepCountedTime times = ChainUtils.countDefaultTimes();
+
         // компенсация не может быть everlasting
         ChainOutput output = ChainOutput.builder()
 
@@ -1110,12 +1159,14 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
                 .event(event)
                 .status(OutboxStatus.WAITING)
-                .last_update(Instant.now())
-                .readExpiration(Instant.now()
-                        .plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
-                .performanceExpirationPeriod(ChainUtils
-                        .convertToMillis(ChainDefaults.DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
-                        ChainTimeUnit.SEC))
+                .last_update(times.getLastUpdate())
+                .readExpiration(times.getCurrentReadExpiration())
+                .performanceExpirationPeriod(times.getDuration())
+
+
+                .readLockPeriod(times.getReadLockPeriod())
+                .lockUntil(times.getLockUntil())
+                .readExpirationPeriod(times.getReadExpirationPeriod())
                 .build();
 
 
@@ -1155,17 +1206,20 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // настройки времени берутся не от шага, а от компенсации (сейчас - дефолтные)
 
+        StepCountedTime times = ChainUtils.countDefaultTimes();
+
         // компенсация не может быть everlasting
         ChainOutput output = ChainOutput.builder()
 
                 .event(event)
                 .status(OutboxStatus.WAITING)
-                .last_update(Instant.now())
-                .readExpiration(Instant.now()
-                        .plusSeconds(ChainDefaults.DEFAULT_READ_EXPIRATION_TIME_IN_SECONDS))
-                .performanceExpirationPeriod(ChainUtils
-                        .convertToMillis(ChainDefaults.DEFAULT_PERFORMANCE_EXPIRATION_PERIOD_IN_SECONDS,
-                        ChainTimeUnit.SEC))
+                .last_update(times.getLastUpdate())
+                .readExpiration(times.getCurrentReadExpiration())
+                .performanceExpirationPeriod(times.getDuration())
+
+                .readLockPeriod(times.getReadLockPeriod())
+                .lockUntil(times.getLockUntil())
+                .readExpirationPeriod(times.getReadExpirationPeriod())
                 .build();
 
 
