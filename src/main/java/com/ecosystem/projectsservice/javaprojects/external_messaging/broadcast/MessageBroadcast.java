@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.external_messaging.broadcast;
 
 
+import com.ecosystem.projectsservice.javaprojects.external_messaging.message.ExternalMessage;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.BroadcastException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,16 +21,23 @@ public class MessageBroadcast {
 
 
 
+    // асинхронная публикация (в том числе метод в мосте)
+
     @Async("virtualThreadFactory")
-    public void sendAsync()  {
+    public void sendAsync(ExternalMessage message)  {
+
+        publisher.publishEvent(message);
 
     }
 
 
-    public void sendSync(){
+    public void sendSync(ExternalMessage message){
 
+        publisher.publishEvent(message);
 
     }
+
+
 
 
 

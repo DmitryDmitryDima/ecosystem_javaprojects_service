@@ -32,7 +32,6 @@ public class ExternalQueueBroadcastBridge {
 
 
     @EventListener
-    @Async("virtualThreadFactory")
     public void sendProjectEventFromSystem(ProjectEventFromSystemCategory event){
 
 

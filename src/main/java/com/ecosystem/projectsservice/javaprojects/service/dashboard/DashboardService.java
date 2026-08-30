@@ -20,6 +20,7 @@ import com.ecosystem.projectsservice.javaprojects.transport.external_events.cont
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -94,6 +95,7 @@ public class DashboardService {
                 = new ProjectEventFromSystemContextCategory();
 
         contextCategory.setCorrelationId(uuid);
+        contextCategory.setProjectId(UUID.randomUUID());
 
         TestData data = new TestData();
 

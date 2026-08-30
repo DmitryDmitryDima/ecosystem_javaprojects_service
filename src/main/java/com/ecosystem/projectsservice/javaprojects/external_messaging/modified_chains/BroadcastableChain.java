@@ -6,14 +6,15 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ch
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.StepExtension;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.chain.structure.DeclarativeChainSpringAdapter;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.broadcast.MessageBroadcast;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.context.ExternalContext;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.data.ExternalData;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.message.ExternalMessage;
-import com.ecosystem.projectsservice.javaprojects.external_messaging.message.MessageStatus;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.declarative_messaging.MessageAfter;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.declarative_messaging.MessageBefore;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.declarative_messaging.MessageStepExtension;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.types.ExternalMessageType;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
@@ -24,8 +25,25 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
 
 
 
-    private String messageType;
 
+
+    private BroadcastEnvelope broadcastEnvelope = new BroadcastEnvelope();
+
+
+    @Autowired
+    private MessageBroadcast broadcast;
+
+
+
+
+
+
+
+
+
+    public BroadcastEnvelope broadcast() {
+        return broadcastEnvelope;
+    }
 
 
 
@@ -34,8 +52,22 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
     protected abstract Class<? extends ExternalMessage> messageBind();
 
 
+    /*
+    наполнение envelope
+     */
+
     @Override
     protected void readChainStructure() {
+
+
+
+
+        broadcastEnvelope.setBroadcastInstance(broadcast);
+        broadcastEnvelope.setExternalMessageClazz(messageBind());
+
+
+
+
 
 
 
@@ -43,11 +75,17 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
         ExternalMessageType messageTypeAnno
                 = this.getClass().getAnnotation(ExternalMessageType.class);
 
-        if (messageTypeAnno == null) throw new IllegalStateException("не указан тип внешнего сообщения");
+        if (messageTypeAnno == null)
+            throw new IllegalStateException("не указан тип внешнего сообщения");
 
-        messageType = messageTypeAnno.type().getName();
 
-        System.out.println(messageType +" message type");
+
+
+        broadcastEnvelope.setMessageType(messageTypeAnno.type().getName());
+
+
+
+
 
         super.readChainStructure();
     }

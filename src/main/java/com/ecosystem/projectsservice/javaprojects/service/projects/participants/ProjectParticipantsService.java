@@ -159,7 +159,8 @@ public class ProjectParticipantsService {
                         } else {
                             notificationStrategy.setPrivateChannel(toNotify);
                         }
-                        return ProjectEventFromUserContext.from(context, requestContext, project.getId(), notificationStrategy, null);})
+                        return ProjectEventFromUserContext
+                                .from(context, requestContext, project.getId(), notificationStrategy, null);})
 
 
                     .withData(()->new ParticipantActionData(toAddUUID))
