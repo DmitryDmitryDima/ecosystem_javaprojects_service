@@ -11,24 +11,22 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ch
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputResult;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.output_actions.*;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.*;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarStatus;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.DeliveryStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.PerformanceStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputMetadata;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputProcessor;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarIndex;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarIndex;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEventProcessingInfo;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
-import jakarta.persistence.criteria.CriteriaBuilder;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -949,10 +947,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         var info = event.getProcessingInfo();
 
-        // todo причина ошибки
+
         event.setMessage("Выполнение шага "+info.getCurrentStep()+
 
-                " завершилось ошибкой "
+                " завершилось ошибкой "+e.getCause()
                 );
 
 

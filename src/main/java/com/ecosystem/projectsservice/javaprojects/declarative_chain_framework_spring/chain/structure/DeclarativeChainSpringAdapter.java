@@ -4,7 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ch
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputProcessor;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.ChainPreparationException;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -2,7 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.m
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputMetadata;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarStatus;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModel;
 
 import java.util.UUID;

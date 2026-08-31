@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control;
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar;
 
 import java.util.List;
 import java.util.Map;

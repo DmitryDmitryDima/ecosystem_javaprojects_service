@@ -1,15 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects.external_messaging.test;
 
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadExpiration;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadLock;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.Retry;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.WaitingForSignal;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
-import com.ecosystem.projectsservice.javaprojects.external_messaging.context.ExternalContext;
-import com.ecosystem.projectsservice.javaprojects.external_messaging.data.ExternalData;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.message.ExternalMessage;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.message.message_category.ProjectEventFromSystemCategory;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.BroadcastableChain;
@@ -49,7 +43,7 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
         System.out.println(event.getProcessingInfo().getPerformanceStatus());
 
-        throw new IllegalStateException("sudden crash inside compensation");
+
 
 
 
@@ -57,11 +51,10 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     @Opening(name = "op", next = "middle")
     @MessageBefore
-    @MessageAfter
+
     public void op(TestEvent event){
 
-        System.out.println("opening mod");
-        System.out.println(event.getExternalContext().getCorrelationId());
+
 
         event.setMessage("message from op");
     }
@@ -71,7 +64,12 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     public void middle(TestEvent event,
                        ProcessAvatar avatar){
 
-        System.out.println("middle mod");
+
+
+
+
+
+
 
 
 
@@ -91,6 +89,12 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     @MessageBefore
     @MessageAfter
     public void end(TestEvent event){
+
+
+        event.setMessage("message for you");
+
+
+
 
 
 

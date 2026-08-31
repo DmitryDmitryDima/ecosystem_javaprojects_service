@@ -126,7 +126,8 @@ public class DirectoryRemovalChain extends ControlledOutboxChain<DirectoryRemova
 
 
                     event.setMessage("отказ в удалении директории." +
-                            " Не получено одобрение других участников, просматривающих контент внутри директории");
+                            " Не получено одобрение других участников, " +
+                            "просматривающих контент внутри директории");
                     event.getInternalData().setCompensationPhase(true);
                     return true;
                 }

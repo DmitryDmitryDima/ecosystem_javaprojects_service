@@ -2,8 +2,8 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.c
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.registry.ChainEventQualifier;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.output_actions.*;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarStatus;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.mapper.MapperComponent;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModel;

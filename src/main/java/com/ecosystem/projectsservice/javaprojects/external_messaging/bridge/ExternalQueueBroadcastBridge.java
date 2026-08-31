@@ -49,13 +49,13 @@ public class ExternalQueueBroadcastBridge {
 
             System.out.println(payload+" is ready for external chain");
 
-            /*
+
 
             rabbitTemplate.convertAndSend(externalValues
                     .getSystemProjectsEventsExchangeName(),
                     "", payload, postProcessor);
 
-             */
+
 
 
         }

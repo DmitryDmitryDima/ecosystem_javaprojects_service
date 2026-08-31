@@ -4,12 +4,13 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ch
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.CompensationResult;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.StepExtension;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.chain.structure.DeclarativeChainSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.broadcast.MessageBroadcast;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.context.ExternalContext;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.data.ExternalData;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.message.ExternalMessage;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.message.MessageStatus;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.declarative_messaging.MessageAfter;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.declarative_messaging.MessageBefore;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.declarative_messaging.MessageStepExtension;
@@ -130,12 +131,20 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
     }
 
     @Override
-    protected void chainFinalHook(E event, ChainStep step, ProcessAvatar avatar, OutputResult result) {
+    protected void chainFinalHook(E event,
+                                  ChainStep step,
+                                  ProcessAvatar avatar,
+                                  OutputResult result) {
         super.chainFinalHook(event, step, avatar, result);
 
         if (result.isPublished()){
 
-            System.out.println("Публикация соообщения об успешном завершении процесса!");
+            broadcastEnvelope.sendSync(
+                            event.getExternalContext(),
+                    event.getExternalData(),
+                    event.getMessage(),
+                    MessageStatus.SUCCESS);
+
         }
     }
 
@@ -144,10 +153,24 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
         super.afterCompensationHook(event, avatar, result);
 
 
+        Exception exception = result.getException();
+
+        String compensationResultMessage = exception
+                ==null?"Статус компенсации:успешно":"статус компенсации:ошибка - "+exception;
 
 
-        System.out.println("Сообщение об ошибке. Последнее сообщение - "+event.getMessage()+"." +
-                " Статус компенсации: "+result.getException());
+
+
+        broadcastEnvelope.sendSync(
+                event.getExternalContext(),
+                event.getExternalData(),
+                event.getMessage()+" "+compensationResultMessage,
+                MessageStatus.ERROR);
+
+
+
+
+
     }
 
     @Override
@@ -160,16 +183,24 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
 
             if (extension instanceof MessageStepExtension messageStepExtension){
                 if (messageStepExtension.isMessageBefore()){
-                    System.out.println("Публикация сообщения о том, что шаг "
-                            +step.getName()+" сейчас будет выполнен");
+                    broadcastEnvelope.sendSync(
+                            event.getExternalContext(),
+                            event.getExternalData(),
+                            event.getMessage(),
+                            MessageStatus.PROCESSING);
                 }
             }
         }
     }
 
 
+    // помним, что этот хук выполняет только после успешного выполнения шага
+
     @Override
-    protected void afterStepHook(E event, ChainStep step, ProcessAvatar avatar, OutputResult result) {
+    protected void afterStepHook(E event,
+                                 ChainStep step,
+                                 ProcessAvatar avatar,
+                                 OutputResult result) {
         super.afterStepHook(event, step, avatar, result);
 
         List<StepExtension> extensions = step.getExtensions();
@@ -178,8 +209,11 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
 
             if (extension instanceof MessageStepExtension messageStepExtension){
                 if (messageStepExtension.isMessageAfter() && result.isPublished()){
-                    System.out.println("Публикация сообщения о том, что шаг "
-                            +step.getName()+" был выполнен");
+                    broadcastEnvelope.sendSync(
+                            event.getExternalContext(),
+                            event.getExternalData(),
+                            event.getMessage(),
+                            MessageStatus.PROCESSING);
                 }
             }
         }
@@ -189,5 +223,5 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
 
 
 
-    // todo для компенсации (в конце) реализуется автоматическое сообщение в хуке со статусом error
+
 }

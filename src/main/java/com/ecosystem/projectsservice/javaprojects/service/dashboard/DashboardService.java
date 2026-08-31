@@ -6,21 +6,15 @@ import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarsWithIndexes;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.IndexGroupDTO;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.context.context_category.ProjectEventFromSystemContextCategory;
-import com.ecosystem.projectsservice.javaprojects.external_messaging.data.ExternalData;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestData;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestEvent;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestModifiedChain;
-import com.ecosystem.projectsservice.javaprojects.repository.OutboxEventRepository;
-import com.ecosystem.projectsservice.javaprojects.service.processes.directories.directory_add.DirectoryAddExternalData;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatar;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.TestChain;
-import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.TestChainEvent;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromUserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
