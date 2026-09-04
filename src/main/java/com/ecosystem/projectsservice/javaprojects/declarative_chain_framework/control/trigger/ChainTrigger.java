@@ -55,13 +55,16 @@ public class ChainTrigger {
     }
 
 
-    public void makeFeed(TriggerFeed feed){
+    public synchronized boolean react(TriggerFeed feed){
 
 
 
-        if (!isActive()) return;
+        if (!isActive())
+            throw new ReactionException("триггер был остановлен и больше не принимает ответов");
 
         allFeeds.put(feed.getOrigin(), feed);
+
+        return false;
 
 
     }

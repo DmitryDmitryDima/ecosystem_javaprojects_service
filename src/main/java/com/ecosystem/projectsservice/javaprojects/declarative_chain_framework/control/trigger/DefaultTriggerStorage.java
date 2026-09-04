@@ -46,23 +46,12 @@ public class DefaultTriggerStorage implements TriggerStorage {
         // phase trigger является наследником reactive trigger
         // его отличие в том, что при положительной реакции следующие фазы столкнутся с тем,
         // что триггер уже был закрыт, и не выполнятся
-        if (trigger instanceof ReactiveChainTrigger reactiveChainTrigger){
 
-            boolean needPush = reactiveChainTrigger.react(feed);
+        boolean needPush = trigger.react(feed);
 
-            if (needPush){
-                pushProcess(trigger);
-            }
-
+        if (needPush){
+            pushProcess(trigger);
         }
-
-
-
-        // базовый триггер не имеет стратегий и не умеет пушить
-        else {
-            trigger.makeFeed(feed);
-        }
-
 
 
     }

@@ -17,16 +17,7 @@ public class ReactiveChainTrigger extends ChainTrigger{
     public synchronized boolean react(TriggerFeed feed){
 
 
-        if (!isActive()){
-            throw new ReactionException("триггер был остановлен и больше не принимает ответов");
-        }
-
-
-
-
-
-
-        makeFeed(feed);
+        super.react(feed);
 
         if (onFeedReaction == null) return false; // стратегии может не быть,
         // например в классе наследнике - фазовом триггере
