@@ -96,7 +96,8 @@ public class TriggersAggregator {
     // в зависимости от вида триггера мы производим некоторые действия по контролю его данных и жизненного цикла
     public void initiateTriggerIfExists(DeclarativeChainEvent<?,?,?> chainEvent,
                                         ExternalEvent externalEvent,
-                                        ExternalEventType externalEventType, Long waitingFor) throws Exception{
+                                        ExternalEventType externalEventType,
+                                        Long waitingFor) throws Exception{
 
         Trigger trigger = unitedTriggerStore.get(chainEvent.getContext().getCorrelationId());
         // пользователь не создал какого либо триггера

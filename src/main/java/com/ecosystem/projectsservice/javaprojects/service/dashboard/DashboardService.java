@@ -71,7 +71,7 @@ public class DashboardService {
 
                 UUID processId = avatar.getCorrelationId();
 
-                repo.receiveSignal(processId);
+                repo.receiveSignalWhileWaitingFor(processId);
 
 
 

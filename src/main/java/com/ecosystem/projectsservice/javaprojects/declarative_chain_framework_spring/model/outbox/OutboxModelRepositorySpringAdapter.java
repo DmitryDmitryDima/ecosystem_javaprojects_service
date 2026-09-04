@@ -391,7 +391,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     }
 
     @Override
-    public void receiveSignal(UUID processUUID) {
+    public void receiveSignalWhileWaitingFor(UUID processUUID) {
 
         // все делается атомарно
 
@@ -405,7 +405,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
             transaction.execute(status -> {
 
-                System.out.println("find waiting for with "+processUUID);
+
 
 
                 Optional<OutboxModelJpaEntity> processCheck = outboxModelJpaRepository
@@ -459,13 +459,42 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
         catch (Exception e){
             throw
-                    new OutboxRepositoryException("ошибка транзакции получения сигнала " + e.getMessage());
+                    new OutboxRepositoryException("ошибка транзакции получения сигнала для waiting for " + e.getMessage());
         }
 
 
 
         //
 
+    }
+
+    @Override
+    public void receiveSignalWhileLocked(UUID processUUID) {
+        try {
+
+            Optional<OutboxModelJpaEntity> check
+                    = outboxModelJpaRepository
+                    .findByStatusAndProcessIdForUpdate(OutboxStatus.WAITING, processUUID);
+
+
+            if (check.isEmpty()){
+                throw new IllegalStateException("ожидающий процесс не найден");
+            }
+
+
+            var entity = check.get();
+
+            entity.setAllReadVersion(entity.getAllReadVersion()+1);
+
+            entity.setLockedUntil(Instant.now());
+
+
+
+        }
+
+        catch (Exception e){
+            throw new OutboxRepositoryException("ошибка транзакции получения сигнала для read lock: "+e.getMessage());
+        }
     }
 
 

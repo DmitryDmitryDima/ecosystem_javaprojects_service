@@ -49,7 +49,14 @@ public interface OutboxModelRepository {
 
     // получаем внешний сигнал, проставляя waiting for signal в waiting
     // и перенастраивая read_expiration
-    void receiveSignal(UUID processUUID);
+    void receiveSignalWhileWaitingFor(UUID processUUID);
+
+
+
+    // внешний сигнал ищет waiting ивент и меняет ему lock_until на now, досрочно вытаскивая его из спячки
+    void receiveSignalWhileLocked(UUID processUUID);
+
+
 
 
 

@@ -7,8 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_ch
 
 @ChainEventQualifier("broadcastable_chain_test")
 public class TestEvent
-        extends ExternallyConnectedChainEvent<ProjectEventFromSystemContextCategory,
-        TestData> {
+        extends ExternallyConnectedChainEvent<ProjectEventFromSystemContextCategory, TestData> {
 
 
 
