@@ -28,7 +28,11 @@ public class DefaultTriggerStorage implements TriggerStorage {
 
         storage.put(trigger.getProcessId(), trigger);
 
-        // if
+
+        // фазовый триггер должен зарегистрировать фазы
+        if (trigger instanceof PhasicChainTrigger phasicChainTrigger){
+
+        }
 
 
 
