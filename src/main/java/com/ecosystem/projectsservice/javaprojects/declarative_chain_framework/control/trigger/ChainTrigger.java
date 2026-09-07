@@ -1,14 +1,18 @@
 package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger;
 
 
+import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.PhaseStrategy;
+
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 /*
 
-триггеры предназначены для организации доставки сигнала до waiting for signal процесса
+триггеры предназначены для организации доставки сигнала до waiting for signal или readlock процесса
 
  */
 public class ChainTrigger {
@@ -41,6 +45,12 @@ public class ChainTrigger {
 
 
 
+    private Function<Map<String, TriggerFeed>, Boolean> onFeedReaction;
+
+    private TriggerPhaseStrategy phaseStrategy;
+
+
+
 
 
 
@@ -64,7 +74,18 @@ public class ChainTrigger {
 
         allFeeds.put(feed.getOrigin(), feed);
 
-        return false;
+        if (onFeedReaction == null) return false; // стратегии может не быть,
+        // например в классе наследнике - фазовом триггере
+
+        boolean reaction = onFeedReaction.apply(getAllFeeds());
+
+        if (reaction){
+            deactivate();
+        }
+
+        return reaction;
+
+
 
 
     }
@@ -75,6 +96,9 @@ public class ChainTrigger {
     }
 
 
+
+
+
     public Instant getExpirationTime() {
         return expirationTime;
     }
@@ -83,13 +107,23 @@ public class ChainTrigger {
         this.expirationTime = expirationTime;
     }
 
-    public ConcurrentHashMap<String, TriggerFeed> getAllFeeds() {
-        return allFeeds;
+
+    // snapshot
+    public Map<String, TriggerFeed> getAllFeeds() {
+        return Map.copyOf(allFeeds);
     }
 
-    public void setAllFeeds(ConcurrentHashMap<String, TriggerFeed> allFeeds) {
-        this.allFeeds = allFeeds;
+
+
+    public Function<Map<String, TriggerFeed>, Boolean> getOnFeedReaction() {
+        return onFeedReaction;
     }
+
+    public void setOnFeedReaction(Function<Map<String, TriggerFeed>, Boolean> onFeedReaction) {
+        this.onFeedReaction = onFeedReaction;
+    }
+
+
 
 
     public PushStrategy getPushStrategy() {
@@ -107,5 +141,14 @@ public class ChainTrigger {
 
     public void setProcessId(UUID processId) {
         this.processId = processId;
+    }
+
+
+    public TriggerPhaseStrategy getPhaseStrategy() {
+        return phaseStrategy;
+    }
+
+    public void setPhaseStrategy(TriggerPhaseStrategy phaseStrategy) {
+        this.phaseStrategy = phaseStrategy;
     }
 }

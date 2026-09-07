@@ -37,7 +37,12 @@ public class PhaseStrategy {
             return new PhaseStrategy(predefinedActions);
         }
 
-        public PhaseStrategyBuilder addPhase(Function<Map<String, TriggerAnswer>, Boolean> action, long period){
+        // период не привязан к предыдущей фазе,
+        // то есть задается независимая величина
+        public PhaseStrategyBuilder addPhase(Function<Map<String,
+                                                     TriggerAnswer>,
+                                                     Boolean> action,
+                                             long period){
             predefinedActions.add(new Phase(action, period));
             return this;
         }

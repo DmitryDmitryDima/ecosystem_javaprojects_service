@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.external_messaging.test;
 
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadLock;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
@@ -86,6 +87,7 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     }
 
     @Ending(name = "end")
+    @ReadLock(time = 10)
     @MessageBefore
     @MessageAfter
     public void end(TestEvent event){

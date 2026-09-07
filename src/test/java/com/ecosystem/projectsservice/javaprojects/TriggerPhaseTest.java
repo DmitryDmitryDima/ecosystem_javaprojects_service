@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 @SpringBootTest
-public class PhaseTest {
+public class TriggerPhaseTest {
 
     @Test
     public void env(){

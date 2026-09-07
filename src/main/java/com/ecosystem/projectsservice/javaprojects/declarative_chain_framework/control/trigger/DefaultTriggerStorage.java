@@ -5,11 +5,19 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.mo
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 // todo метод очистки от expired
 public class DefaultTriggerStorage implements TriggerStorage {
 
 
     private OutboxModelRepository repository;
+
+
+
+
+
 
 
     private ConcurrentHashMap<UUID, ChainTrigger> storage
@@ -26,13 +34,16 @@ public class DefaultTriggerStorage implements TriggerStorage {
     public void registerTrigger(ChainTrigger trigger) {
 
 
+
+
+
         storage.put(trigger.getProcessId(), trigger);
 
 
-        // фазовый триггер должен зарегистрировать фазы
-        if (trigger instanceof PhasicChainTrigger phasicChainTrigger){
 
-        }
+        // если в триггере есть фазы, то их необходимо зарегистрировать
+
+        registerPhases(trigger);
 
 
 
@@ -50,6 +61,9 @@ public class DefaultTriggerStorage implements TriggerStorage {
         // phase trigger является наследником reactive trigger
         // его отличие в том, что при положительной реакции следующие фазы столкнутся с тем,
         // что триггер уже был закрыт, и не выполнятся
+
+
+
 
         boolean needPush = trigger.react(feed);
 
@@ -71,6 +85,8 @@ public class DefaultTriggerStorage implements TriggerStorage {
     @Override
     public void pushProcess(ChainTrigger trigger) {
 
+
+
         if (trigger.getPushStrategy() == PushStrategy.WAITING_FOR_SIGNAL){
             repository.receiveSignalWhileWaitingFor(trigger.getProcessId());
 
@@ -79,6 +95,97 @@ public class DefaultTriggerStorage implements TriggerStorage {
         else if (trigger.getPushStrategy() == PushStrategy.READLOCK){
             repository.receiveSignalWhileLocked(trigger.getProcessId());
         }
+
+    }
+
+    @Override
+    public void registerPhases(ChainTrigger trigger) {
+
+
+        if (trigger.getPhaseStrategy() == null) return;
+
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+
+
+            for (var phase:trigger.getPhaseStrategy().getActions()){
+
+                Runnable runnable = ()->{
+
+
+                    // задержка периода
+
+                    try {
+                        Thread.sleep(phase.getMsDelay());
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+
+                    // выполнение действия
+
+                    try {
+
+
+                        boolean phaseAnswer = false;
+
+                        synchronized (trigger){
+
+                            // ничего не делаем, если триггер был деактивирован
+                            if (!trigger.isActive()){
+                                return;
+                            }
+
+                            phaseAnswer =
+                                    phase.getAction().apply(trigger.getAllFeeds());
+
+                            if (phaseAnswer){
+
+                                trigger.deactivate();
+
+                            }
+                        }
+
+                        // выносим за synchronized блок
+
+                        if (phaseAnswer){
+                            pushProcess(trigger);
+                        }
+
+
+
+
+
+
+
+                    }
+
+                    catch (Exception e){
+                        e.printStackTrace();
+                    }
+
+
+
+                };
+
+
+                executor.submit(runnable);
+            }
+
+
+        }
+
+
+
+
+    }
+
+
+
+
+    @Override
+    public void clear() {
+
+        //
 
     }
 

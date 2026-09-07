@@ -16,4 +16,10 @@ public interface TriggerStorage {
     void pushProcess(ChainTrigger trigger);
 
 
+    void registerPhases(ChainTrigger trigger);
+
+
+    void clear();
+
+
 }
