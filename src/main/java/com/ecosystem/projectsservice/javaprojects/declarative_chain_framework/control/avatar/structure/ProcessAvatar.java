@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar;
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure;
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputMetadata;

@@ -3,9 +3,11 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_s
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputProcessor;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputProcessorDefault;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.storage.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.storage.TriggerStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.control.ProcessAvatarStorageSpringScheduledVersion;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.dead_letter.DeadLetterChannel;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.control.TriggerRuntimeStorageSpring;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.managers.dead_letter.DeadLetterChannelApplicationPublisher;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_manager.EventManager;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_manager.EventManagerDefault;
@@ -58,8 +60,15 @@ public class BasicConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public ProcessAvatarStorage runtimeStorage(){
+    public ProcessAvatarStorage avatarRuntimeStorage(){
         return new ProcessAvatarStorageSpringScheduledVersion();
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TriggerStorage triggerRuntimeStorage(OutboxModelRepository repository){
+        return new TriggerRuntimeStorageSpring(repository);
     }
 
 

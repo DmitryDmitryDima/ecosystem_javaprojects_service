@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output;
 
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatar;
 
 public interface OutputProcessor {
 

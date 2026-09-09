@@ -1,11 +1,9 @@
-package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger;
-
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.PhaseStrategy;
-import com.ecosystem.projectsservice.javaprojects.transport.process_control.triggers.TriggerAnswer;
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 
 public class TriggerPhaseStrategy {
@@ -13,12 +11,26 @@ public class TriggerPhaseStrategy {
 
     private List<TriggerPhase> actions;
 
+    private List<Future<?>> activePhases = new ArrayList<>();
+
     private TriggerPhaseStrategy(List<TriggerPhase> actions){
         this.actions = actions;
     }
 
     public List<TriggerPhase> getActions() {
         return actions;
+    }
+
+
+    public void addActivePhase(Future<?> submittedPhase){
+
+        activePhases.add(submittedPhase);
+    }
+
+    // посылаем cancel сигнал всем ожидающим фазам
+    public void cancelPhases(){
+
+        activePhases.forEach(phase->phase.cancel(true));
     }
 
 

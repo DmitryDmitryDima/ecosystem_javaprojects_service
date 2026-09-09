@@ -1,6 +1,9 @@
 package com.ecosystem.projectsservice.javaprojects.service.dashboard;
 
 
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.storage.TriggerStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.ChainTrigger;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.PushStrategy;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarsWithIndexes;
@@ -9,12 +12,13 @@ import com.ecosystem.projectsservice.javaprojects.external_messaging.context.con
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestData;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestEvent;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestModifiedChain;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.storage.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.service.processes.test_processes.TestChain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,6 +31,10 @@ public class DashboardService {
 
     @Autowired
     private OutboxModelRepository repo;
+
+
+    @Autowired
+    private TriggerStorage storage;
 
 
 
@@ -64,21 +72,10 @@ public class DashboardService {
 
 
 
-        if (!avatarStorage.getAll().isEmpty()){
-
-            avatarStorage.getAll().forEach(avatar -> {
-
-
-                UUID processId = avatar.getCorrelationId();
-
-                repo.receiveSignalWhileWaitingFor(processId);
 
 
 
-            });
 
-            return;
-        }
         UUID uuid = UUID.randomUUID();
 
 
@@ -106,6 +103,28 @@ public class DashboardService {
         testEvent.setExternalData(data);
 
         modifiedChain.init(testEvent);
+
+
+        ChainTrigger trigger = ChainTrigger
+
+                .builder()
+                .processId(uuid)
+                .expiration(Instant.now().plusSeconds(200))
+                .pushStrategy(PushStrategy.READLOCK)
+
+                .reaction((answers)->{
+
+                    System.out.println("reaction for "+answers);
+
+                    return false;
+                })
+
+
+                .construct();
+
+
+        storage.registerTrigger(trigger);
+
 
 
 

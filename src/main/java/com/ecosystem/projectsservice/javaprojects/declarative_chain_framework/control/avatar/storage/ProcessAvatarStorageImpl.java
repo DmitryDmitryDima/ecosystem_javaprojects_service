@@ -1,5 +1,9 @@
-package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar;
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.storage;
 
+
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatarIndex;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatarStatus;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;

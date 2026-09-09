@@ -4,7 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.an
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.message.ExternalMessage;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.message.message_category.ProjectEventFromSystemCategory;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.modified_chains.BroadcastableChain;

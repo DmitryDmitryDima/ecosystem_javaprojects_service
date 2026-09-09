@@ -1,8 +1,8 @@
 package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_manager;
 
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStatus;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatarStatus;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.storage.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.DeliveryStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.dead_letter.DeadLetter;

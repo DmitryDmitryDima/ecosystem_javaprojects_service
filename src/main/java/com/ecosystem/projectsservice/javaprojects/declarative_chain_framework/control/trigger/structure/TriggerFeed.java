@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger;
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure;
 
 
 import java.util.UUID;

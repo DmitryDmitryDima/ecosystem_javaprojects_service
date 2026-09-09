@@ -11,17 +11,17 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ch
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputResult;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.output_actions.*;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.*;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStatus;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.DeliveryStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.PerformanceStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.ChainOutput;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputMetadata;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputProcessor;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.storage.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarIndex;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatarIndex;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEventProcessingInfo;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
 

@@ -4,7 +4,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ch
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.CompensationResult;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.StepExtension;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatar;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.chain.structure.DeclarativeChainSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.broadcast.MessageBroadcast;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.context.ExternalContext;

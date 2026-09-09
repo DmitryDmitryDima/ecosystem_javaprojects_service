@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.transport.process_control.aggregation_and_rule;
 
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.ProcessAvatarIndex;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatarIndex;
 import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
 import lombok.Getter;
 

@@ -1,4 +1,4 @@
-package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger;
+package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -10,6 +10,10 @@ public class TriggerPhase {
 
     private long msDelay;
     private Function<Map<String, TriggerFeed>, Boolean> action;
+
+    private String phaseLog;
+
+    private Exception exception;
 
     public TriggerPhase(Function<Map<String, TriggerFeed>, Boolean> action,
                         long msDelay) {
@@ -31,5 +35,22 @@ public class TriggerPhase {
 
     public void setAction(Function<Map<String, TriggerFeed>, Boolean> action) {
         this.action = action;
+    }
+
+
+    public String getPhaseLog() {
+        return phaseLog;
+    }
+
+    public void setPhaseLog(String phaseLog) {
+        this.phaseLog = phaseLog;
+    }
+
+    public Exception getResultingException() {
+        return exception;
+    }
+
+    public void setResultingException(Exception exception) {
+        this.exception = exception;
     }
 }
