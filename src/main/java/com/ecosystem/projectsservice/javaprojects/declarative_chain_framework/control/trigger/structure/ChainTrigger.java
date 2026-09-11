@@ -2,6 +2,8 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.c
 
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,12 +41,12 @@ public class ChainTrigger {
     private UUID processId;
 
 
-    private ConcurrentHashMap<String, TriggerFeed> allFeeds
+    private ConcurrentHashMap<String, List<TriggerFeed>> allFeeds
             = new ConcurrentHashMap<>();
 
 
 
-    private Function<Map<String, TriggerFeed>, Boolean> onFeedReaction;
+    private Function<Map<String, List<TriggerFeed>>, Boolean> onFeedReaction;
 
     private TriggerPhaseStrategy phaseStrategy;
 
@@ -52,7 +54,7 @@ public class ChainTrigger {
     public ChainTrigger(UUID processId,
                         Instant expirationTime,
                         PushStrategy pushStrategy,
-                        Function<Map<String, TriggerFeed>, Boolean> onFeedReaction,
+                        Function<Map<String, List<TriggerFeed>>, Boolean> onFeedReaction,
                         TriggerPhaseStrategy phaseStrategy) {
         this.processId = processId;
         this.expirationTime = expirationTime;
@@ -86,7 +88,28 @@ public class ChainTrigger {
 
             if (!isActive())
                 throw new ReactionException("триггер был остановлен и больше не принимает ответов");
-            allFeeds.put(feed.getOrigin(), feed);
+
+
+
+
+            allFeeds.compute(feed.getOrigin(), (origin, list)->{
+
+                if (list == null){
+                    List<TriggerFeed> newList = new ArrayList<>();
+
+                    newList.add(feed);
+
+                    return newList;
+                }
+
+                else {
+                    list.add(feed);
+                    return list;
+                }
+
+
+
+            });
 
             if (onFeedReaction == null) return false; // стратегии может не быть,
         }
@@ -137,7 +160,7 @@ public class ChainTrigger {
 
 
     // snapshot
-    public Map<String, TriggerFeed> getAllFeeds() {
+    public Map<String, List<TriggerFeed>> getAllFeeds() {
         return Map.copyOf(allFeeds);
     }
 
@@ -149,11 +172,11 @@ public class ChainTrigger {
 
 
 
-    public Function<Map<String, TriggerFeed>, Boolean> getOnFeedReaction() {
+    public Function<Map<String, List<TriggerFeed>>, Boolean> getOnFeedReaction() {
         return onFeedReaction;
     }
 
-    public void setOnFeedReaction(Function<Map<String, TriggerFeed>, Boolean> onFeedReaction) {
+    public void setOnFeedReaction(Function<Map<String, List<TriggerFeed>>, Boolean> onFeedReaction) {
         this.onFeedReaction = onFeedReaction;
     }
 
@@ -204,13 +227,13 @@ public class ChainTrigger {
 
         private UUID processId;
 
-        private Function<Map<String, TriggerFeed>, Boolean> onFeedReaction;
+        private Function<Map<String, List<TriggerFeed>>, Boolean> onFeedReaction;
 
         private TriggerPhaseStrategy phaseStrategy;
 
 
 
-        public ChainTriggerBuilder reaction(Function<Map<String, TriggerFeed>, Boolean> reaction){
+        public ChainTriggerBuilder reaction(Function<Map<String, List<TriggerFeed>>, Boolean> reaction){
 
             this.onFeedReaction = reaction;
             return this;

@@ -46,7 +46,7 @@ public class TriggerPhaseStrategy {
             return new TriggerPhaseStrategy(predefinedActions);
         }
 
-        public TriggerPhaseStrategyBuilder addPhase(Function<Map<String, TriggerFeed>,
+        public TriggerPhaseStrategyBuilder addPhase(Function<Map<String, List<TriggerFeed>>,
                                                             Boolean> action,
                                                     long period){
 

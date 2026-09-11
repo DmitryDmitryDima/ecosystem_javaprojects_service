@@ -40,6 +40,11 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
         }
 
 
+        if (storage.containsKey(trigger.getProcessId())){
+            throw new TriggerStorageException("триггер для заданного id уже существует");
+        }
+
+
 
 
 
@@ -64,9 +69,7 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
         if (trigger==null) throw new ReactionException("триггер не найден");
 
 
-        // phase trigger является наследником reactive trigger
-        // его отличие в том, что при положительной реакции следующие фазы столкнутся с тем,
-        // что триггер уже был закрыт, и не выполнятся
+
 
 
 

@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure;
 
 
+import java.time.Instant;
 import java.util.UUID;
 
 // может быть наследован, а также может применяться как самостоятельный класс
@@ -14,6 +15,9 @@ public class TriggerFeed {
     private String origin;
 
     private UUID processId;
+
+
+    private final Instant arrivedAt = Instant.now();
 
 
     public TriggerFeed(UUID processId, String data, String origin) {
@@ -44,5 +48,15 @@ public class TriggerFeed {
 
     public void setProcessId(UUID processId) {
         this.processId = processId;
+    }
+
+    @Override
+    public String toString() {
+        return "TriggerFeed{" +
+                "data='" + data + '\'' +
+                ", origin='" + origin + '\'' +
+                ", processId=" + processId +
+                ", arrivedAt=" + arrivedAt +
+                '}';
     }
 }
