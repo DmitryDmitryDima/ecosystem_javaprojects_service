@@ -28,7 +28,7 @@ public abstract class BroadcastableChain <E extends ExternallyConnectedChainEven
 
 
 
-    private BroadcastEnvelope broadcastEnvelope = new BroadcastEnvelope();
+    private final BroadcastEnvelope broadcastEnvelope = new BroadcastEnvelope();
 
 
     @Autowired

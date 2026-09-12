@@ -30,7 +30,7 @@ public class TriggerPhaseStrategy {
     // посылаем cancel сигнал всем ожидающим фазам
     public void cancelPhases(){
 
-        activePhases.forEach(phase->phase.cancel(true));
+        activePhases.forEach(phase->phase.cancel(false));
     }
 
 

@@ -406,6 +406,9 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
             transaction.execute(status -> {
 
 
+                System.out.println("активируем waiting for signal шаг");
+
+
 
 
                 Optional<OutboxModelJpaEntity> processCheck = outboxModelJpaRepository
@@ -472,21 +475,39 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     public void receiveSignalWhileLocked(UUID processUUID) {
         try {
 
-            Optional<OutboxModelJpaEntity> check
-                    = outboxModelJpaRepository
-                    .findByStatusAndProcessIdForUpdate(OutboxStatus.WAITING, processUUID);
+
+            System.out.println("Активируем readlock шаг");
 
 
-            if (check.isEmpty()){
-                throw new IllegalStateException("ожидающий процесс не найден");
-            }
 
 
-            var entity = check.get();
+            transaction.execute(status -> {
 
-            entity.setAllReadVersion(entity.getAllReadVersion()+1);
 
-            entity.setLockedUntil(Instant.now());
+
+
+                Optional<OutboxModelJpaEntity> check
+                        = outboxModelJpaRepository
+                        .findByStatusAndProcessIdForUpdate(OutboxStatus.WAITING, processUUID);
+
+
+                if (check.isEmpty()){
+                    throw new IllegalStateException("ожидающий процесс не найден");
+                }
+
+
+                var entity = check.get();
+
+
+
+                entity.setAllReadVersion(entity.getAllReadVersion()+1);
+
+                entity.setLockedUntil(Instant.now());
+
+                return null;
+            });
+
+
 
 
 

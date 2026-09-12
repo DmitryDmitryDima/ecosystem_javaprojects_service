@@ -50,25 +50,38 @@ public class ChainTrigger {
 
     private TriggerPhaseStrategy phaseStrategy;
 
+    private FeedStrategy feedStrategy = FeedStrategy.OVERRIDE;
+
 
     public ChainTrigger(UUID processId,
                         Instant expirationTime,
                         PushStrategy pushStrategy,
                         Function<Map<String, List<TriggerFeed>>, Boolean> onFeedReaction,
-                        TriggerPhaseStrategy phaseStrategy) {
+                        TriggerPhaseStrategy phaseStrategy, FeedStrategy feedStrategy) {
         this.processId = processId;
         this.expirationTime = expirationTime;
         this.pushStrategy = pushStrategy;
         this.onFeedReaction = onFeedReaction;
         this.phaseStrategy = phaseStrategy;
+        this.feedStrategy = feedStrategy;
     }
 
-    public void deactivate(){
-        active.set(false);
+    public boolean deactivate(){
 
-        if (phaseStrategy!=null){
-            phaseStrategy.cancelPhases();
+        // метод compare and set меняет значение только в том случае, если ожидаемое равно true
+
+        // возвращает true, если замена состояния произошла
+        boolean deactivationSuccess = active.compareAndSet(true, false);
+
+        if (deactivationSuccess){
+            if (phaseStrategy!=null){
+                phaseStrategy.cancelPhases();
+            }
         }
+
+        return deactivationSuccess;
+
+
     }
 
 
@@ -81,39 +94,45 @@ public class ChainTrigger {
     }
 
 
-    public synchronized boolean react(TriggerFeed feed){
-
-
-        synchronized (this){
-
-            if (!isActive())
-                throw new ReactionException("триггер был остановлен и больше не принимает ответов");
+    public boolean react(TriggerFeed feed){
 
 
 
+        if (!isActive()){
 
-            allFeeds.compute(feed.getOrigin(), (origin, list)->{
-
-                if (list == null){
-                    List<TriggerFeed> newList = new ArrayList<>();
-
-                    newList.add(feed);
-
-                    return newList;
-                }
-
-                else {
-                    list.add(feed);
-                    return list;
-                }
-
-
-
-            });
-
-            if (onFeedReaction == null) return false; // стратегии может не быть,
+            throw new ReactionException("триггер был остановлен и больше не принимает ответов");
         }
 
+
+
+        // атомарное внесение ответа
+
+        allFeeds.compute(feed.getOrigin(), (origin, list)->{
+
+            if (list == null || feedStrategy == FeedStrategy.OVERRIDE){
+                List<TriggerFeed> newList = new ArrayList<>();
+
+                newList.add(feed);
+
+                return newList;
+            }
+
+            else {
+
+                List<TriggerFeed> newList = new ArrayList<>(list);
+                newList.add(feed);
+                return newList;
+            }
+
+
+
+        });
+
+        // выходим из реакции - стратегии нет
+        if (onFeedReaction == null) return false;
+
+
+        // реагируем, используя snapshot из getAllFeeds()
         boolean reaction;
 
         try {
@@ -125,18 +144,22 @@ public class ChainTrigger {
 
         }
 
-        synchronized (this){
+        // если реакция положительная - деактивируем триггер
+        if (reaction){
+            boolean deactivationAttempt = deactivate();
 
-            if (!isActive())
-                throw new ReactionException("триггер был остановлен во время обработки реакции");
-
-
-            if (reaction){
-                deactivate();
-            }
-
-            return reaction;
+            if (!deactivationAttempt) throw new ClosedTriggerException("реакция не зафиксирована, " +
+                    "так как триггер был деактивирован");
         }
+
+        return reaction;
+
+
+
+
+
+
+
 
 
     }
@@ -231,6 +254,8 @@ public class ChainTrigger {
 
         private TriggerPhaseStrategy phaseStrategy;
 
+        private FeedStrategy feedStrategy = FeedStrategy.OVERRIDE;
+
 
 
         public ChainTriggerBuilder reaction(Function<Map<String, List<TriggerFeed>>, Boolean> reaction){
@@ -266,6 +291,12 @@ public class ChainTrigger {
             return this;
         }
 
+        public ChainTriggerBuilder feedStrategy(FeedStrategy feedStrategy){
+            this.feedStrategy = feedStrategy;
+
+            return this;
+        }
+
 
         public ChainTrigger construct(){
 
@@ -273,7 +304,7 @@ public class ChainTrigger {
                     expirationTime,
                     pushStrategy,
                     onFeedReaction,
-                    phaseStrategy);
+                    phaseStrategy, feedStrategy);
 
         }
 

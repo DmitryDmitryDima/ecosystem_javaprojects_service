@@ -2,10 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.service.dashboard;
 
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.storage.TriggerStorage;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.ChainTrigger;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.PushStrategy;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.TriggerFeed;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.TriggerPhaseStrategy;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.*;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarsWithIndexes;
@@ -81,18 +78,10 @@ public class DashboardService {
 
 
 
-        UUID genuuid = UUID.fromString("f47ac10b-58cc-4372-a567-0e02b2c3d479");
-
-        try {
-            storage.feedTrigger(new TriggerFeed(genuuid, "Hello","dima"));
-        }
-
-        catch (Exception e){
-            e.printStackTrace();
-        }
 
 
-        /*
+
+
 
         UUID uuid = UUID.randomUUID();
 
@@ -122,41 +111,10 @@ public class DashboardService {
 
         modifiedChain.init(testEvent);
 
-         */
 
 
-        TriggerPhaseStrategy strategy = TriggerPhaseStrategy.constructStrategy()
-
-                .addPhase((answers)->{
-                    System.out.println("phase 1");
-                    System.out.println(answers);
-                    return false;
-                }, 6_000)
-
-                .addPhase((answers)->{
-                    System.out.println("phase 2");
-                    System.out.println(answers);
-                    return false;
-                }, 8_000)
-
-                .getStrategy();
 
 
-        ChainTrigger trigger = ChainTrigger
-
-                .builder()
-                .processId(genuuid)
-                .expiration(Instant.now().plusSeconds(200))
-                .pushStrategy(PushStrategy.WAITING_FOR_SIGNAL)
-                .phaseStrategy(strategy)
-                .reaction((answers)->{
-                    System.out.println("reaction for "+answers);
-                    return false;
-                })
-                .construct();
-
-
-        storage.registerTrigger(trigger);
 
 
 

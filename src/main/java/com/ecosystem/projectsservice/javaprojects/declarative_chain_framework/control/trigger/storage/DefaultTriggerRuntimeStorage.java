@@ -16,7 +16,8 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
 
     private OutboxModelRepository repository;
 
-    private final ExecutorService threadManager = Executors.newVirtualThreadPerTaskExecutor();
+    private final ExecutorService threadManager
+            = Executors.newVirtualThreadPerTaskExecutor();
 
 
     private final ConcurrentHashMap<UUID, ChainTrigger> storage
@@ -76,8 +77,9 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
 
         boolean needPush = trigger.react(feed);
 
+        // на данном этапе триггер гарантированно деактивирован реакцией
         if (needPush){
-            pushProcess(trigger);
+            pushProcess(trigger.getProcessId(), trigger.getPushStrategy());
         }
 
 
@@ -92,17 +94,22 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
     // на этой базе легко сделать персистентность
 
     @Override
-    public void pushProcess(ChainTrigger trigger) {
+    public void pushProcess(UUID processId, PushStrategy strategy) {
 
 
+        try {
+            if (strategy == PushStrategy.WAITING_FOR_SIGNAL) {
 
-        if (trigger.getPushStrategy() == PushStrategy.WAITING_FOR_SIGNAL){
-            repository.receiveSignalWhileWaitingFor(trigger.getProcessId());
 
+                repository.receiveSignalWhileWaitingFor(processId);
+
+            } else if (strategy == PushStrategy.READLOCK) {
+                repository.receiveSignalWhileLocked(processId);
+            }
         }
 
-        else if (trigger.getPushStrategy() == PushStrategy.READLOCK){
-            repository.receiveSignalWhileLocked(trigger.getProcessId());
+        catch (Exception e){
+            throw new TriggerStorageException("Ошибка push транзакции: "+e.getMessage());
         }
 
     }
@@ -114,7 +121,18 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
         if (trigger.getPhaseStrategy() == null) return;
 
 
+
+
+
         for (var phase:trigger.getPhaseStrategy().getActions()){
+
+
+
+            Executor delayedExecutor
+                    = CompletableFuture
+                    .delayedExecutor(phase.getMsDelay(), TimeUnit.MILLISECONDS, threadManager);
+
+
 
             Runnable runnable = ()->{
 
@@ -122,40 +140,22 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
                 // задержка периода
 
                 try {
-                    Thread.sleep(phase.getMsDelay());
-
-                    if (!trigger.isActive()){
-                        return;
-                    }
 
 
+                    if (!trigger.isActive()) return;
 
 
+                    // выполняем фазу, используя snapshot
                     boolean phaseAnswer = phase.getAction().apply(trigger.getAllFeeds());
 
-                    synchronized (trigger){
-                        if (!trigger.isActive()){
-                            return;
-                        }
+                    if (phaseAnswer){
+                        boolean deactivationResult = trigger.deactivate();
 
-                        if (phaseAnswer){
-                            trigger.deactivate();
-
-
+                        if (deactivationResult){
+                            pushProcess(trigger.getProcessId(), trigger.getPushStrategy());
                         }
                     }
 
-                    // вызов вне лока
-                    pushProcess(trigger);
-
-
-
-
-
-
-
-
-
 
 
 
@@ -164,17 +164,7 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
 
 
                 }
-                catch (InterruptedException e){
-                    String log = "фаза прервана";
 
-                    phase.setPhaseLog(log);
-
-                    Thread.currentThread().interrupt();
-
-
-
-
-                }
                 catch (Exception e) {
 
                     String log = "Ошибка фазы: "+e.getMessage();
@@ -191,8 +181,10 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
 
             };
 
+            Future<?> future = CompletableFuture.runAsync(runnable, delayedExecutor);
 
-            Future<?> future = threadManager.submit(runnable);
+
+
 
             trigger.submitPhase(future);
 
@@ -212,6 +204,17 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
     }
 
 
+    // удаляем триггер из хранилища
+    @Override
+    public void removeTrigger(UUID uuid) {
+        ChainTrigger trigger = storage.remove(uuid);
+
+        if (trigger!=null){
+
+            trigger.deactivate();
+
+        }
+    }
 
 
     @Override
@@ -226,6 +229,8 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
 
                 entry.getValue().deactivate();
 
+                return true;
+
 
             }
 
@@ -236,17 +241,7 @@ public class DefaultTriggerRuntimeStorage implements TriggerStorage {
 
 
 
-        storage.forEach((uuid, trigger) -> {
 
-            // если триггер просрочен, он уходит из хранилища
-            if (trigger.isExpired()){
-
-                trigger.deactivate();
-
-                storage.remove(uuid);
-            }
-
-        });
 
     }
 
