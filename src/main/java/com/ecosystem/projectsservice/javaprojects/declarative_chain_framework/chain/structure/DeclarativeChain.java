@@ -654,6 +654,18 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                 compensationAfterStopScenario(event, avatar);
             }
 
+
+            /*
+
+
+
+
+
+
+
+
+             */
+
             else {
                 stepExecutionScenario(event, avatar);
             }
@@ -725,6 +737,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             Object[] args = new Object[parameterTypes.length];
 
+
+            // готовим руль
+            ChainRudder rudder = new ChainRudder();
+
             for (int i = 0; i<parameterTypes.length; i++){
 
                 Class<?> parameterType = parameterTypes[i];
@@ -736,6 +752,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                 else if (parameterType == ProcessAvatar.class){
 
                     args[i] = avatar;
+                }
+
+                else if (parameterType == ChainRudder.class){
+                    args[i] = rudder;
                 }
 
                 // неизвестный тип
@@ -893,6 +913,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         info.setPerformanceStatus(PerformanceStatus.STEP_PERFORMED);
         info.setCurrentStep(next.getName());
         info.setCurrentRetry(0); // сбрасываем счетчик на случай, если мы вошли сюда после retry фазы
+
+
+        // TODO ПРОВЕРКА НА превышение LOOP
 
 
         OutputMetadata<?> meta = new OutputMetadata<>();

@@ -5,6 +5,9 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ev
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.PerformanceStatus;
 import lombok.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class ChainEventProcessingInfo {
 
@@ -24,6 +27,10 @@ public class ChainEventProcessingInfo {
 
     // что произошло с процессом в момент создания outbox ивента
     private PerformanceStatus performanceStatus;
+
+    // показывает, сколько раз какой шаг был повторен
+    // шаг заносится сюда только будучи помеченным аннотацией loop
+    private Map<String, Long> loopStat;
 
 
     public ChainEventProcessingInfo(final long currentRetry,

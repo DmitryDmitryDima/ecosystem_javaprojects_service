@@ -1,6 +1,7 @@
 package com.ecosystem.projectsservice.javaprojects.external_messaging.test;
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadLock;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.Retry;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.WaitingForSignal;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
@@ -9,6 +10,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.co
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.storage.TriggerStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.ChainTrigger;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.PushStrategy;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.TriggerFeed;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.TriggerPhaseStrategy;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.message.ExternalMessage;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.message.message_category.ProjectEventFromSystemCategory;
@@ -25,6 +27,10 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -38,6 +44,10 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     @Autowired
     private TriggerStorage triggers;
+
+
+    private final ExecutorService executor
+            = Executors.newVirtualThreadPerTaskExecutor();
 
 
     @Override
@@ -70,16 +80,36 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
 
 
+        /*
+
+
+
 
 
         TriggerPhaseStrategy strategy = TriggerPhaseStrategy.constructStrategy()
 
                 .addPhase((answers-> {
-                    System.out.println("Тестовая фаза 1 - просто проверка");
+                    System.out.println("Тестовая фаза 1 ");
 
-                    return false;
+                    boolean found = false;
 
-                }), 2_000)
+                    for (var feed:answers.values()){
+
+                        if (feed.getFirst().getData().equals("hello")){
+                            found = true;
+
+                            System.out.println("условие пуша выполнено - пушим");
+                        }
+
+                    }
+
+                    if (!found){
+                        System.out.println("условие для пуша не выполнено");
+                    }
+
+                    return found;
+
+                }), 5_000)
 
 
 
@@ -87,10 +117,26 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
                 .addPhase((answers)->{
 
-                    System.out.println("Тестовая фаза 2 - активация");
+                    System.out.println("Тестовая фаза 2 ");
 
-                    return true;
-                }, 3_000)
+                    boolean found = false;
+
+                    for (var feed:answers.values()){
+
+                        if (feed.getFirst().getData().equals("hello")){
+                            found = true;
+
+                            System.out.println("условие пуша выполнено - пушим");
+                        }
+
+                    }
+
+                    if (!found){
+                        System.out.println("условие для пуша не выполнено");
+                    }
+
+                    return found;
+                }, 10_000)
 
 
 
@@ -104,6 +150,11 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
                 .processId(event.getProcessId())
                 .expiration(Instant.now().plusSeconds(50))
                 .phaseStrategy(strategy)
+                .reaction(answers->{
+                    System.out.println("reaction received");
+
+                    return false;
+                })
 
                 .construct();
 
@@ -115,16 +166,71 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
 
 
+
+
+
         event.setMessage("message from op");
+
+
+        CompletableFuture.delayedExecutor(3000, TimeUnit.MILLISECONDS, executor).execute(
+
+                ()->{
+
+                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
+                            "hello1", "dima"));
+                }
+        );
+
+        CompletableFuture.delayedExecutor(4000,
+                TimeUnit.MILLISECONDS, executor).execute(
+
+                ()->{
+
+                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
+                            "hello2", "dima1"));
+
+
+                }
+        );
+
+        CompletableFuture.delayedExecutor(10000,
+                TimeUnit.MILLISECONDS, executor).execute(
+
+                ()->{
+
+                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
+                            "hello", "dima"));
+
+
+                }
+        );
+
+         */
+
+
+
+
+
+
 
 
     }
 
     @Step(name = "middle", next = "end")
     @MessageAfter
-    @ReadLock(time = 10)
+    @Retry(maxCount = 5)
+    //@ReadLock(time = 50)
     public void middle(TestEvent event,
                        ProcessAvatar avatar){
+
+
+        System.out.println(event.getProcessingInfo().getPerformanceStatus());
+
+        throw new IllegalStateException("fuck!");
+
+
+
+        /*
 
 
         System.out.println("middle step");
@@ -137,14 +243,14 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
         TriggerPhaseStrategy strategy = TriggerPhaseStrategy.constructStrategy()
 
                 .addPhase((answers-> {
-                    System.out.println("Тестовая фаза 1 - активируем waiting for цепь");
+                    System.out.println("Тестовая фаза 1");
 
-                    return true;
+                    return false;
 
                 }), 2_000)
 
                 .addPhase((answers-> {
-                    System.out.println("Тестовая фаза 2 - по идее не сработает из за cancel");
+                    System.out.println("Тестовая фаза 2 ");
 
                     return false;
 
@@ -163,10 +269,63 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
                 .expiration(Instant.now().plusSeconds(50))
                 .phaseStrategy(strategy)
 
+                .reaction((answers)->{
+
+                    System.out.println("instant reaction");
+
+                    boolean found = false;
+
+                    for (var feed:answers.values()){
+
+                        if (feed.getFirst().getData().equals("hello")){
+
+                            System.out.println("положительная реакция");
+
+                            found = true;
+
+
+                        }
+                    }
+
+                    if (!found){
+                        System.out.println("отрицательная реакция");
+                    }
+
+                    return found;
+
+                })
+
                 .construct();
 
 
         triggers.registerTrigger(trigger);
+
+
+        CompletableFuture.delayedExecutor(10000,
+                TimeUnit.MILLISECONDS, executor).execute(
+
+                ()->{
+
+                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
+                            "hello1", "dima"));
+
+
+                }
+        );
+
+        CompletableFuture.delayedExecutor(12000,
+                TimeUnit.MILLISECONDS, executor).execute(
+
+                ()->{
+
+                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
+                            "hello", "dima"));
+
+
+                }
+        );
+
+         */
 
 
 
@@ -197,7 +356,7 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     }
 
     @Ending(name = "end")
-    @WaitingForSignal(time = 10)
+    //@WaitingForSignal(time = 30)
     @MessageBefore
     @MessageAfter
     public void end(TestEvent event){
