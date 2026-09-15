@@ -5,12 +5,15 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.an
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.common.ChainInitException;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.common.ChainPreparationException;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.common.ChainStepExecutionException;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.common.StepStoppedDuringExecutionException;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.StepCountedTime;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.utils.ChainUtils;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputResult;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.output_actions.*;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.*;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatarStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.DeliveryStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.PerformanceStatus;
@@ -636,6 +639,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         }
 
 
+
+
+
         // успешное чтение
         else if (deliveryStatus == DeliveryStatus.SUCCESS_READING){
 
@@ -643,7 +649,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             // stopped && crashed - компенсационные сценарии
 
-            if (performanceStatus == PerformanceStatus.CRASHED){
+            if (performanceStatus == PerformanceStatus.CRASHED ||
+                    performanceStatus == PerformanceStatus.LOOP_OVERFLOW
+                    || performanceStatus == PerformanceStatus.INVALID_PATH){
                 compensationAfterCrashScenario(event, avatar);
             }
 
@@ -720,6 +728,10 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
         avatar.stepOnStart(step.getName());
 
 
+        // готовим руль
+        ChainRudder rudder = new ChainRudder();
+
+
 
         try {
 
@@ -738,8 +750,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             Object[] args = new Object[parameterTypes.length];
 
 
-            // готовим руль
-            ChainRudder rudder = new ChainRudder();
+
 
             for (int i = 0; i<parameterTypes.length; i++){
 
@@ -783,6 +794,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
+
+
         }
         catch (Exception exception){
 
@@ -791,7 +804,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             // что процесс был прерван в момент выполнения
             if (exception.getCause() instanceof StepStoppedDuringExecutionException){
 
-                stepStopDuringExecutionScenario(event, avatar, step);
+                stepStopDuringExecutionScenario(event, avatar, step, rudder);
 
                 return;
 
@@ -801,7 +814,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
                 // ошибка бизнес логики.
 
-                stepExecutionErrorScenario(event, avatar,step, exception);
+                stepExecutionErrorScenario(event, avatar, step, exception, rudder);
 
 
 
@@ -820,20 +833,27 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
         if (avatar.getStatus().get() == ProcessAvatarStatus.STOPPED){
-            stepStopAfterStepExecutionScenario(event, avatar, step);
+            stepStopAfterStepExecutionScenario(event, avatar, step, rudder);
             return;
         }
+
+
+
+
 
         // success scenario
 
         // если шаг был конечным в цепи
         if (step == ending){
-            stepExecutionSuccessEndingScenario(event, avatar, step);
+
+            // rudder может переопределить следующий шаг
+
+            stepExecutionSuccessEndingScenario(event, avatar, step, rudder);
         }
 
         // промежуточный шаг
         else {
-            stepExecutionSuccessStepScenario(event, avatar, step);
+            stepExecutionSuccessStepScenario(event, avatar, step, rudder);
         }
 
 
@@ -853,7 +873,20 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     // todo хук завершения всего процесса
     protected void stepExecutionSuccessEndingScenario(E event,
                                                       ProcessAvatar avatar,
-                                                      ChainStep step){
+                                                      ChainStep step,
+                                                      ChainRudder rudder){
+
+
+        // rudder переопределяет поведение, указав следующий шаг
+        if (rudder.getNext()!=null){
+
+            stepExecutionSuccessStepScenario(event, avatar, step, rudder);
+
+            return;
+
+        }
+
+
 
 
 
@@ -895,24 +928,42 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     protected void stepExecutionSuccessStepScenario(E event,
                                                     ProcessAvatar avatar,
-                                                    ChainStep step){
+                                                    ChainStep step,
+                                                    ChainRudder rudder){
 
         // не забываем сбросить счетчик ретраев для следующего шага
 
         // вычисляем next шаг.
-        // todo Учитываем, что при ошибке публикации в ивенте в current будет именно следующий шаг
+        // Учитываем, что при ошибке публикации в ивенте в current будет именно следующий шаг
 
 
-        ChainStep next = findStepByName(step.getNext());
+        // учитываем, что rudder может переопределить следующий шаг
+
+        String stepName = rudder.getNext() == null?step.getNext():rudder.getNext();
+
+        ChainStep next = findStepByName(stepName);
+
+
+
 
         ChainEventProcessingInfo info = event.getProcessingInfo();
 
-        if (next == null) throw new ChainScenarioException("следующий шаг не найден после "+step.getName());
+        // подвид crash - не найден следующий шаг
+        if (next == null) {
+
+            chainExecutionInvalidPathErrorScenario(event, avatar, step, stepName, rudder);
+
+
+            return;
+        }
+
 
 
         info.setPerformanceStatus(PerformanceStatus.STEP_PERFORMED);
         info.setCurrentStep(next.getName());
         info.setCurrentRetry(0); // сбрасываем счетчик на случай, если мы вошли сюда после retry фазы
+
+
 
 
         // TODO ПРОВЕРКА НА превышение LOOP
@@ -961,11 +1012,114 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     }
 
+    // критическая ошибка цепи - превышен loop счетчик
+    // todo добавить rudder override
+    protected void chainExecutionLoopOverflowScenario(E event,
+                                                      ProcessAvatar avatar,
+                                                      ChainStep step,
+                                                      ChainRudder rudder
+                                                      )
+
+    {
+
+        event.getProcessingInfo().setPerformanceStatus(PerformanceStatus.LOOP_OVERFLOW);
+
+        event.setMessage("критическая ошибка - превышено допустимое число итераций для "+step.getName());
+
+        // для компенсационного ивента выставляются дефолтные периоды времени
+        StepCountedTime times = ChainUtils.countDefaultTimes();
+
+
+
+        ChainOutput output = ChainOutput.builder()
+                .event(event)
+                .status(OutboxStatus.WAITING)
+                .last_update(times.getLastUpdate())
+                .readExpiration(times.getCurrentReadExpiration())
+                .performanceExpirationPeriod(
+                        times.getDuration())
+
+                .readLockPeriod(times.getReadLockPeriod())
+                .lockUntil(times.getLockUntil())
+                .readExpirationPeriod(times.getReadExpirationPeriod())
+                .build();
+
+
+
+        OutputMetadata<?> metadata = new OutputMetadata<>();
+
+        // не забываем проставить тип действия для процессора
+        metadata.setAction(new ChainCrash());
+
+
+        onPublishChainOutput(output,
+                metadata,
+                avatar);
+
+
+
+
+    }
+
+    // критическая ошибка цепи - не найден следующий шаг
+
+    // todo добавить rudder override
+    protected void chainExecutionInvalidPathErrorScenario(E event,
+                                                          ProcessAvatar avatar,
+                                                          ChainStep step,
+                                                          String unknownStep,
+                                                          ChainRudder rudder){
+
+        event.getProcessingInfo().setPerformanceStatus(PerformanceStatus.INVALID_PATH);
+
+        event.setMessage("Критическая ошибка - не найден шаг для выполнения - "
+                +unknownStep+" Вызывающий шаг - "+step.getName());
+
+
+        // для компенсационного ивента выставляются дефолтные периоды времени
+        StepCountedTime times = ChainUtils.countDefaultTimes();
+
+
+
+        ChainOutput output = ChainOutput.builder()
+                .event(event)
+                .status(OutboxStatus.WAITING)
+                .last_update(times.getLastUpdate())
+                .readExpiration(times.getCurrentReadExpiration())
+                .performanceExpirationPeriod(
+                        times.getDuration())
+
+                .readLockPeriod(times.getReadLockPeriod())
+                .lockUntil(times.getLockUntil())
+                .readExpirationPeriod(times.getReadExpirationPeriod())
+                .build();
+
+
+
+        OutputMetadata<?> metadata = new OutputMetadata<>();
+
+        // не забываем проставить тип действия для процессора
+        metadata.setAction(new ChainCrash());
+
+
+        onPublishChainOutput(output,
+                metadata,
+                avatar);
+
+
+
+    }
+
+
+
+
+
     // выполнение шага завершилось ошибкой
     protected void stepExecutionErrorScenario(E event,
                                               ProcessAvatar avatar,
                                               ChainStep step,
-                                              Exception e){
+                                              Exception e,
+                                              ChainRudder rudder){
 
 
         var info = event.getProcessingInfo();
@@ -979,9 +1133,30 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
+
+
+
+
         // количество ретраев исчерпано
         // - процесс получает статус crashed, генерируется компенсационный ивент
         if (info.getCurrentRetry()>=step.getRetry()){
+
+
+
+            // проверяем, перезаписывает ли rudder сценарий onCrash?
+
+            if (rudder.getOnStepCrash()!=null){
+
+
+                // дублируем в поле next, адаптируя руль к сценарию успеха
+                rudder.setNext(rudder.getOnStepCrash());
+
+                stepExecutionSuccessStepScenario(event, avatar, step, rudder);
+
+                return;
+            }
+
+
 
             info.setPerformanceStatus(PerformanceStatus.CRASHED);
 
@@ -1093,7 +1268,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
     // если пользователь не использовал мониторинг аватара при выполнении шага
     protected void stepStopAfterStepExecutionScenario(E event,
                                                       ProcessAvatar avatar,
-                                                      ChainStep step
+                                                      ChainStep step, ChainRudder rudder
                                                                ){
 
         event.setMessage("Остановка процесса после выполнения шага "+event.getProcessingInfo().getCurrentStep());
@@ -1145,7 +1320,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     protected void stepStopDuringExecutionScenario(E event,
                                                    ProcessAvatar avatar,
-                                                   ChainStep step){
+                                                   ChainStep step,
+                                                   ChainRudder rudder){
 
         event.setMessage("Остановка процесса во время шага "+event.getProcessingInfo().getCurrentStep());
 

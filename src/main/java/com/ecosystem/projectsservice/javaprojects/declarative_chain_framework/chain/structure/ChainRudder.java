@@ -11,8 +11,20 @@ public class ChainRudder {
     private String next;
 
 
-    // данное поле позволяет проигнорировать crash, перенаправив цепь на указанный шаг
-    private String onCrash;
+    // данное поле позволяет проигнорировать ошибку в шаге,
+    // перенаправив цепь на вручную указанный шаг
+    private String onStepCrash;
+
+
+    // если возникла ошибка invalid path, то можно вручную указать другой шаг
+    // пример - ai выдал недействительный шаг
+    private String onInvalidPath;
+
+    // позволяет указать шаг, идущий после loop overflow - для того, чтобы обойти дефолтную компенсацию
+    private String onLoopOverflow;
+
+
+
 
 
     public String getNext() {
@@ -23,11 +35,28 @@ public class ChainRudder {
         this.next = next;
     }
 
-    public String getOnCrash() {
-        return onCrash;
+    public String getOnStepCrash() {
+        return onStepCrash;
     }
 
-    public void setOnCrash(String onCrash) {
-        this.onCrash = onCrash;
+    public void setOnStepCrash(String onCrash) {
+        this.onStepCrash = onCrash;
+    }
+
+
+    public String getOnInvalidPath() {
+        return onInvalidPath;
+    }
+
+    public void setOnInvalidPath(String onInvalidPath) {
+        this.onInvalidPath = onInvalidPath;
+    }
+
+    public String getOnLoopOverflow() {
+        return onLoopOverflow;
+    }
+
+    public void setOnLoopOverflow(String onLoopOverflow) {
+        this.onLoopOverflow = onLoopOverflow;
     }
 }

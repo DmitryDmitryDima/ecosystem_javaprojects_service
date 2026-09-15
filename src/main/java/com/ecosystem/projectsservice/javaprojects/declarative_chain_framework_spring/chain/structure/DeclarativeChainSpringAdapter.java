@@ -3,7 +3,7 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_s
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.DeclarativeChain;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_registry.EventRegistry;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputProcessor;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.ChainPreparationException;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.common.ChainPreparationException;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.storage.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.ChainEvent;
 import jakarta.annotation.PostConstruct;

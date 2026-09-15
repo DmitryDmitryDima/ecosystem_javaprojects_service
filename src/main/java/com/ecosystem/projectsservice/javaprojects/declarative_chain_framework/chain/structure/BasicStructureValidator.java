@@ -1,6 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure;
 
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.InvalidStructureException;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.exception.common.InvalidStructureException;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.step.ChainStep;
 
 import java.util.Map;

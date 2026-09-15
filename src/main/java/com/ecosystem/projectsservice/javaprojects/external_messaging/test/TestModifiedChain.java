@@ -6,6 +6,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.an
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Ending;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Opening;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.order.Step;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.structure.ChainRudder;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.structure.ProcessAvatar;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.storage.TriggerStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.ChainTrigger;
@@ -73,139 +74,18 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     @Opening(name = "op", next = "middle")
     @MessageBefore
-    public void op(TestEvent event){
+    public void op(TestEvent event, ChainRudder rudder){
 
 
         System.out.println("opening step");
 
-
-
-        /*
-
+        rudder.setOnStepCrash("end");
 
 
 
-
-        TriggerPhaseStrategy strategy = TriggerPhaseStrategy.constructStrategy()
-
-                .addPhase((answers-> {
-                    System.out.println("Тестовая фаза 1 ");
-
-                    boolean found = false;
-
-                    for (var feed:answers.values()){
-
-                        if (feed.getFirst().getData().equals("hello")){
-                            found = true;
-
-                            System.out.println("условие пуша выполнено - пушим");
-                        }
-
-                    }
-
-                    if (!found){
-                        System.out.println("условие для пуша не выполнено");
-                    }
-
-                    return found;
-
-                }), 5_000)
+        throw new IllegalStateException("error");
 
 
-
-
-
-                .addPhase((answers)->{
-
-                    System.out.println("Тестовая фаза 2 ");
-
-                    boolean found = false;
-
-                    for (var feed:answers.values()){
-
-                        if (feed.getFirst().getData().equals("hello")){
-                            found = true;
-
-                            System.out.println("условие пуша выполнено - пушим");
-                        }
-
-                    }
-
-                    if (!found){
-                        System.out.println("условие для пуша не выполнено");
-                    }
-
-                    return found;
-                }, 10_000)
-
-
-
-                .getStrategy();
-
-
-        ChainTrigger trigger = ChainTrigger
-                .builder()
-
-                .pushStrategy(PushStrategy.READLOCK)
-                .processId(event.getProcessId())
-                .expiration(Instant.now().plusSeconds(50))
-                .phaseStrategy(strategy)
-                .reaction(answers->{
-                    System.out.println("reaction received");
-
-                    return false;
-                })
-
-                .construct();
-
-
-        triggers.registerTrigger(trigger);
-
-
-
-
-
-
-
-
-
-        event.setMessage("message from op");
-
-
-        CompletableFuture.delayedExecutor(3000, TimeUnit.MILLISECONDS, executor).execute(
-
-                ()->{
-
-                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
-                            "hello1", "dima"));
-                }
-        );
-
-        CompletableFuture.delayedExecutor(4000,
-                TimeUnit.MILLISECONDS, executor).execute(
-
-                ()->{
-
-                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
-                            "hello2", "dima1"));
-
-
-                }
-        );
-
-        CompletableFuture.delayedExecutor(10000,
-                TimeUnit.MILLISECONDS, executor).execute(
-
-                ()->{
-
-                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
-                            "hello", "dima"));
-
-
-                }
-        );
-
-         */
 
 
 
@@ -226,106 +106,11 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
         System.out.println(event.getProcessingInfo().getPerformanceStatus());
 
-        throw new IllegalStateException("fuck!");
-
-
-
-        /*
-
-
         System.out.println("middle step");
 
 
-        triggers.removeTrigger(event.getProcessId());
 
 
-
-        TriggerPhaseStrategy strategy = TriggerPhaseStrategy.constructStrategy()
-
-                .addPhase((answers-> {
-                    System.out.println("Тестовая фаза 1");
-
-                    return false;
-
-                }), 2_000)
-
-                .addPhase((answers-> {
-                    System.out.println("Тестовая фаза 2 ");
-
-                    return false;
-
-                }), 3_000)
-
-
-
-                .getStrategy();
-
-
-        ChainTrigger trigger = ChainTrigger
-                .builder()
-
-                .pushStrategy(PushStrategy.WAITING_FOR_SIGNAL)
-                .processId(event.getProcessId())
-                .expiration(Instant.now().plusSeconds(50))
-                .phaseStrategy(strategy)
-
-                .reaction((answers)->{
-
-                    System.out.println("instant reaction");
-
-                    boolean found = false;
-
-                    for (var feed:answers.values()){
-
-                        if (feed.getFirst().getData().equals("hello")){
-
-                            System.out.println("положительная реакция");
-
-                            found = true;
-
-
-                        }
-                    }
-
-                    if (!found){
-                        System.out.println("отрицательная реакция");
-                    }
-
-                    return found;
-
-                })
-
-                .construct();
-
-
-        triggers.registerTrigger(trigger);
-
-
-        CompletableFuture.delayedExecutor(10000,
-                TimeUnit.MILLISECONDS, executor).execute(
-
-                ()->{
-
-                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
-                            "hello1", "dima"));
-
-
-                }
-        );
-
-        CompletableFuture.delayedExecutor(12000,
-                TimeUnit.MILLISECONDS, executor).execute(
-
-                ()->{
-
-                    triggers.feedTrigger(new TriggerFeed(event.getProcessId(),
-                            "hello", "dima"));
-
-
-                }
-        );
-
-         */
 
 
 
