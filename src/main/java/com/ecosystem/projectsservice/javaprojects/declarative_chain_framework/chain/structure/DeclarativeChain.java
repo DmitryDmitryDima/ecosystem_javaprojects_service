@@ -277,6 +277,11 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
             ReadExpiration readExpirationPeriod = method.getAnnotation(ReadExpiration.class);
             ReadLock readLockPeriod = method.getAnnotation(ReadLock.class);
 
+            Loop loop = method.getAnnotation(Loop.class);
+
+
+
+
 
             ChainStep chainStep = new ChainStep();
 
@@ -307,6 +312,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
             chainStep.setReadExpiration(readExpirationPeriod == null? null:readExpirationPeriod.time());
             chainStep.setReadExpirationUnit(readExpirationPeriod == null? null:readExpirationPeriod.timeUnit());
+
+
+            chainStep.setMaxIterations(loop == null? 1L:loop.iterations());
 
 
 
@@ -390,7 +398,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     }
 
-    protected void afterCompensationHook(E event, ProcessAvatar avatar, CompensationResult result){
+    protected void afterCompensationHook(E event,
+                                         ProcessAvatar avatar,
+                                         CompensationResult result){
 
     }
 
@@ -542,8 +552,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-     // todo реализовать возможность создавать шаги с аватаром в качестве параметра
-          (альтернатива геттеру)
+
 
     */
 
@@ -706,6 +715,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         ChainStep step = findStepByName(info.getCurrentStep());
 
+        // todo перехватывается ли сценарий, когда неправильный шаг пришел от источника истины - БД?
         if (step == null) throw new ChainStepExecutionException("не найден шаг для выполнения");
 
 
@@ -730,6 +740,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // готовим руль
         ChainRudder rudder = new ChainRudder();
+
+
+
 
 
 
@@ -931,6 +944,29 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                                                     ChainStep step,
                                                     ChainRudder rudder){
 
+
+
+
+        ChainEventProcessingInfo info = event.getProcessingInfo();
+
+        Map<String, Long> iterations = info.getIterationsStat();
+
+        // обновляем счетчик итераций
+
+        iterations
+                .put(step.getName(),
+                        iterations.getOrDefault(step.getName(), 0L)+1);
+
+
+
+
+
+
+
+
+
+
+
         // не забываем сбросить счетчик ретраев для следующего шага
 
         // вычисляем next шаг.
@@ -939,23 +975,156 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
         // учитываем, что rudder может переопределить следующий шаг
 
-        String stepName = rudder.getNext() == null?step.getNext():rudder.getNext();
-
-        ChainStep next = findStepByName(stepName);
 
 
 
+        String stepNameCandidate = rudder.getNext() == null?step.getNext():rudder.getNext();
 
-        ChainEventProcessingInfo info = event.getProcessingInfo();
+        ChainStep next = findStepByName(stepNameCandidate);
+
+
+
+
+
 
         // подвид crash - не найден следующий шаг
+        // проверяем, есть ли в rudder шаг на данный случай (и валиден ли он)
         if (next == null) {
 
-            chainExecutionInvalidPathErrorScenario(event, avatar, step, stepName, rudder);
 
 
-            return;
+            // проверяем, перезаписывает ли rudder сценарий, когда не найден следующий шаг
+
+            String rudderVar = rudder.getOnInvalidPath();
+
+
+
+
+            if (rudderVar!=null){
+
+                ChainStep rudderVarStep = findStepByName(rudderVar);
+
+                if (rudderVarStep == null){
+
+                    chainExecutionInvalidPathErrorScenario(event, avatar, step, rudderVar, rudder);
+
+                    return;
+
+                }
+
+
+
+                next = rudderVarStep;
+
+
+
+            }
+
+            else {
+
+                chainExecutionInvalidPathErrorScenario(event, avatar, step, stepNameCandidate, rudder);
+
+                return;
+
+            }
+
+
+
+
         }
+
+
+
+
+
+
+
+
+
+
+        // следующий шаг найден, и он валиден. Нужно проверить, будет ли превышение loop, если следующий шаг запустится
+
+
+        // подвид crash - превышение числа итераций для следующего шага
+        if (iterations.getOrDefault(next.getName(), 0L)
+                >=(next.getMaxIterations())){
+
+
+
+
+
+
+            // проверка на rudder - тут снова может перезаписан next шаг
+            // он также проверяется на валидность и число итераций
+
+            String rudderVar = rudder.getOnLoopOverflow();
+
+
+            if (rudderVar!=null){
+
+                ChainStep rudderVarStep = findStepByName(rudderVar);
+
+                // rudder вариант указан неверно, запускается invalid path crash
+                if (rudderVarStep == null){
+
+                    chainExecutionInvalidPathErrorScenario(event, avatar, step, rudderVar, rudder);
+
+                    return;
+
+                }
+
+                // если имеется превышение лимита итераций и для rudder варианта
+                if (iterations.getOrDefault(rudderVar, 0L)
+                        >=(rudderVarStep.getMaxIterations())){
+
+
+                    chainExecutionLoopOverflowScenario(event, avatar, rudderVarStep, rudder);
+
+
+                    return;
+
+
+
+                }
+
+                else {
+
+
+                    next = rudderVarStep;
+                }
+
+
+
+
+
+
+            }
+
+            else {
+
+
+                chainExecutionLoopOverflowScenario(event, avatar, step, rudder);
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+
+
+
+
+        }
+
+
 
 
 
@@ -966,7 +1135,9 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-        // TODO ПРОВЕРКА НА превышение LOOP
+
+
+
 
 
         OutputMetadata<?> meta = new OutputMetadata<>();
@@ -1070,6 +1241,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
                                                           String unknownStep,
                                                           ChainRudder rudder){
 
+
+
         event.getProcessingInfo().setPerformanceStatus(PerformanceStatus.INVALID_PATH);
 
         event.setMessage("Критическая ошибка - не найден шаг для выполнения - "
@@ -1115,6 +1288,7 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
     // выполнение шага завершилось ошибкой
+
     protected void stepExecutionErrorScenario(E event,
                                               ProcessAvatar avatar,
                                               ChainStep step,

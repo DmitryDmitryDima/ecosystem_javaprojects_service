@@ -43,6 +43,11 @@ public class ChainStep  {
     private Long readLock;
 
 
+    private Long maxIterations = 1L;
+
+
+
+
 
 
 
@@ -193,6 +198,14 @@ public class ChainStep  {
         this.readLock = readLock;
     }
 
+    public Long getMaxIterations() {
+        return maxIterations;
+    }
+
+    public void setMaxIterations(Long maxIterations) {
+        this.maxIterations = maxIterations;
+    }
+
     public ChainStep(String next,
                      Method method,
                      String name,
@@ -206,7 +219,7 @@ public class ChainStep  {
                      ChainTimeUnit readLockUnit,
                      Long readLock,
                      boolean everlasting,
-                     List<StepExtension> extensions) {
+                     List<StepExtension> extensions, long maxIterations) {
         this.next = next;
         this.method = method;
         this.name = name;
@@ -221,10 +234,32 @@ public class ChainStep  {
         this.readLock = readLock;
         this.everlasting = everlasting;
         this.extensions = extensions;
+
+        this.maxIterations = maxIterations;
     }
 
     public ChainStep() {
     }
 
 
+    @Override
+    public String toString() {
+        return "ChainStep{" +
+                "name='" + name + '\'' +
+                ", next='" + next + '\'' +
+                ", method=" + method +
+                ", retry=" + retry +
+                ", timeLimitUnit=" + timeLimitUnit +
+                ", timeLimit=" + timeLimit +
+                ", waitingForSignalUnit=" + waitingForSignalUnit +
+                ", waitingForSignal=" + waitingForSignal +
+                ", readExpirationUnit=" + readExpirationUnit +
+                ", readExpiration=" + readExpiration +
+                ", readLockUnit=" + readLockUnit +
+                ", readLock=" + readLock +
+                ", maxIterations=" + maxIterations +
+                ", everlasting=" + everlasting +
+                ", extensions=" + extensions +
+                '}';
+    }
 }

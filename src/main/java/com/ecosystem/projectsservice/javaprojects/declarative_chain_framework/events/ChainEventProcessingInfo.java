@@ -3,7 +3,6 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.e
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.DeliveryStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.events.status_groups.PerformanceStatus;
-import lombok.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,9 +27,14 @@ public class ChainEventProcessingInfo {
     // что произошло с процессом в момент создания outbox ивента
     private PerformanceStatus performanceStatus;
 
-    // показывает, сколько раз какой шаг был повторен
-    // шаг заносится сюда только будучи помеченным аннотацией loop
-    private Map<String, Long> loopStat;
+    public Map<String, Long> getIterationsStat() {
+        return iterationsStat;
+    }
+
+
+
+    // retry на считается итерацией !
+    private Map<String, Long> iterationsStat = new HashMap<>();
 
 
     public ChainEventProcessingInfo(final long currentRetry,
@@ -60,6 +64,17 @@ public class ChainEventProcessingInfo {
         return this.currentStep;
     }
 
+
+    public Long getCurrentIteration(){
+
+        return iterationsStat.getOrDefault(currentStep, 0L);
+
+
+    }
+
+    public void setIterationsStat(Map<String, Long> iterationsStat) {
+        this.iterationsStat = iterationsStat;
+    }
 
     public DeliveryStatus getDeliveryStatus() {
         return this.deliveryStatus;

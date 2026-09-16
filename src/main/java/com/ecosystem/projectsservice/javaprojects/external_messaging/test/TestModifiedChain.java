@@ -1,5 +1,6 @@
 package com.ecosystem.projectsservice.javaprojects.external_messaging.test;
 
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.Loop;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.ReadLock;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.Retry;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.annotations.control.WaitingForSignal;
@@ -74,18 +75,11 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     @Opening(name = "op", next = "middle")
     @MessageBefore
-    public void op(TestEvent event, ChainRudder rudder){
+    public void op(TestEvent event,
+                   ChainRudder rudder){
 
 
         System.out.println("opening step");
-
-        rudder.setOnStepCrash("end");
-
-
-
-        throw new IllegalStateException("error");
-
-
 
 
 
@@ -96,17 +90,12 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     }
 
-    @Step(name = "middle", next = "end")
+    @Step(name = "middle", next = "middle")
+    @Loop(iterations = 5)
     @MessageAfter
-    @Retry(maxCount = 5)
-    //@ReadLock(time = 50)
     public void middle(TestEvent event,
-                       ProcessAvatar avatar){
-
-
-        System.out.println(event.getProcessingInfo().getPerformanceStatus());
-
-        System.out.println("middle step");
+                       ProcessAvatar avatar,
+                       ChainRudder rudder){
 
 
 
@@ -119,45 +108,25 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
 
 
+        // 0 1 2 3 4 -> end
+        System.out.println("middle step iteration "+event
+                .getProcessingInfo()
+                .getCurrentIteration());
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        rudder.setOnLoopOverflow("end");
 
 
     }
 
     @Ending(name = "end")
-    //@WaitingForSignal(time = 30)
     @MessageBefore
     @MessageAfter
-    public void end(TestEvent event){
-
+    public void end(TestEvent event, ChainRudder rudder){
 
         event.setMessage("message for you");
-
-
-
-
-
-
-
-
-
         System.out.println("ending step");
+
+
 
     }
 
