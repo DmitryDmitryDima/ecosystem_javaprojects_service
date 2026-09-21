@@ -109,7 +109,7 @@ public class DashboardService {
         testEvent.setExternalContext(contextCategory);
         testEvent.setExternalData(data);
 
-        modifiedChain.init(testEvent);
+        modifiedChain.init(testEvent, "end");
 
 
 

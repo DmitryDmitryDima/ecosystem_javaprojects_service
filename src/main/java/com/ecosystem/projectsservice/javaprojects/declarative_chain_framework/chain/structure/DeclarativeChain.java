@@ -404,6 +404,107 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
     }
 
+    // старт цепи с указанного вручную шага
+
+    /* данный метод полезен для сценария перезапуска процесса с конкрентного шага,
+     например при определенной компенсации
+
+     Важная деталь - event получает новый uuid, а также параметры выполнения.
+     То есть наследоваться от старой очереди может только пользовательская бизнес логика
+     */
+    public void init(E event, String from) throws ChainInitException {
+
+
+        try {
+
+
+            if (event == null){
+                throw new IllegalStateException("отсутствует ивент");
+            }
+
+            if (event.getProcessId() == null){
+                throw new IllegalStateException("вы должны дать процессу его uuid");
+            }
+
+
+            // нужно валидировать шаг, посланный в качестве аргумента
+
+
+            ChainStep startStep = findStepByName(from);
+
+            if (startStep == null) throw new IllegalStateException("шаг не найден");
+
+
+            // цепочка уже собрана и валидирована
+            ChainEventProcessingInfo startingSettings = ChainEventProcessingInfo.builder()
+                    .currentStep(startStep.getName())
+                    .performanceStatus(PerformanceStatus.CHAIN_INITIATED)
+                    .build();
+
+
+            // старое состояние процесса, если оно есть, перезаписывается!
+            event.setProcessingInfo(startingSettings);
+
+
+
+            ProcessAvatar runtimeAvatar
+                    = new ProcessAvatar(event.getProcessId());
+
+            // добавляем индексы, вызывая переопределяемый метод
+            runtimeAvatar.addIndexes(setProcessIndexes(event));
+
+            runtimeAvatar.setStatus(ProcessAvatarStatus.WAITING);
+
+            // внутри - проверка наличия аватара с таким же id
+            // - первая idempotency защита
+            processAvatarStorage.registerAvatar(runtimeAvatar);
+
+
+            var times = ChainUtils.countTimeForNextStep(startStep);
+
+
+            ChainOutput output = ChainOutput.builder()
+                    .event(event)
+                    .status(opening.getWaitingForSignal()==null?OutboxStatus.WAITING
+                            :OutboxStatus.WAITING_FOR_SIGNAL)
+                    .last_update(times.getLastUpdate())
+                    .readExpiration(times.getCurrentReadExpiration())
+                    .performanceExpirationPeriod(times.getDuration())
+                    .lockUntil(times.getLockUntil())
+                    .readExpirationPeriod(times.getReadExpirationPeriod())
+                    .readLockPeriod(times.getReadLockPeriod())
+                    .build();
+
+
+
+            OutputMetadata<?> metadata = new OutputMetadata<>();
+
+            // не забываем проставить тип действия
+            metadata.setAction(new ChainInit());
+
+
+
+
+            OutputResult result = onPublishChainOutput(output, metadata, runtimeAvatar);
+
+            if (!result.isPublished()){
+                throw new IllegalStateException(result.getMessage());
+            }
+
+
+
+
+
+
+        }
+
+        catch (Exception e){
+            throw new ChainInitException("Не удалось запустить цепь "+e.getMessage());
+        }
+
+
+    }
+
 
 
 
@@ -1042,7 +1143,8 @@ public abstract class DeclarativeChain<E extends ChainEvent> {
 
 
 
-        // следующий шаг найден, и он валиден. Нужно проверить, будет ли превышение loop, если следующий шаг запустится
+        // следующий шаг найден, и он валиден.
+        // Нужно проверить, будет ли превышение loop, если следующий шаг запустится
 
 
         // подвид crash - превышение числа итераций для следующего шага

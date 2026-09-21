@@ -75,11 +75,15 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
 
     @Opening(name = "op", next = "middle")
     @MessageBefore
+
     public void op(TestEvent event,
                    ChainRudder rudder){
 
 
         System.out.println("opening step");
+
+
+
 
 
 
@@ -98,23 +102,9 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
                        ChainRudder rudder){
 
 
-
-
-
-
-
-
-
-
-
-
-        // 0 1 2 3 4 -> end
-        System.out.println("middle step iteration "+event
-                .getProcessingInfo()
-                .getCurrentIteration());
+        System.out.println("middle step iteration "+event.getProcessingInfo().getCurrentIteration());
 
         rudder.setOnLoopOverflow("end");
-
 
     }
 
