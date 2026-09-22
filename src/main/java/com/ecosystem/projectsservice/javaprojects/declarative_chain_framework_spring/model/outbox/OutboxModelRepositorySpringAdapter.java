@@ -7,6 +7,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.mo
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.model.idempotency.IdempotencyModelJpaEntity;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.model.idempotency.IdempotencyModelJpaRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -529,13 +530,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
         try {
             return
                     transaction.execute(status -> {
-                        /*
-                                List<OutboxModelJpaEntity> jpaEntities
-                                        = outboxModelJpaRepository
-                                        .readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus
-                                                .WAITING);
 
-                         */
 
                         List<OutboxModelJpaEntity> jpaEntities = outboxModelJpaRepository
                                 .readAllWaitingEntitiesWhereReadExpirationNotReachedAndReadLockFree();
@@ -565,13 +560,50 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     }
 
     @Override
-    public List<? extends OutboxModel> readActualWaitingEvents(Long batchSize) {
-        return List.of();
+    public List<? extends OutboxModel> readActualWaitingEvents(int batchSize) {
+
+        try {
+            return
+                    transaction.execute(status -> {
+
+
+                                List<OutboxModelJpaEntity> jpaEntities
+                                        = outboxModelJpaRepository
+
+                                        .readAllWaitingEntitiesWhereReadExpirationNotReachedAndReadLockFree
+                                                (PageRequest.of(0,
+                                                batchSize));
+
+
+
+                                // при чтении статус меняется на processing,
+                                // обновляется last update,
+                                // а также происходит обновление readVersion
+                                jpaEntities.forEach(outboxModelJpaEntity -> {
+                                    outboxModelJpaEntity.setLastUpdate(Instant.now());
+                                    outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity
+                                            .getAllReadVersion() + 1);
+                                    outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+
+
+
+                                });
+
+                                return jpaEntities;
+                            }
+                    );
+        } catch (Exception e) {
+            throw new
+                    OutboxRepositoryException("Не удалось получить актуальные Waiting записи. Причина: " + e.getMessage());
+        }
+
+
+
     }
 
 
     @Override
-    public List<? extends OutboxModel> readEverlastingProcessingEvents(Long batchSize) {
+    public List<? extends OutboxModel> readEverlastingProcessingEvents(int batchSize) {
         return List.of();
     }
 
@@ -649,7 +681,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     }
 
     @Override
-    public List<? extends OutboxModel> readMissedExpiredProcessingEvents(Long batchSize) {
+    public List<? extends OutboxModel> readMissedExpiredProcessingEvents(int batchSize) {
         return List.of();
     }
 
@@ -695,7 +727,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     }
 
     @Override
-    public List<? extends OutboxModel> readExpiredProcessingEvents(Long batchSize) {
+    public List<? extends OutboxModel> readExpiredProcessingEvents(int batchSize) {
         return List.of();
     }
 
@@ -741,7 +773,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     }
 
     @Override
-    public List<? extends OutboxModel> readExpiredWaitingEvents(Long batchSize) {
+    public List<? extends OutboxModel> readExpiredWaitingEvents(int batchSize) {
         return List.of();
     }
 
@@ -785,7 +817,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     }
 
     @Override
-    public List<? extends OutboxModel> readExpiredWaitingForSignalEvents(Long batchSize) {
+    public List<? extends OutboxModel> readExpiredWaitingForSignalEvents(int batchSize) {
         return List.of();
     }
 
@@ -826,7 +858,7 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
     }
 
     @Override
-    public List<? extends OutboxModel> readManagerCrashEvents(Long batchSize) {
+    public List<? extends OutboxModel> readManagerCrashEvents(int batchSize) {
         return List.of();
     }
 }

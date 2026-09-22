@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_s
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_manager.EventManager;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.outbox_reader.OutboxReaderDefault;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.read_limits.ReadLimits;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -10,8 +11,8 @@ public class OutboxReaderSpringAdapter extends OutboxReaderDefault
 
 
     public OutboxReaderSpringAdapter(OutboxModelRepository repository,
-                                     EventManager manager) {
-        super(repository, manager);
+                                     EventManager manager, ReadLimits limits) {
+        super(repository, manager, limits);
     }
 
     @Override

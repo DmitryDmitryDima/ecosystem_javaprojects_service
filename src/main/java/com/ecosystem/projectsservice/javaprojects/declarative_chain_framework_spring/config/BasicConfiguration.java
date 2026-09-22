@@ -5,6 +5,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ch
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.chain.output.OutputProcessorDefault;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.avatar.storage.ProcessAvatarStorage;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.storage.TriggerStorage;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.read_limits.ReadLimits;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.control.ProcessAvatarStorageSpringScheduledVersion;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.dead_letter.DeadLetterChannel;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.control.TriggerRuntimeStorageSpring;
@@ -16,6 +17,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.ma
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.mapper.MapperComponent;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.managers.mapper.MapperSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.outbox_reader.OutboxReader;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.managers.read_limits.ReadLimitsSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.managers.reader.OutboxReaderSpringAdapter;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.sender.ChainManagerSender;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.managers.sender.ChainManagerSenderSpringApplicationPublisherAdapter;
@@ -96,11 +98,19 @@ public class BasicConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public ReadLimits readLimits(){
+
+        return new ReadLimitsSpringAdapter();
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean
     public OutboxReader outboxReader(OutboxModelRepository repository,
-                                     EventManager eventManager){
+                                     EventManager eventManager, ReadLimits limits){
 
 
-        return new OutboxReaderSpringAdapter(repository, eventManager);
+        return new OutboxReaderSpringAdapter(repository, eventManager, limits);
     }
 
 
@@ -119,6 +129,8 @@ public class BasicConfiguration {
                 runtimeStorage, deadLetterChannel);
 
     }
+
+
 
     @Bean
     @ConditionalOnMissingBean

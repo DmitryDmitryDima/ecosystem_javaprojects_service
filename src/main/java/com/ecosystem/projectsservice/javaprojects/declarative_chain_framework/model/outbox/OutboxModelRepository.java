@@ -69,7 +69,7 @@ public interface OutboxModelRepository {
     // performance period == null
     // allProcessingRead ++
 
-    List<? extends OutboxModel> readEverlastingProcessingEvents(Long batchSize);
+    List<? extends OutboxModel> readEverlastingProcessingEvents(int batchSize);
 
     List<? extends OutboxModel> readEverlastingProcessingEvents();
 
@@ -80,7 +80,7 @@ public interface OutboxModelRepository {
 
     List<? extends OutboxModel> readMissedExpiredProcessingEvents();
 
-    List<? extends OutboxModel> readMissedExpiredProcessingEvents(Long batchSize);
+    List<? extends OutboxModel> readMissedExpiredProcessingEvents(int batchSize);
 
 
     // читаем expired processing ивенты, где allProcessingRead = 0,
@@ -89,34 +89,34 @@ public interface OutboxModelRepository {
 
     List<? extends OutboxModel> readExpiredProcessingEvents();
 
-    List<? extends OutboxModel> readExpiredProcessingEvents(Long batchSize);
+    List<? extends OutboxModel> readExpiredProcessingEvents(int batchSize);
 
 
     // читаем актуальные waiting events - самая высокая частота проверки
     // атомарно ставим статус processing
     // в данном случае allProcessingRead не трогаем !
     List<? extends OutboxModel> readActualWaitingEvents();
-    List<? extends OutboxModel> readActualWaitingEvents(Long batchSize);
+    List<? extends OutboxModel> readActualWaitingEvents(int batchSize);
 
     // читаем просроченные waiting event
     // атомарно processing
 
     List<? extends OutboxModel> readExpiredWaitingEvents();
-    List<? extends OutboxModel> readExpiredWaitingEvents(Long batchSize);
+    List<? extends OutboxModel> readExpiredWaitingEvents(int batchSize);
 
 
     // читаем просроченные waiting for signal ивенты
     // атомарно processing
 
     List<? extends OutboxModel> readExpiredWaitingForSignalEvents();
-    List<? extends OutboxModel> readExpiredWaitingForSignalEvents(Long batchSize);
+    List<? extends OutboxModel> readExpiredWaitingForSignalEvents(int batchSize);
 
 
 
 
 
     List<? extends OutboxModel> readManagerCrashEvents();
-    List<? extends OutboxModel> readManagerCrashEvents(Long batchSize);
+    List<? extends OutboxModel> readManagerCrashEvents(int batchSize);
 
 
 

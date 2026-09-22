@@ -4,6 +4,7 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_s
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
 
@@ -91,6 +92,18 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
     List<OutboxModelJpaEntity>
     readAllWaitingEntitiesWhereReadExpirationNotReachedAndReadLockFree();
+
+
+    // SKIP LOCKED - чтобы пропустить УЖЕ БЛОКНУТЫЕ СТРОКИ
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = 'WAITING' " +
+            "and entity.readExpiration>CURRENT_TIMESTAMP and entity.lockedUntil<CURRENT_TIMESTAMP  ")
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
+    List<OutboxModelJpaEntity>
+    readAllWaitingEntitiesWhereReadExpirationNotReachedAndReadLockFree(Pageable pageable);
+
+
+
 
 
 

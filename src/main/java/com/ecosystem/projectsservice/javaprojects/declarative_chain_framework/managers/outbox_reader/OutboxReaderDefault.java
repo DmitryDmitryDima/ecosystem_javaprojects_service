@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.m
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_manager.EventManager;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.event_manager.ManagerResult;
+import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.managers.read_limits.ReadLimits;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModel;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxStatus;
@@ -21,12 +22,16 @@ public class OutboxReaderDefault implements OutboxReader{
 
     private EventManager manager;
 
+    private ReadLimits limits;
+
     public OutboxReaderDefault(){}
 
     public OutboxReaderDefault(OutboxModelRepository repository,
-                               EventManager manager){
+                               EventManager manager,
+                               ReadLimits limits){
         this.repository = repository;
         this.manager = manager;
+        this.limits = limits;
     }
 
 
@@ -38,6 +43,9 @@ public class OutboxReaderDefault implements OutboxReader{
         this.manager = manager;
     }
 
+    public void setLimits(ReadLimits limits) {
+        this.limits = limits;
+    }
 
     // read version должен совпадать
     private void attemptToSetManagerCrashedStatus(ManagerResult result,
@@ -70,7 +78,6 @@ public class OutboxReaderDefault implements OutboxReader{
 
     // дефолтное значение после двоеточия
     @Override
-    //@Scheduled(fixedDelayString = "${reader.waiting.events:500}")
     public void readWaitingEvents() {
 
 
@@ -78,7 +85,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
         // атомарно проставлен processing статус
         List<? extends OutboxModel> actualWaiting
-                = repository.readActualWaitingEvents();
+                = repository.readActualWaitingEvents(limits.waitingEventsLimit());
 
         for (var model:actualWaiting){
 
@@ -96,13 +103,13 @@ public class OutboxReaderDefault implements OutboxReader{
     }
 
     @Override
-    //@Scheduled(fixedDelayString = "${reader.waiting.events.expired:20000}")
     public void readExpiredWaitingEvents() {
 
 
         //System.out.println("READING Expired waiting EVENTS");
 
-        List<? extends OutboxModel> expiredWaitingEvents = repository.readExpiredWaitingEvents();
+        List<? extends OutboxModel> expiredWaitingEvents
+                = repository.readExpiredWaitingEvents();
 
         for (var model:expiredWaitingEvents){
             ManagerResult managementResult = manager.workWithExpiredWaitingEvent(model);
@@ -126,7 +133,6 @@ public class OutboxReaderDefault implements OutboxReader{
     // в любом случае - компенсационный сценарий
 
     @Override
-    //@Scheduled(fixedDelayString = "${reader.processing.events.expired:20000}")
     public void readExpiredProcessingEvents() {
 
         //System.out.println("read expired processing events");
@@ -159,7 +165,6 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
     @Override
-    //@Scheduled(fixedDelayString = "${reader.processing.events.everlasting:20000}")
     public void readEverlastingProcessingEvents() {
 
 
@@ -196,7 +201,6 @@ public class OutboxReaderDefault implements OutboxReader{
     // dead letter статус проставляется атомарно! менеджер не трогает модель и посылает ее в модель
     // 60 секунд
     @Override
-    //@Scheduled(fixedDelayString = "${reader.processing.events.missed:60000}")
     public void readMissedExpiredProcessingEvents() {
 
 
@@ -222,7 +226,6 @@ public class OutboxReaderDefault implements OutboxReader{
 
     // при чтении данные ивенты атомарно получают финальный dead_letter
     @Override
-    //@Scheduled(fixedDelayString = "${reader.manager.crashed.events:60000}")
     public void readManagerCrashedEvents() {
 
 
@@ -240,7 +243,6 @@ public class OutboxReaderDefault implements OutboxReader{
 
     // атомарно получили processing статус
     @Override
-    //@Scheduled(fixedDelayString = "${reader.waiting.for.signal.events:2000}")
     public void readExpiredWaitingForSignalEvents() {
 
 
