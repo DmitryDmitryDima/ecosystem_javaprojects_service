@@ -8,6 +8,7 @@ import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.mo
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.model.idempotency.IdempotencyModelJpaEntity;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework_spring.model.idempotency.IdempotencyModelJpaRepository;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -604,7 +605,36 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     @Override
     public List<? extends OutboxModel> readEverlastingProcessingEvents(int batchSize) {
-        return List.of();
+
+        try {
+
+
+            return transaction.execute(status -> {
+
+                List<OutboxModelJpaEntity> everlastingSteps = outboxModelJpaRepository
+                        .readEverlastingSteps(OutboxStatus.PROCESSING, PageRequest.of(0, batchSize));
+
+
+                everlastingSteps.forEach(step -> {
+
+                    // атомарно обновляем счетчик при чтении
+                    step.setAllReadProcessingVersion(step.getAllReadProcessingVersion() + 1);
+                    step.setAllReadVersion(step.getAllReadVersion());
+
+                });
+
+
+                return everlastingSteps;
+            });
+
+
+        } catch (Exception e) {
+
+            throw new OutboxRepositoryException("ошибка чтения активных бесконечных шагов: " + e.getMessage());
+        }
+
+
+
     }
 
 
@@ -682,7 +712,37 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     @Override
     public List<? extends OutboxModel> readMissedExpiredProcessingEvents(int batchSize) {
-        return List.of();
+
+
+        try {
+
+
+            return transaction.execute(status -> {
+
+
+                List<OutboxModelJpaEntity> entities = outboxModelJpaRepository
+                        .readMissedEventsExpiredByPerformance(batchSize);
+
+
+                entities.forEach(entity -> {
+                    entity.setAllReadProcessingVersion(entity.getAllReadProcessingVersion()+1);
+                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
+                    entity.setLastUpdate(Instant.now());
+                    entity.setStatus(OutboxStatus.DEAD_LETTER);
+                });
+
+                return entities;
+            });
+        }
+
+        catch (Exception e){
+
+            throw new OutboxRepositoryException("Ошибка чтения многократно зависших шагов. "
+                    +e.getMessage());
+        }
+
+
+
     }
 
 
@@ -728,7 +788,39 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     @Override
     public List<? extends OutboxModel> readExpiredProcessingEvents(int batchSize) {
-        return List.of();
+
+
+        try {
+
+
+            return transaction.execute(status -> {
+
+
+                List<OutboxModelJpaEntity> entities = outboxModelJpaRepository
+                        .readEventsExpiredByPerformance(batchSize);
+
+
+                entities.forEach(entity -> {
+                    entity.setAllReadProcessingVersion(entity.getAllReadProcessingVersion()+1);
+                    entity.setAllReadVersion(entity.getAllReadVersion()+1);
+
+                    // time lock, чтобы missing processing поток не прочитал ивент во время компенсации
+                    entity.setLockedUntil(Instant.now()
+                            .plusSeconds(DEFAULT_LOCK_UNTIL_PERIOD_IN_SECONDS_FOR_PROCESSING_STATUS_READERS));
+
+                    // явный компенсационный сценарий помечается атомарно
+                    entity.setCompensation(true);
+                });
+
+                return entities;
+            });
+        }
+
+        catch (Exception e){
+
+            throw new OutboxRepositoryException("Ошибка чтения зависших шагов. "+e.getMessage());
+        }
+
     }
 
 
@@ -774,7 +866,41 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     @Override
     public List<? extends OutboxModel> readExpiredWaitingEvents(int batchSize) {
-        return List.of();
+
+        try {
+            return
+                    transaction.execute(status -> {
+
+                        List<OutboxModelJpaEntity> jpaEntities = outboxModelJpaRepository
+                                .readAllEntitiesWithReadExpirationReached(OutboxStatus.WAITING,
+                                        PageRequest.of(0, batchSize));
+
+
+                        // при чтении статус меняется на processing,
+                        // обновляется last update,
+                        // а также происходит обновление readVersion
+                        jpaEntities.forEach(outboxModelJpaEntity -> {
+                            outboxModelJpaEntity.setLastUpdate(Instant.now());
+                            outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion()+1);
+                            outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+
+                            // явный компенсационный сценарий помечается атомарно
+                            outboxModelJpaEntity.setCompensation(true);
+
+                        });
+
+                        return jpaEntities;}
+                    );
+        }
+
+        catch (Exception e){
+            throw new
+                    OutboxRepositoryException("Не удалось получить просроченные Waiting записи. Причина: " +
+                    ""+e.getMessage());
+        }
+
+
+
     }
 
     @Override
@@ -818,7 +944,41 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     @Override
     public List<? extends OutboxModel> readExpiredWaitingForSignalEvents(int batchSize) {
-        return List.of();
+
+        try {
+            return
+                    transaction.execute(status -> {
+
+                        List<OutboxModelJpaEntity> jpaEntities = outboxModelJpaRepository
+                                .readAllEntitiesWithReadExpirationReached(OutboxStatus.WAITING_FOR_SIGNAL,
+                                        PageRequest.of(0, batchSize));
+
+
+                        // при чтении статус меняется на processing,
+                        // обновляется last update,
+                        // а также происходит обновление readVersion
+                        jpaEntities.forEach(outboxModelJpaEntity -> {
+                            outboxModelJpaEntity.setLastUpdate(Instant.now());
+                            outboxModelJpaEntity.setAllReadVersion(outboxModelJpaEntity.getAllReadVersion()+1);
+                            outboxModelJpaEntity.setStatus(OutboxStatus.PROCESSING);
+
+
+                            // явный компенсационный сценарий помечается атомарно
+                            outboxModelJpaEntity.setCompensation(true);
+
+                        });
+
+                        return jpaEntities;}
+                    );
+        }
+
+        catch (Exception e){
+            throw new
+                    OutboxRepositoryException("Не удалось получить просроченные" +
+                    " Waiting for External записи. Причина: " +
+                    ""+e.getMessage());
+        }
+
     }
 
     @Override
@@ -830,7 +990,8 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
 
 
-                List<OutboxModelJpaEntity> events = outboxModelJpaRepository.readByStatus(OutboxStatus.MANAGER_CRASH);
+                List<OutboxModelJpaEntity> events
+                        = outboxModelJpaRepository.readByStatus(OutboxStatus.MANAGER_CRASH);
 
                 // счетчик + статус
                 events.forEach(event->{
@@ -859,6 +1020,35 @@ public class OutboxModelRepositorySpringAdapter implements OutboxModelRepository
 
     @Override
     public List<? extends OutboxModel> readManagerCrashEvents(int batchSize) {
-        return List.of();
+        try {
+
+            return transaction.execute(status -> {
+
+
+
+                List<OutboxModelJpaEntity> events
+                        = outboxModelJpaRepository.readByStatus(OutboxStatus.MANAGER_CRASH,
+                        PageRequest.of(0,
+                        batchSize));
+
+                // счетчик + статус
+                events.forEach(event->{
+                    event.setAllReadVersion(event.getAllReadVersion()+1);
+                    event.setStatus(OutboxStatus.DEAD_LETTER);
+                    event.setLastUpdate(Instant.now());
+
+
+
+                });
+
+
+                return events;
+            });
+
+        }
+
+        catch (Exception e){
+            throw new OutboxRepositoryException("Ошибка чтения managed_crashed шагов. "+e.getMessage());
+        }
     }
 }

@@ -50,12 +50,35 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     List<OutboxModelJpaEntity> readByStatus(OutboxStatus status);
 
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = :status")
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
+
+    List<OutboxModelJpaEntity> readByStatus(OutboxStatus status, Pageable pageable);
+
+
+
+
+
 
     // TODO пока используем нативный запрос, нужно разобраться, как это абстрагировать для hql
     @NativeQuery("select * from  outbox_model entity  where entity.status = 'PROCESSING' " +
             "and entity.all_read_processing_version = 0 and entity.performance_limit_time is not null " +
             "and entity.last_update + (entity.performance_limit_time * interval '1 ms' )<now() for update skip locked")
     List<OutboxModelJpaEntity> readEventsExpiredByPerformance();
+
+
+    @NativeQuery("select * from  outbox_model entity  where entity.status = 'PROCESSING' " +
+            "and entity.all_read_processing_version = 0 and entity.performance_limit_time is not null " +
+            "and entity.last_update + (entity.performance_limit_time * interval '1 ms' )<now() limit ?1 for update skip locked")
+    List<OutboxModelJpaEntity> readEventsExpiredByPerformance(int batch);
+
+
+
+
+
+
+
 
     @NativeQuery("select * from  outbox_model entity  where entity.status = 'PROCESSING' " +
             "and entity.all_read_processing_version >0  and entity.performance_limit_time is not null " +
@@ -65,6 +88,13 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     List<OutboxModelJpaEntity> readMissedEventsExpiredByPerformance();
 
 
+    @NativeQuery("select * from  outbox_model entity  where entity.status = 'PROCESSING' " +
+            "and entity.all_read_processing_version >0  and entity.performance_limit_time is not null " +
+            "and entity.last_update + (entity.performance_limit_time * interval '1 ms' )<now()" +
+            "and entity.locked_until<now()" +
+            " LIMIT ?1 "+
+            " for update skip locked")
+    List<OutboxModelJpaEntity> readMissedEventsExpiredByPerformance(int limit);
 
 
 
@@ -72,17 +102,12 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
 
 
-    /*
-    // SKIP LOCKED - чтобы пропустить УЖЕ БЛОКНУТЫЕ СТРОКИ
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = :status " +
-            "and entity.readExpiration>CURRENT_TIMESTAMP ")
-    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
 
-    List<OutboxModelJpaEntity>
-    readAllEntitiesByStatusWhereReadExpirationNotReached(OutboxStatus status);
 
-     */
+
+
+
+
 
 
     // SKIP LOCKED - чтобы пропустить УЖЕ БЛОКНУТЫЕ СТРОКИ
@@ -119,6 +144,17 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
 
     List<OutboxModelJpaEntity> readAllEntitiesWithReadExpirationReached(OutboxStatus status);
 
+    // SKIP LOCKED - ЧТОБЫ ПРОПУСТИТЬ УЖЕ БЛОКНУТЫЕ СТРОКИ
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT entity FROM OutboxModelJpaEntity entity where entity.status = :status " +
+            "and entity.readExpiration<CURRENT_TIMESTAMP")
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
+
+    List<OutboxModelJpaEntity> readAllEntitiesWithReadExpirationReached(OutboxStatus status, Pageable pageable);
+
+
+
+
 
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -127,6 +163,17 @@ public interface OutboxModelJpaRepository extends JpaRepository<OutboxModelJpaEn
     @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
 
     List<OutboxModelJpaEntity> readEverlastingSteps(OutboxStatus status);
+
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT entity FROM OutboxModelJpaEntity entity " +
+            "where entity.performanceLimitTime is null and entity.status = :status")
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value ="-2")})
+
+    List<OutboxModelJpaEntity> readEverlastingSteps(OutboxStatus status, Pageable pageable);
+
+
+
 
 
 

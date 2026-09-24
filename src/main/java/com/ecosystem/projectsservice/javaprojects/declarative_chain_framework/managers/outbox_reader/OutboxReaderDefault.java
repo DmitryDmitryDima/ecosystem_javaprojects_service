@@ -109,7 +109,7 @@ public class OutboxReaderDefault implements OutboxReader{
         //System.out.println("READING Expired waiting EVENTS");
 
         List<? extends OutboxModel> expiredWaitingEvents
-                = repository.readExpiredWaitingEvents();
+                = repository.readExpiredWaitingEvents(limits.expiredWaitingEventsLimit());
 
         for (var model:expiredWaitingEvents){
             ManagerResult managementResult = manager.workWithExpiredWaitingEvent(model);
@@ -139,7 +139,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
         List<? extends OutboxModel> expiredProcessingEvents
-                = repository.readExpiredProcessingEvents();
+                = repository.readExpiredProcessingEvents(limits.expiredProcessingEventsLimit());
 
 
         for (var model:expiredProcessingEvents){
@@ -168,10 +168,10 @@ public class OutboxReaderDefault implements OutboxReader{
     public void readEverlastingProcessingEvents() {
 
 
-
+        //System.out.println("everlasting reader");
 
         List<? extends OutboxModel> everlastingProcessingEvents = repository
-                .readEverlastingProcessingEvents();
+                .readEverlastingProcessingEvents(limits.everlastingProcessingEventsLimit());
 
 
         for (var model:everlastingProcessingEvents){
@@ -207,7 +207,7 @@ public class OutboxReaderDefault implements OutboxReader{
         //System.out.println("READING missed expired EVENTS");
 
         List<? extends OutboxModel> missedExpiredProcessingEvents
-                = repository.readMissedExpiredProcessingEvents();
+                = repository.readMissedExpiredProcessingEvents(limits.missingExpiredProcessingEventsLimit());
 
 
 
@@ -231,7 +231,8 @@ public class OutboxReaderDefault implements OutboxReader{
 
         //System.out.println("READING manager crashed EVENTS");
 
-        List<? extends OutboxModel> managerCrashedEvents = repository.readManagerCrashEvents();
+        List<? extends OutboxModel> managerCrashedEvents = repository
+                .readManagerCrashEvents(limits.managerCrashedEventsLimit());
 
 
         for (var model:managerCrashedEvents){
@@ -250,7 +251,7 @@ public class OutboxReaderDefault implements OutboxReader{
 
 
         List<? extends OutboxModel> expiredWaitingForSignalEvents = repository
-                .readExpiredWaitingForSignalEvents();
+                .readExpiredWaitingForSignalEvents(limits.expiredWaitingForSignalEventsLimit());
 
         for (var model:expiredWaitingForSignalEvents){
 
