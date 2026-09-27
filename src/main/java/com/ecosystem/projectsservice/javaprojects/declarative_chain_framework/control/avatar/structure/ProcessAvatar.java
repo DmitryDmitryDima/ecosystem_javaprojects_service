@@ -167,7 +167,8 @@ public class ProcessAvatar {
         if ((status.get()== ProcessAvatarStatus.STOPPED
                 || status.get() == ProcessAvatarStatus.TERMINATED)
             &&
-        newStatus!= ProcessAvatarStatus.TERMINATED) return; // если был остановлен или закончен, замена на другой статус  не происходит
+        newStatus!= ProcessAvatarStatus.TERMINATED) return;
+        // если был остановлен или закончен, замена на другой статус  не происходит
         status.set(newStatus);
     }
 

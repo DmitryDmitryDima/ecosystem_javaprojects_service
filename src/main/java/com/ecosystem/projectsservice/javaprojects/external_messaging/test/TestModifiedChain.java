@@ -95,7 +95,7 @@ public class TestModifiedChain extends BroadcastableChain<TestEvent> {
     }
 
     @Step(name = "middle", next = "middle")
-    @Loop(iterations = 1)
+    @Loop(iterations = 2)
     @MessageAfter
     public void middle(TestEvent event,
                        ProcessAvatar avatar,
