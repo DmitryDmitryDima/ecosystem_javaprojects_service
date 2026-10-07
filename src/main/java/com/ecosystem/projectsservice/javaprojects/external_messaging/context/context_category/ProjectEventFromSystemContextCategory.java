@@ -19,4 +19,13 @@ public class ProjectEventFromSystemContextCategory extends ExternalContext {
     private UUID projectId;
 
 
+
+
+
+
+
+    // название системного процесса (опционально)
+    private String origin;
+
+
 }
