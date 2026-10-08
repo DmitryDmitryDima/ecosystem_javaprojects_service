@@ -19,11 +19,14 @@ chain ивент больше не привязан ни к контексту, 
 
 import com.ecosystem.projectsservice.javaprojects.external_messaging.context.ExternalContext;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.data.ExternalData;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
+@SuperBuilder
 public abstract class ExternalMessage {
 
 

@@ -2,12 +2,11 @@ package com.ecosystem.projectsservice.javaprojects.service.dashboard;
 
 
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.storage.TriggerStorage;
-import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.control.trigger.structure.*;
 import com.ecosystem.projectsservice.javaprojects.declarative_chain_framework.model.outbox.OutboxModelRepository;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarDTO;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.AvatarsWithIndexes;
 import com.ecosystem.projectsservice.javaprojects.dto.dashboard.IndexGroupDTO;
-import com.ecosystem.projectsservice.javaprojects.external_messaging.context.context_category.ProjectEventFromSystemContextCategory;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.context.context_category.ProjectMessageFromSystemContext;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestData;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestEvent;
 import com.ecosystem.projectsservice.javaprojects.external_messaging.test.TestModifiedChain;
@@ -17,7 +16,6 @@ import com.ecosystem.projectsservice.javaprojects.service.processes.test_process
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -89,8 +87,8 @@ public class DashboardService {
         TestEvent testEvent = new TestEvent();
         testEvent.setProcessId(uuid);
 
-        ProjectEventFromSystemContextCategory contextCategory
-                = new ProjectEventFromSystemContextCategory();
+        ProjectMessageFromSystemContext contextCategory
+                = new ProjectMessageFromSystemContext();
 
         contextCategory.setCorrelationId(uuid);
         contextCategory.setProjectId(UUID.randomUUID());

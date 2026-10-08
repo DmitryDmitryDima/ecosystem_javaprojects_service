@@ -1,14 +1,12 @@
 package com.ecosystem.projectsservice.javaprojects.external_messaging.bridge;
 
 
-import com.ecosystem.projectsservice.javaprojects.external_messaging.context.context_category.ProjectEventFromSystemContextCategory;
-import com.ecosystem.projectsservice.javaprojects.external_messaging.message.message_category.ProjectEventFromSystemCategory;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.message.message_category.ProjectMessageFromSystem;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.MessageQueueExternals;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -32,7 +30,7 @@ public class ExternalQueueBroadcastBridge {
 
 
     @EventListener
-    public void sendProjectEventFromSystem(ProjectEventFromSystemCategory event){
+    public void sendProjectEventFromSystem(ProjectMessageFromSystem event){
 
 
 

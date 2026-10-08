@@ -14,7 +14,7 @@ import java.util.UUID;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProjectEventFromSystemContextCategory extends ExternalContext {
+public class ProjectMessageFromSystemContext extends ExternalContext {
 
     private UUID projectId;
 

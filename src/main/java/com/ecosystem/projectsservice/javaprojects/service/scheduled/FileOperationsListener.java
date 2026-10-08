@@ -1,15 +1,17 @@
 package com.ecosystem.projectsservice.javaprojects.service.scheduled;
 
 import com.ecosystem.projectsservice.javaprojects.dto.projects.cache.CachedFile;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.broadcast.MessageBroadcast;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.context.context_category.ProjectMessageFromSystemContext;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.message.MessageStatus;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.message.message_category.ProjectMessageFromSystem;
+import com.ecosystem.projectsservice.javaprojects.external_messaging.types.MessageType;
 import com.ecosystem.projectsservice.javaprojects.model.File;
 import com.ecosystem.projectsservice.javaprojects.service.cache.FileCache;
 import com.ecosystem.projectsservice.javaprojects.service.external_values.StorageExternals;
+import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.filesave.version_2.FileSaveMessageData;
 import com.ecosystem.projectsservice.javaprojects.service.storage.StorageService;
 import com.ecosystem.projectsservice.javaprojects.transport.broadcast.Broadcast;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.ExternalEventType;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.context.context_categories.ProjectEventFromSystemContext;
-import com.ecosystem.projectsservice.javaprojects.service.processes.files_processes.filesave.FileSaveExternalData;
-import com.ecosystem.projectsservice.javaprojects.transport.external_events.event_categories.ProjectEventFromSystem;
 import com.ecosystem.projectsservice.javaprojects.repository.FileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -61,6 +63,12 @@ public class FileOperationsListener {
 
     @Autowired
     private Broadcast broadcast;
+
+
+    @Autowired
+    private MessageBroadcast messageBroadcast;
+
+
 
     @Autowired
     private StorageService storageService;
@@ -117,6 +125,63 @@ public class FileOperationsListener {
                 file.getContent());
 
 
+
+
+
+
+
+
+
+
+
+        ProjectMessageFromSystemContext context = new ProjectMessageFromSystemContext();
+        context.setOrigin("file storage updater process");
+        context.setProjectId(file.getProjectId());
+        context.setTimestamp(Instant.now());
+        context.setCorrelationId(UUID.randomUUID());
+
+
+        FileSaveMessageData data = new FileSaveMessageData();
+
+        data.setName(file.getName());
+        data.setFileId(file.getId());
+        data.setExtension(file.getExtension());
+
+
+
+
+
+
+
+
+
+        ProjectMessageFromSystem message = ProjectMessageFromSystem.builder()
+                .message("Данные сохранены на диск")
+                .status(MessageStatus.SUCCESS)
+                .type(MessageType.JAVA_PROJECT_FILE_SAVE_SYSTEM.getName())
+                .context(context)
+                .data(data)
+                .build();
+
+
+        messageBroadcast.sendSync(message);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /*
         // отправляем уведомление о том, что изменения сохранены
         broadcast.sendAsync(new Broadcast.EventBuilder()
                 .useEvent(ProjectEventFromSystem::new)
@@ -138,6 +203,9 @@ public class FileOperationsListener {
 
 
         System.out.println(file.getVersion());
+
+
+         */
 
 
         fileCache.markAsWritten(file.getId(), file.getVersion());
