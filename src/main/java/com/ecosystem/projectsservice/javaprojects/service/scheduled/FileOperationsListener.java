@@ -134,18 +134,35 @@ public class FileOperationsListener {
 
 
 
-        ProjectMessageFromSystemContext context = new ProjectMessageFromSystemContext();
-        context.setOrigin("file storage updater process");
-        context.setProjectId(file.getProjectId());
-        context.setTimestamp(Instant.now());
-        context.setCorrelationId(UUID.randomUUID());
+        ProjectMessageFromSystemContext context
+
+                = ProjectMessageFromSystemContext.builder()
+
+                .correlationId(UUID.randomUUID())
+                .origin("file storage updater process")
+                .timestamp(Instant.now())
+                .projectId(file.getProjectId())
+
+                .build();
 
 
-        FileSaveMessageData data = new FileSaveMessageData();
 
-        data.setName(file.getName());
-        data.setFileId(file.getId());
-        data.setExtension(file.getExtension());
+
+
+
+
+        FileSaveMessageData data = FileSaveMessageData
+                .builder()
+                .fileId(file.getId())
+                .name(file.getName())
+                .extension(file.getExtension())
+                .build();
+
+
+
+
+
+
 
 
 

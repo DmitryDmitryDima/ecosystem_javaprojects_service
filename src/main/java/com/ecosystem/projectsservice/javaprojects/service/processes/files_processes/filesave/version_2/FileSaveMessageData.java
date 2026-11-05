@@ -2,6 +2,7 @@ package com.ecosystem.projectsservice.javaprojects.service.processes.files_proce
 
 import com.ecosystem.projectsservice.javaprojects.external_messaging.data.ExternalData;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Builder
 public class FileSaveMessageData extends ExternalData {
 
     private UUID fileId;
